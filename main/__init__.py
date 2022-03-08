@@ -1,23 +1,30 @@
 from crypt import methods
 from fileinput import filename
 from pickle import TRUE
+import re
 from unittest import result
 from flask import Flask, redirect, request, url_for, jsonify, make_response
+from main.model.attendance import Attendance
 from main.shared.shared import db, ma
 from main.model.user import User
 from main.schema.user import user_schema, users_schema
+from main.schema.attendance import attendaces_schema, attendance_schema
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import and_, or_
 from flask_cors import CORS
 import jwt
 from datetime import datetime, timedelta
 from functools import wraps
+import os
+from os.path import join, dirname, realpath
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:root@localhost/HRISDATA'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JSON_SORT_KEYS'] = False
+app.config['UPLOAD_FOLDER'] = join(dirname(realpath(__file__)), 'static/upload')
 app.config['SECRET_KEY'] = 'IKIKUNCIrahasiasu,rasahkeposia.pokonaulahHayangNYAhosiah.pateniraimu'
 app.secret_key = 'IKIKUNCIrahasiasu,rasahkeposia.pokonaulahHayangNYAhosiah.pateniraimu'
 CORS(app)
@@ -41,6 +48,7 @@ def response(code, message, status, data):
         "data": data
     }), code
 
+
 def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -62,6 +70,7 @@ def token_required(f):
         return f(user, *args, **kwargs)
 
     return decorated
+
 
 @app.route("/")
 def index():
@@ -127,4 +136,58 @@ def profil(self):
     return response(200, "Berhasil", True, user_schema.dump(user))
 
 
+@app.route('/v1/api/attendance', methods=['POST', 'GET'])
+@token_required
+def attendance(self):
+    if request.method == 'POST':
+        datein = datetime.utcnow().strftime("%d-%m-%y %X")
+        imagein = request.json["image_checkin"]
+        locationin = request.json['location_in']
 
+        att = Attendance(self.uid, datein, imagein, locationin, None, None, None)
+        db.session.add(att)
+        db.session.commit()
+
+        return response(200, "Berhasil melakukan absensi masuk", True, attendance_schema.dump(att))
+    else:
+        att = Attendance.query.filter(Attendance.uid == self.uid).all()
+
+        return response(200, "Berhasil", True, attendaces_schema.dump(att))
+
+@app.route("/v1/api/attendance/<int:id>", methods=['PUT', 'GET', 'DELETE'])
+@token_required
+def attendance_id(self, id):
+    att = Attendance.query.filter(Attendance.id == id).first()
+    if request.method == 'PUT':
+        locationout = request.json["location_out"]
+        imageout = request.json["image_checkout"]
+
+        att.date_checkout = datetime.utcnow().strftime("%d-%m-%y %X")
+        att.location_out = locationout
+        att.image_out = imageout
+        db.session.commit()
+
+        return response(200, "Berhasil melakukan absensi keluar", True, attendance_schema.dump(att))
+    elif request.method == 'DELETE':
+        if att.image_in != "" and att.image_in is not None:
+            if os.path.exists(os.path.join(app.config['UPLOAD_FOLDER'], att.image_in)):
+                os.remove(os.path.join(app.config['UPLOAD_FOLDER'], att.image_in))
+        if att.image_out != "" and att.image_out is not None:
+            if os.path.exists(os.path.join(app.config['UPLOAD_FOLDER'], att.image_out)):
+                os.remove(os.path.join(app.config['UPLOAD_FOLDER'], att.image_out))
+
+        db.session.delete(att)
+        db.session.commit()
+
+        return response(200, "Berhasil menghapus", True, None)
+    else: 
+        return response(200, "Berhasil", True, attendance_schema.dump(att))
+
+@app.route('/v1/api/upload', methods=['POST'])
+@token_required
+def upload(self):
+    file = request.files['image']
+    file_name = secure_filename(file.filename)
+    file.save(os.path.join(app.config['UPLOAD_FOLDER'], file_name))
+
+    return response(200, "Berhasil menupload gambar", True, file_name)
