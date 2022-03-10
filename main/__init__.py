@@ -197,14 +197,14 @@ def upload_attendance(self, id):
         file = request.files['imagein']
         file_name = secure_filename(file.filename)
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], file_name))
-        att.image_in = filename
+        att.image_in = file_name
         db.session.commit()
         return response(200, "Berhasil mengupload gambar", True, file_name)
     elif 'imageout' in request.files:
         file = request.files['imageout']
         file_name = secure_filename(file.filename)
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], file_name))
-        att.image_out = filename
+        att.image_out = file_name
         db.session.commit()
         return response(200, "Berhasil mengupload gambar", True, file_name)
     else:
