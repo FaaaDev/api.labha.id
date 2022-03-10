@@ -193,14 +193,14 @@ def upload(self):
 @token_required
 def upload_attendance(self, id):
     att = Attendance.query.filter(Attendance.id == id).first()
-    if 'imagein' in request.form:
+    if 'imagein' in request.files:
         file = request.files['imagein']
         file_name = secure_filename(file.filename)
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], file_name))
         att.image_in = filename
         db.session.commit()
         return response(200, "Berhasil mengupload gambar", True, file_name)
-    elif 'imageout' in request.form:
+    elif 'imageout' in request.files:
         file = request.files['imageout']
         file_name = secure_filename(file.filename)
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], file_name))
@@ -208,4 +208,4 @@ def upload_attendance(self, id):
         db.session.commit()
         return response(200, "Berhasil mengupload gambar", True, file_name)
     else:
-        return response(400, "Tidak ada foto yang sesuai", True, file_name)
+        return response(400, "Tidak ada foto yang sesuai", True, None)
