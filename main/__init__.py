@@ -141,10 +141,9 @@ def profil(self):
 def attendance(self):
     if request.method == 'POST':
         datein = datetime.utcnow().strftime("%d-%m-%y %X")
-        imagein = request.json["image_checkin"]
         locationin = request.json['location_in']
 
-        att = Attendance(self.uid, datein, imagein, locationin, None, None, None)
+        att = Attendance(self.uid, datein, None, locationin, None, None, None)
         db.session.add(att)
         db.session.commit()
 
@@ -160,11 +159,9 @@ def attendance_id(self, id):
     att = Attendance.query.filter(Attendance.id == id).first()
     if request.method == 'PUT':
         locationout = request.json["location_out"]
-        imageout = request.json["image_checkout"]
 
         att.date_checkout = datetime.utcnow().strftime("%d-%m-%y %X")
         att.location_out = locationout
-        att.image_out = imageout
         db.session.commit()
 
         return response(200, "Berhasil melakukan absensi keluar", True, attendance_schema.dump(att))
@@ -190,4 +187,25 @@ def upload(self):
     file_name = secure_filename(file.filename)
     file.save(os.path.join(app.config['UPLOAD_FOLDER'], file_name))
 
-    return response(200, "Berhasil menupload gambar", True, file_name)
+    return response(200, "Berhasil mengupload gambar", True, file_name)
+
+@app.route('/v1/api/upload/attendance/<int:id>', methods=['POST'])
+@token_required
+def upload_attendance(self, id):
+    att = Attendance.query.filter(Attendance.id == id).first()
+    if 'imagein' in request.form:
+        file = request.files['imagein']
+        file_name = secure_filename(file.filename)
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'], file_name))
+        att.image_in = filename
+        db.session.commit()
+        return response(200, "Berhasil mengupload gambar", True, file_name)
+    elif 'imageout' in request.form:
+        file = request.files['imageout']
+        file_name = secure_filename(file.filename)
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'], file_name))
+        att.image_out = filename
+        db.session.commit()
+        return response(200, "Berhasil mengupload gambar", True, file_name)
+    else:
+        return response(400, "Tidak ada foto yang sesuai", True, file_name)
