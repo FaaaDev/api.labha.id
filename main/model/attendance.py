@@ -8,10 +8,10 @@ class Attendance(db.Model):
     uid = db.Column(db.Integer)
     date_checkin = db.Column(db.String(100))
     image_in = db.Column(db.String(100))
-    location_in = db.Column(db.String(20))
+    location_in = db.Column(db.Text)
     date_checkout = db.Column(db.String(200), unique = True)
     image_out = db.Column(db.String(200))
-    location_out = db.Column(db.String(100))
+    location_out = db.Column(db.Text)
 
     def __init__(self, uid, date_checkin, image_in, location_in, date_checkout, image_out, location_out):
         self.uid = uid
