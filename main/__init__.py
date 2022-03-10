@@ -159,14 +159,12 @@ def attendance_id(self, id):
     att = Attendance.query.filter(Attendance.id == id).first()
     if request.method == 'PUT':
         locationout = request.json["location_out"]
-        print(locationout)
 
-        # att.date_checkout = datetime.utcnow().strftime("%d-%m-%y %X")
-        # att.location_out = locationout
-        # db.session.commit()
+        att.date_checkout = datetime.utcnow().strftime("%d-%m-%y %X")
+        att.location_out = locationout
+        db.session.commit()
 
-        # return response(200, "Berhasil melakukan absensi keluar", True, attendance_schema.dump(att))
-        return response(200, "Berhasil melakukan absensi keluar", True, locationout)
+        return response(200, "Berhasil melakukan absensi keluar", True, attendance_schema.dump(att))
     elif request.method == 'DELETE':
         if att.image_in != "" and att.image_in is not None:
             if os.path.exists(os.path.join(app.config['UPLOAD_FOLDER'], att.image_in)):
