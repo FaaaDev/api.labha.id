@@ -159,6 +159,7 @@ def attendance_id(self, id):
     att = Attendance.query.filter(Attendance.id == id).first()
     if request.method == 'PUT':
         locationout = request.json["location_out"]
+        print(locationout)
 
         att.date_checkout = datetime.utcnow().strftime("%d-%m-%y %X")
         att.location_out = locationout
