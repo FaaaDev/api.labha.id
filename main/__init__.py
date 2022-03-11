@@ -109,7 +109,7 @@ def user():
             phone = request.json['phone']
             email = request.json['email']
             password = request.json['password']
-            image = ""
+            image = request.json['image']
             dob = request.json['dob']
 
             user = User(username, password, phone, email, image, dob)
