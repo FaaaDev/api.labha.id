@@ -2,13 +2,14 @@ from crypt import methods
 from fileinput import filename
 from pickle import TRUE
 import re
+from sys import prefix
 from unittest import result
 from flask import Flask, redirect, request, url_for, jsonify, make_response
-from main.model.attendance import Attendance
+from main.model.bank_mdb import BankMdb
 from main.shared.shared import db, ma
 from main.model.user import User
 from main.schema.user import user_schema, users_schema
-from main.schema.attendance import attendaces_schema, attendance_schema
+from main.schema.bank_mdb import banks_schema, bank_schema
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import and_, or_
 from flask_cors import CORS
@@ -18,13 +19,15 @@ from functools import wraps
 import os
 from os.path import join, dirname, realpath
 from werkzeug.utils import secure_filename
+import bcrypt
 
 app = Flask(__name__)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:root@localhost/HRISDATA'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:12345678@localhost:5432/accdemo'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JSON_SORT_KEYS'] = False
-app.config['UPLOAD_FOLDER'] = join(dirname(realpath(__file__)), 'static/upload')
+app.config['UPLOAD_FOLDER'] = join(
+    dirname(realpath(__file__)), 'static/upload')
 app.config['SECRET_KEY'] = 'IKIKUNCIrahasiasu,rasahkeposia.pokonaulahHayangNYAhosiah.pateniraimu'
 app.secret_key = 'IKIKUNCIrahasiasu,rasahkeposia.pokonaulahHayangNYAhosiah.pateniraimu'
 CORS(app)
@@ -63,7 +66,7 @@ def token_required(f):
         try:
             # decoding the payload to fetch the stored details
             data = jwt.decode(token, app.config['SECRET_KEY'])
-            user = User.query.filter(User.uid == data['id']).first()
+            user = User.query.filter(User.id == data['id']).first()
         except Exception as e:
             return response(401, "Invalid or expired token !!", False, None)
         # returns the current logged in users contex to the routes
@@ -79,19 +82,17 @@ def index():
 
 @app.route("/v1/api/login", methods=['POST'])
 def login():
-    email = request.json['email']
+    username = request.json['username']
     password = request.json['password']
 
-    user = User.query.filter(User.email == email).first()
+    user = User.query.filter(User.username == username).first()
 
     if user is None:
         return response(403, "Akun tidak ditemukan", False, None)
     else:
-        if user.password != password:
-            return response(403, "Password yang anda masukkan salah", False, None)
-        else:
+        if bcrypt.checkpw(password.encode(), user.password.encode()):
             token = jwt.encode({
-                'id': user.uid,
+                'id': user.id,
                 'exp': datetime.utcnow() + timedelta(hours=5)
             }, app.config['SECRET_KEY'])
             data = {
@@ -99,20 +100,24 @@ def login():
                 "token": token.decode('utf-8')
             }
             return response(200, "Berhasil", True, data)
+        else:
+            return response(403, "Password yang anda masukkan salah", False, None)
 
 
 @app.route("/v1/api/user", methods=['POST', 'GET'])
-def user():
+@token_required
+def user(self):
     if request.method == 'POST':
         try:
             username = request.json['username']
-            phone = request.json['phone']
+            name = request.json['name']
             email = request.json['email']
             password = request.json['password']
-            image = request.json['image']
-            dob = request.json['dob']
 
-            user = User(username, password, phone, email, image, dob)
+            hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
+
+            user = User(username, name, email,
+                        hashed.decode(), None, None, None)
             db.session.add(user)
             db.session.commit()
             result = response(200, "Berhasil menambahkan user",
@@ -124,88 +129,72 @@ def user():
             return result
     else:
         user = User.query.all()
-
         return response(200, "Berhasil", True, users_schema.dump(user))
+
+
+@app.route("/v1/api/user/<int:id>", methods=['PUT', 'GET', 'DELETE'])
+@token_required
+def user_id(self,id):
+    user = User.query.filter(User.id == id).first()
+    if request.method == 'PUT':
+        username = request.json['username']
+        user.username = username
+        db.session.commit()
+
+        return response(200, "Berhasil mengupdate user", True, user_schema.dump(user))
+    elif request.method == 'DELETE':
+        if user:
+            db.session.delete(user)
+            db.session.commit()
+            return response(200, "Berhasil menghapus user", True, None)
+        else:
+            return response(200, "User tidak ditemukan", True, None)
+    elif request.method == 'GET':
+        return response(200, "Berhasil", True, user_schema.dump(user))
+    else:
+        return response(400, "Method not allowed!", True, user_schema.dump(user))
 
 
 @app.route('/v1/api/myprofile', methods=['GET'])
 @token_required
 def profil(self):
-    user = User.query.filter(User.uid == self.uid).first()
+    user = User.query.filter(User.id == self.id).first()
 
     return response(200, "Berhasil", True, user_schema.dump(user))
 
-
-@app.route('/v1/api/attendance', methods=['POST', 'GET'])
+@app.route("/v1/api/bank-code", methods=['POST'])
 @token_required
-def attendance(self):
+def bank_code(self):
+    prefix = request.json['prefix']    
+
+    if len(prefix) == 2:
+        
+        code = 1
+        bc = prefix+"00"+str(code)
+        bank = BankMdb.query.filter(BankMdb.BANK_CODE.like("%{}%".format(prefix))).order_by(BankMdb.BANK_CODE.desc()).all()
+        if bank:
+            code = int(bank[0].BANK_CODE.replace(prefix, ''))+1
+            if code < 10:
+                bc = prefix+"00"+str(code)
+            else:
+                if code > 99:
+                    bc = prefix+str(code)
+                else:
+                    bc = prefix+"0"+str(code)
+
+        print(bc)
+
+        return response(200, "Berhasil", True, {"bank_code": bc.upper()})
+    else:
+        return ""
+
+@app.route("/v1/api/bank", methods=['POST', 'GET'])
+@token_required
+def bank(self):
     if request.method == 'POST':
-        datein = datetime.utcnow().strftime("%d-%m-%y %X")
-        locationin = request.json['location_in']
-
-        att = Attendance(self.uid, datein, None, locationin, None, None, None)
-        db.session.add(att)
-        db.session.commit()
-
-        return response(200, "Berhasil melakukan absensi masuk", True, attendance_schema.dump(att))
+        return ''
     else:
-        att = Attendance.query.filter(Attendance.uid == self.uid).all()
+        bank = BankMdb.query.all()
+        return response(200, "Berhasil", True, banks_schema.dump(bank))
 
-        return response(200, "Berhasil", True, attendaces_schema.dump(att))
 
-@app.route("/v1/api/attendance/<int:id>", methods=['PUT', 'GET', 'DELETE'])
-@token_required
-def attendance_id(self, id):
-    att = Attendance.query.filter(Attendance.id == id).first()
-    if request.method == 'PUT':
-        locationout = request.json["location_out"]
-
-        att.date_checkout = datetime.utcnow().strftime("%d-%m-%y %X")
-        att.location_out = locationout
-        db.session.commit()
-
-        return response(200, "Berhasil melakukan absensi keluar", True, attendance_schema.dump(att))
-    elif request.method == 'DELETE':
-        if att.image_in != "" and att.image_in is not None:
-            if os.path.exists(os.path.join(app.config['UPLOAD_FOLDER'], att.image_in)):
-                os.remove(os.path.join(app.config['UPLOAD_FOLDER'], att.image_in))
-        if att.image_out != "" and att.image_out is not None:
-            if os.path.exists(os.path.join(app.config['UPLOAD_FOLDER'], att.image_out)):
-                os.remove(os.path.join(app.config['UPLOAD_FOLDER'], att.image_out))
-
-        db.session.delete(att)
-        db.session.commit()
-
-        return response(200, "Berhasil menghapus", True, None)
-    else: 
-        return response(200, "Berhasil", True, attendance_schema.dump(att))
-
-@app.route('/v1/api/upload', methods=['POST'])
-@token_required
-def upload(self):
-    file = request.files['image']
-    file_name = secure_filename(file.filename)
-    file.save(os.path.join(app.config['UPLOAD_FOLDER'], file_name))
-
-    return response(200, "Berhasil mengupload gambar", True, file_name)
-
-@app.route('/v1/api/upload/attendance/<int:id>', methods=['POST'])
-@token_required
-def upload_attendance(self, id):
-    att = Attendance.query.filter(Attendance.id == id).first()
-    if 'imagein' in request.files:
-        file = request.files['imagein']
-        file_name = secure_filename(file.filename)
-        file.save(os.path.join(app.config['UPLOAD_FOLDER'], file_name))
-        att.image_in = file_name
-        db.session.commit()
-        return response(200, "Berhasil mengupload gambar", True, file_name)
-    elif 'imageout' in request.files:
-        file = request.files['imageout']
-        file_name = secure_filename(file.filename)
-        file.save(os.path.join(app.config['UPLOAD_FOLDER'], file_name))
-        att.image_out = file_name
-        db.session.commit()
-        return response(200, "Berhasil mengupload gambar", True, file_name)
-    else:
-        return response(400, "Tidak ada foto yang sesuai", True, None)

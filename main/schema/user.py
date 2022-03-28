@@ -2,7 +2,8 @@ from main.shared.shared import ma
 
 class UserSchema(ma.Schema):
     class Meta:
-        fields = ('uid', 'username', 'email', 'phone', 'image', 'dob')
+        ordered=True
+        fields = ('id', 'username', 'name', 'email', 'confirmation_code', 'remember_token', 'active', 'confirmed', 'created_at', 'updated_at')
 
 
 user_schema = UserSchema()
