@@ -362,13 +362,18 @@ def account(self):
         sld_type = request.json['kode_saldo']
         connect = request.json['terhubung']
         sld_awal = request.json['saldo_awal']
-
-        account = AccouMdb(acc_code, acc_name, umm_code,
-                           kat_code, dou_type, sld_type, connect, sld_awal)
-        db.session.add(account)
-        db.session.commit()
-
-        return response(200, "Berhasil", True, accou_schema.dump(account))
+        try:
+            account = AccouMdb(acc_code, acc_name, umm_code,
+                               kat_code, dou_type, sld_type, connect, sld_awal)
+            db.session.add(account)
+            db.session.commit()
+            result = response(200, "Berhasil", True,
+                              accou_schema.dump(account))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode akun "+acc_code+" sudah digunakan", False, None)
+        finally:
+            return result
     else:
         result = db.session.query(AccouMdb, KategMdb, KlasiMdb)\
             .join(AccouMdb, KategMdb.id == AccouMdb.kat_code)\
@@ -385,6 +390,7 @@ def account(self):
         ]
 
         return response(200, "Berhasil", True, data)
+
 
 @app.route("/v1/api/account/umum", methods=['GET'])
 @token_required
