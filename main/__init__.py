@@ -326,7 +326,6 @@ def account_umum(self, kat_id):
         key)), AccouMdb.dou_type == "U")).order_by(AccouMdb.acc_code.desc()).first()
 
     if last_acc != None:
-        print(int(last_acc.acc_code.replace(str(kategory[1].id)+"-", "")))
         next_code = str(
             kategory[1].id)+"."+str(int(last_acc.acc_code.replace(str(kategory[1].id)+".", ""))+1)
     else:
