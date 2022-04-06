@@ -321,16 +321,16 @@ def account_umum(self, kat_id):
         .order_by(KategMdb.id.asc())\
         .filter(KategMdb.id == kat_id).first()
 
-    key = str(kategory[1].id)+"-"+str(kat_id)
+    key = str(kategory[1].id)+"."+str(kat_id)
     last_acc = AccouMdb.query.filter(and_(AccouMdb.acc_code.like("%{}%".format(
         key)), AccouMdb.dou_type == "U")).order_by(AccouMdb.acc_code.desc()).first()
 
     if last_acc != None:
         print(int(last_acc.acc_code.replace(str(kategory[1].id)+"-", "")))
         next_code = str(
-            kategory[1].id)+"-"+str(int(last_acc.acc_code.replace(str(kategory[1].id)+"-", ""))+1)
+            kategory[1].id)+"."+str(int(last_acc.acc_code.replace(str(kategory[1].id)+".", ""))+1)
     else:
-        next_code = str(kategory[1].id)+"-"+str(kat_id)+"0001"
+        next_code = str(kategory[1].id)+"."+str(kat_id)+"0001"
 
     return response(200, "Berhasil", True, next_code)
 
@@ -343,10 +343,10 @@ def account_detail(self, umm_code):
         AccouMdb.acc_code.desc()).first()
 
     if last_acc != None:
-        next_code = umm_code+"-" + \
-            str(int(last_acc.acc_code.replace(umm_code+"-", ""))+1)
+        next_code = umm_code+"." + \
+            str(int(last_acc.acc_code.replace(umm_code+".", ""))+1)
     else:
-        next_code = umm_code+"-"+"1"
+        next_code = umm_code+"."+"1"
     return response(200, "Berhasil", True, next_code)
 
 
