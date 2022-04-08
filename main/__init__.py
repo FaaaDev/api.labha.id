@@ -9,8 +9,10 @@ from main.model.accou_mdb import AccouMdb
 from main.model.adm_menu import AdmMenu
 from main.model.adm_user_menu import AdmUserMenu
 from main.model.bank_mdb import BankMdb
+from main.model.ccost_mdb import CcostMdb
 from main.model.klasi_mdb import KlasiMdb
 from main.model.kateg_mdb import KategMdb
+from main.schema.ccost_mdb import ccost_schema, ccosts_schema, CcostSchema
 from main.shared.shared import db, ma
 from main.model.user import User
 from main.schema.user import user_schema, users_schema
@@ -448,3 +450,39 @@ def account_id(self, id):
         }
 
         return response(200, "Berhasil", True, data)
+
+
+@app.route("/v1/api/cost-center", methods=['POST', 'GET'])
+@token_required
+def ccost(self):
+    if request.method == 'POST':
+        name = request.json['name']
+        keterangan = request.json['keterangan']
+        cost = CcostMdb(name, keterangan)
+        db.session.add(cost)
+        db.session.commit()
+
+        return response(200, "Berhasil", True, ccost_schema.dump(cost))
+    else:
+        result = CcostMdb.query.all()
+        
+        return response(200, "Berhasil", True, ccosts_schema.dump(result))
+
+
+@app.route("/v1/api/cost-center/<int:id>", methods=['PUT', 'GET', 'DELETE'])
+@token_required
+def ccost_id(self, id):
+    cost = CcostMdb.query.filter(CcostMdb.id == id).first()
+    if request.method == 'PUT':
+        cost.name = request.json['name']
+        cost.keterangan = request.json['keterangan']
+        db.session.commit()
+
+        return response(200, "Berhasil", True, ccost_schema.dump(cost))
+    elif request.method == 'DELETE':
+        db.session.delete(cost)
+        db.session.commit()
+
+        return response(200, "Berhasil", True, None)
+    else:
+        return response(200, "Berhasil", True, ccost_schema.dump(cost))
