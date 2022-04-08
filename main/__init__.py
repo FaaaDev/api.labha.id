@@ -379,8 +379,6 @@ def account(self):
         result = db.session.query(AccouMdb, KategMdb, KlasiMdb)\
             .join(AccouMdb, KategMdb.id == AccouMdb.kat_code)\
             .outerjoin(KlasiMdb, KategMdb.kode_klasi == KlasiMdb.id)\
-            .order_by(KategMdb.id.asc())\
-            .order_by(KlasiMdb.id.asc())\
             .order_by(AccouMdb.acc_code.asc()).all()
         print(result)
         data = [
