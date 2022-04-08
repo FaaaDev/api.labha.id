@@ -269,7 +269,7 @@ def kategory(self):
     else:
         result = db.session.query(KategMdb, KlasiMdb)\
             .outerjoin(KlasiMdb, KategMdb.kode_klasi == KlasiMdb.id)\
-            .order_by(KategMdb.id.asc()).all()
+            .order_by(KategMdb.kode_klasi.asc()).all()
         print(result)
         data = [
             {
