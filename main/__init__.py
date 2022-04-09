@@ -95,17 +95,28 @@ def index():
 def login():
     username = request.json['username']
     password = request.json['password']
+    if 'remember' in request.json:
+        remember = request.json['remember']
+    else:
+        remember = False
 
+    print(remember)
     user = User.query.filter(User.username == username).first()
 
     if user is None:
         return response(403, "Akun tidak ditemukan", False, None)
     else:
         if bcrypt.checkpw(password.encode(), user.password.encode()):
-            token = jwt.encode({
-                'id': user.id,
-                'exp': datetime.utcnow() + timedelta(hours=5)
-            }, app.config['SECRET_KEY'])
+            if remember:
+                token = jwt.encode({
+                    'id': user.id,
+                    'exp': datetime.utcnow() + timedelta(weeks=2)
+                }, app.config['SECRET_KEY'])
+            else:
+                token = jwt.encode({
+                    'id': user.id,
+                    'exp': datetime.utcnow() + timedelta(hours=5)
+                }, app.config['SECRET_KEY'])
             data = {
                 "user": user_schema.dump(user),
                 "token": token.decode('utf-8')
