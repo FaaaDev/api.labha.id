@@ -12,7 +12,9 @@ from main.model.bank_mdb import BankMdb
 from main.model.ccost_mdb import CcostMdb
 from main.model.klasi_mdb import KlasiMdb
 from main.model.kateg_mdb import KategMdb
+from main.model.proj_mdb import ProjMdb
 from main.schema.ccost_mdb import ccost_schema, ccosts_schema, CcostSchema
+from main.schema.proj_mdb import proj_schema, projs_schema, ProjSchema
 from main.shared.shared import db, ma
 from main.model.user import User
 from main.schema.user import user_schema, users_schema
@@ -500,3 +502,39 @@ def ccost_id(self, id):
         return response(200, "Berhasil", True, None)
     else:
         return response(200, "Berhasil", True, ccost_schema.dump(cost))
+
+
+@app.route("/v1/api/project", methods=['POST', 'GET'])
+@token_required
+def proj(self):
+    if request.method == 'POST':
+        name = request.json['name']
+        keterangan = request.json['keterangan']
+        project = ProjMdb(name, keterangan)
+        db.session.add(project)
+        db.session.commit()
+
+        return response(200, "Berhasil", True, proj_schema.dump(project))
+    else:
+        result = ProjMdb.query.all()
+
+        return response(200, "Berhasil", True, projs_schema.dump(result))
+
+
+@app.route("/v1/api/project/<int:id>", methods=['PUT', 'GET', 'DELETE'])
+@token_required
+def proj_id(self, id):
+    project = ProjMdb.query.filter(ProjMdb.id == id).first()
+    if request.method == 'PUT':
+        project.name = request.json['name']
+        project.keterangan = request.json['keterangan']
+        db.session.commit()
+
+        return response(200, "Berhasil", True, ccost_schema.dump(project))
+    elif request.method == 'DELETE':
+        db.session.delete(project)
+        db.session.commit()
+
+        return response(200, "Berhasil", True, None)
+    else:
+        return response(200, "Berhasil", True, ccost_schema.dump(project))
