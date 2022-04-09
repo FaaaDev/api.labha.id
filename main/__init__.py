@@ -372,15 +372,16 @@ def account(self):
                               accou_schema.dump(account))
         except IntegrityError:
             db.session.rollback()
-            result = response(400, "Kode akun "+acc_code+" sudah digunakan", False, None)
+            result = response(400, "Kode akun "+acc_code +
+                              " sudah digunakan", False, None)
         finally:
             return result
     else:
         result = db.session.query(AccouMdb, KategMdb, KlasiMdb)\
             .join(AccouMdb, KategMdb.id == AccouMdb.kat_code)\
             .outerjoin(KlasiMdb, KategMdb.kode_klasi == KlasiMdb.id)\
-                .order_by(AccouMdb.id.asc())\
-            .order_by(AccouMdb.acc_code.asc()).all()
+            .order_by(KlasiMdb.id.asc())\
+            .order_by(KategMdb.id.asc()).all()
         print(result)
         data = [
             {
@@ -466,7 +467,7 @@ def ccost(self):
         return response(200, "Berhasil", True, ccost_schema.dump(cost))
     else:
         result = CcostMdb.query.all()
-        
+
         return response(200, "Berhasil", True, ccosts_schema.dump(result))
 
 
@@ -487,15 +488,3 @@ def ccost_id(self, id):
         return response(200, "Berhasil", True, None)
     else:
         return response(200, "Berhasil", True, ccost_schema.dump(cost))
-
-
-
-
-
-
-
-
-
-
-
-
