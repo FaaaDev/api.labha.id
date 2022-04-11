@@ -1,3 +1,4 @@
+from enum import unique
 from main.shared.shared import db
 
 class ProjMdb(db.Model):
@@ -5,7 +6,7 @@ class ProjMdb(db.Model):
     __tablename__ = 'PROJMDB'
 
     id = db.Column(db.Integer, primary_key=True)
-    proj_code = db.Column(db.String(255))
+    proj_code = db.Column(db.String(255), unique=True)
     proj_name = db.Column(db.String(255))
     proj_ket = db.Column(db.Text)
     

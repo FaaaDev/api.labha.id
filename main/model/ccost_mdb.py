@@ -5,7 +5,7 @@ class CcostMdb(db.Model):
     __tablename__ = 'CCOSTMDB'
 
     id = db.Column(db.Integer, primary_key=True)
-    ccost_code = db.Column(db.String(255))
+    ccost_code = db.Column(db.String(255), unique=True)
     ccost_name = db.Column(db.String(255))
     ccost_ket = db.Column(db.Text)
     

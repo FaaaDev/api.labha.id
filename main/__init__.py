@@ -472,14 +472,19 @@ def account_id(self, id):
 @token_required
 def ccost(self):
     if request.method == 'POST':
-        code = request.json['ccost_code']
-        name = request.json['ccost_name']
-        keterangan = request.json['ccost_ket']
-        cost = CcostMdb(code, name, keterangan)
-        db.session.add(cost)
-        db.session.commit()
-
-        return response(200, "Berhasil", True, ccost_schema.dump(cost))
+        try:
+            code = request.json['ccost_code']
+            name = request.json['ccost_name']
+            keterangan = request.json['ccost_ket']
+            cost = CcostMdb(code, name, keterangan)
+            db.session.add(cost)
+            db.session.commit()
+            result = response(200, "Berhasil", True, ccost_schema.dump(cost))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
     else:
         result = CcostMdb.query.all()
 
@@ -491,12 +496,18 @@ def ccost(self):
 def ccost_id(self, id):
     cost = CcostMdb.query.filter(CcostMdb.id == id).first()
     if request.method == 'PUT':
-        cost.ccost_code = request.json['ccost_code']
-        cost.ccost_name = request.json['ccost_name']
-        cost.ccost_ket = request.json['ccost_ket']
-        db.session.commit()
+        try:
+            cost.ccost_code = request.json['ccost_code']
+            cost.ccost_name = request.json['ccost_name']
+            cost.ccost_ket = request.json['ccost_ket']
+            db.session.commit()
 
-        return response(200, "Berhasil", True, ccost_schema.dump(cost))
+            result = response(200, "Berhasil", True, ccost_schema.dump(cost))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
     elif request.method == 'DELETE':
         db.session.delete(cost)
         db.session.commit()
@@ -510,14 +521,20 @@ def ccost_id(self, id):
 @token_required
 def proj(self):
     if request.method == 'POST':
-        code = request.json['proj_code']
-        name = request.json['proj_name']
-        keterangan = request.json['proj_ket']
-        project = ProjMdb(code, name, keterangan)
-        db.session.add(project)
-        db.session.commit()
+        try:
+            code = request.json['proj_code']
+            name = request.json['proj_name']
+            keterangan = request.json['proj_ket']
+            project = ProjMdb(code, name, keterangan)
+            db.session.add(project)
+            db.session.commit()
 
-        return response(200, "Berhasil", True, proj_schema.dump(project))
+            result = response(200, "Berhasil", True, proj_schema.dump(project))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
     else:
         result = ProjMdb.query.all()
 
@@ -529,12 +546,17 @@ def proj(self):
 def proj_id(self, id):
     project = ProjMdb.query.filter(ProjMdb.id == id).first()
     if request.method == 'PUT':
-        project.proj_code = request.json['proj_code']
-        project.proj_name = request.json['proj_name']
-        project.proj_ket = request.json['proj_ket']
-        db.session.commit()
-
-        return response(200, "Berhasil", True, proj_schema.dump(project))
+        try:
+            project.proj_code = request.json['proj_code']
+            project.proj_name = request.json['proj_name']
+            project.proj_ket = request.json['proj_ket']
+            db.session.commit()
+            result = response(200, "Berhasil", True, proj_schema.dump(project))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
     elif request.method == 'DELETE':
         db.session.delete(project)
         db.session.commit()
