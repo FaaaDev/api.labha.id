@@ -5,10 +5,12 @@ class CcostMdb(db.Model):
     __tablename__ = 'CCOSTMDB'
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(255))
-    keterangan = db.Column(db.Text)
+    ccost_code = db.Column(db.String(255))
+    ccost_name = db.Column(db.String(255))
+    ccost_ket = db.Column(db.Text)
     
 
-    def __init__(self, name, keterangan):
-        self.name = name
-        self.keterangan = keterangan
+    def __init__(self, code, name, keterangan):
+        self.ccost_code = code
+        self.ccost_name = name
+        self.ccost_ket = keterangan

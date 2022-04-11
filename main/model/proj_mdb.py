@@ -5,10 +5,12 @@ class ProjMdb(db.Model):
     __tablename__ = 'PROJMDB'
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(255))
-    keterangan = db.Column(db.Text)
+    proj_code = db.Column(db.String(255), primary_key=True)
+    proj_name = db.Column(db.String(255))
+    proj_ket = db.Column(db.Text)
     
 
-    def __init__(self, name, keterangan):
-        self.name = name
-        self.keterangan = keterangan
+    def __init__(self, proj_code, proj_name, proj_ket):
+        self.proj_code = proj_code
+        self.proj_name = proj_name
+        self.proj_ket = proj_ket
