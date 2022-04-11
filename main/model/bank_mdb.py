@@ -2,14 +2,13 @@ from flask_sqlalchemy import SQLAlchemy
 from main.shared.shared import db
 import datetime
 
-BANK_MDB_SEQ = db.Sequence('BANK_MDB_id_seq')
 
 class BankMdb(db.Model):
     __table_args__ = {'schema': 'master'}
     __tablename__ = 'BANK_MDB'
 
-    id = db.Column(db.Integer, server_default=BANK_MDB_SEQ.next_value())
-    BANK_CODE = db.Column(db.String(20), primary_key = True)
+    id = db.Column(db.Integer, primary_key=True)
+    BANK_CODE = db.Column(db.String(20), unique = True)
     BANK_NAME = db.Column(db.String(100))
     BANK_DESC = db.Column(db.String(120))
     BANK_ACC = db.Column(db.String(120))
