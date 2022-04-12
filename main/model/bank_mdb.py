@@ -11,7 +11,7 @@ class BankMdb(db.Model):
     BANK_CODE = db.Column(db.String(20), unique = True)
     BANK_NAME = db.Column(db.String(100))
     BANK_DESC = db.Column(db.String(120))
-    BANK_ACC = db.Column(db.String(120))
+    acc_id = db.Column(db.Integer)
     user_entry = db.Column(db.Integer)
     entry_date = db.Column(db.TIMESTAMP(timezone=False), default=datetime.datetime.utcnow())
     user_edit = db.Column(db.Integer)
@@ -23,6 +23,6 @@ class BankMdb(db.Model):
         self.BANK_CODE = BANK_CODE
         self.BANK_NAME = BANK_NAME
         self.BANK_DESC = BANK_DESC
-        self.BANK_ACC = BANK_ACC
+        self.acc_id = BANK_ACC
         self.user_entry = user_entry
         self.user_edit = user_edit

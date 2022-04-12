@@ -3,13 +3,17 @@ from fileinput import filename
 from pickle import TRUE
 import re
 from sys import prefix
-from unittest import result
 from flask import Flask, redirect, request, url_for, jsonify, make_response
 from main.model.accou_mdb import AccouMdb
 from main.model.adm_menu import AdmMenu
 from main.model.adm_user_menu import AdmUserMenu
 from main.model.bank_mdb import BankMdb
 from main.model.ccost_mdb import CcostMdb
+from main.model.jpel_mdb import JpelMdb
+from main.model.jpem_mdb import JpemMdb
+from main.model.sales_mdb import SalesMdb
+from main.model.areaPen_mdb import AreaPenMdb
+from main.model.subArea_mdb import SubAreaMdb
 from main.model.klasi_mdb import KlasiMdb
 from main.model.kateg_mdb import KategMdb
 from main.model.proj_mdb import ProjMdb
@@ -23,6 +27,11 @@ from main.schema.adm_user_menu import adm_user_menu_schema, adm_user_menus_schem
 from main.schema.klasi_mdb import klasi_schema, klasies_schema, KlasiMdb as KlasiSchema
 from main.schema.kateg_mdb import kateg_schema, kategs_schema, KategMdb as KategSchema
 from main.schema.accou_mdb import accou_schema, accous_schema, AccouSchema
+from main.schema.jpel_mdb import jpels_schema, jpel_schema
+from main.schema.jpem_mdb import jpems_schema, jpem_schema
+from main.schema.sales_mdb import saless_schema, sales_schema
+from main.schema.areaPen_mdb import areaPens_schema, areaPen_schema
+from main.schema.subArea_mdb import subAreas_schema, subArea_schema
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import and_, or_
 from flask_cors import CORS
@@ -208,42 +217,100 @@ def profil(self):
     return response(200, "Berhasil", True, menu)
 
 
-@app.route("/v1/api/bank-code", methods=['POST'])
-@token_required
-def bank_code(self):
-    prefix = request.json['prefix']
+# @app.route("/v1/api/bank-code", methods=['POST'])
+# @token_required
+# def bank_code(self):
+#     prefix = request.json['prefix']
 
-    if len(prefix) == 2:
+#     if len(prefix) == 2:
 
-        code = 1
-        bc = prefix+"00"+str(code)
-        bank = BankMdb.query.filter(BankMdb.BANK_CODE.like(
-            "%{}%".format(prefix))).order_by(BankMdb.BANK_CODE.desc()).all()
-        if bank:
-            code = int(bank[0].BANK_CODE.replace(prefix, ''))+1
-            if code < 10:
-                bc = prefix+"00"+str(code)
-            else:
-                if code > 99:
-                    bc = prefix+str(code)
-                else:
-                    bc = prefix+"0"+str(code)
+#         code = 1
+#         bc = prefix+"00"+str(code)
+#         bank = BankMdb.query.filter(BankMdb.BANK_CODE.like(
+#             "%{}%".format(prefix))).order_by(BankMdb.BANK_CODE.desc()).all()
+#         if bank:
+#             code = int(bank[0].BANK_CODE.replace(prefix, ''))+1
+#             if code < 10:
+#                 bc = prefix+"00"+str(code)
+#             else:
+#                 if code > 99:
+#                     bc = prefix+str(code)
+#                 else:
+#                     bc = prefix+"0"+str(code)
 
-        print(bc)
+#         print(bc)
 
-        return response(200, "Berhasil", True, {"bank_code": bc.upper()})
-    else:
-        return ""
+#         return response(200, "Berhasil", True, {"bank_code": bc.upper()})
+#     else:
+#         return ""
 
 
 @app.route("/v1/api/bank", methods=['POST', 'GET'])
 @token_required
 def bank(self):
     if request.method == 'POST':
-        return ''
+        try:
+            BANK_CODE = request.json['BANK_CODE']
+            ACC_ID = request.json['ACC_ID']
+            BANK_NAME = request.json['BANK_NAME']
+            BANK_DESC = request.json['BANK_DESC']
+            bank = BankMdb(BANK_CODE, BANK_NAME, BANK_DESC, ACC_ID, self.id, None)
+            db.session.add(bank)
+            db.session.commit()
+
+            result = response(200, "Berhasil", True, bank_schema.dump(bank))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            print(result)
+            return result
     else:
-        bank = BankMdb.query.all()
-        return response(200, "Berhasil", True, banks_schema.dump(bank))
+        result = db.session.query(BankMdb, AccouMdb)\
+            .outerjoin(AccouMdb, BankMdb.acc_id == AccouMdb.id)\
+            .order_by(BankMdb.id.asc()).all()
+        print(result)
+        data = [
+            {
+                "bank": bank_schema.dump(x[0]),
+                "account": accou_schema.dump(x[1])
+            }
+            for x in result
+        ]
+
+        return response(200, "Berhasil", True, data)
+
+
+@app.route("/v1/api/bank/<int:id>", methods=['PUT', 'GET', 'DELETE'])
+@token_required
+def bank_id(self, id):
+    bank = BankMdb.query.filter(BankMdb.id == id).first()
+    if request.method == 'PUT':
+        bank.BANK_CODE = request.json['BANK_CODE']
+        bank.BANK_ACC = request.json['BANK_ACC']
+        bank.BANK_NAMA = request.json['BANK_NAME']
+        bank.BANK_DESC = request.json['BANK_DESC']
+        db.session.commit()
+
+        return response(200, "Berhasil", True, bank_schema.dump(bank))
+    elif request.method == 'DELETE':
+        db.session.delete(bank)
+        db.session.commit()
+
+        return response(200, "Berhasil", True, None)
+    else:
+        result = db.session.query(BankMdb, AccouMdb)\
+            .outerjoin(AccouMdb, BankMdb.BANK_ACC == AccouMdb.acc_code)\
+            .order_by(BankMdb.id.asc())\
+            .filter(BankMdb.id == id).first()
+        print(result)
+        data = {
+            "bank": bank_schema.dump(result[0]),
+            "account": accou_schema.dump(result[1])
+        }
+
+        return response(200, "Berhasil", True, data)
+
 
 
 @app.route("/v1/api/klasifikasi", methods=['POST', 'GET'])
@@ -564,3 +631,265 @@ def proj_id(self, id):
         return response(200, "Berhasil", True, None)
     else:
         return response(200, "Berhasil", True, proj_schema.dump(project))
+
+
+# Jenis Pelanggan
+@app.route("/v1/api/jenis-pelanggan", methods=['POST', 'GET'])
+@token_required
+def jpel(self):
+    if request.method == 'POST':
+        try:
+            code = request.json['jpel_code']
+            name = request.json['jpel_name']
+            keterangan = request.json['jpel_ket']
+            jenisPel = JpelMdb(code, name, keterangan)
+            db.session.add(jenisPel)
+            db.session.commit()
+
+            result = response(200, "Berhasil", True, jpel_schema.dump(jenisPel))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    else:
+        result = JpelMdb.query.all()
+
+        return response(200, "Berhasil", True, jpels_schema.dump(result))
+
+
+@app.route("/v1/api/jenis-pelanggan/<int:id>", methods=['PUT', 'GET', 'DELETE'])
+@token_required
+def jpel_id(self, id):
+    jenisPel = JpelMdb.query.filter(JpelMdb.id == id).first()
+    if request.method == 'PUT':
+        try:
+            jenisPel.code = request.json['jpel_code']
+            jenisPel.name = request.json['jpel_name']
+            jenisPel.keterangan = request.json['jpel_ket']
+            db.session.commit()
+            result = response(200, "Berhasil", True, jpel_schema.dump(jenisPel))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    elif request.method == 'DELETE':
+        db.session.delete(jenisPel)
+        db.session.commit()
+
+        return response(200, "Berhasil", True, None)
+    else:
+        return response(200, "Berhasil", True, jpel_schema.dump(jenisPel))
+
+
+# Jenis Pemasok
+@app.route("/v1/api/jenis-pemasok", methods=['POST', 'GET'])
+@token_required
+def jpem(self):
+    if request.method == 'POST':
+        try:
+            code = request.json['jpem_code']
+            name = request.json['jpem_name']
+            keterangan = request.json['jpem_ket']
+            jenisPem = JpelMdb(code, name, keterangan)
+            db.session.add(jenisPem)
+            db.session.commit()
+
+            result = response(200, "Berhasil", True, jpem_schema.dump(jenisPem))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    else:
+        result = JpemMdb.query.all()
+
+        return response(200, "Berhasil", True, jpems_schema.dump(result))
+
+
+@app.route("/v1/api/jenis-pemasok/<int:id>", methods=['PUT', 'GET', 'DELETE'])
+@token_required
+def jpem_id(self, id):
+    jenisPem = JpemMdb.query.filter(JpemMdb.id == id).first()
+    if request.method == 'PUT':
+        try:
+            jenisPem.code = request.json['jpem_code']
+            jenisPem.name = request.json['jpem_name']
+            jenisPem.keterangan = request.json['jpem_ket']
+            db.session.commit()
+            result = response(200, "Berhasil", True, jpem_schema.dump(jenisPem))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    elif request.method == 'DELETE':
+        db.session.delete(jenisPem)
+        db.session.commit()
+
+        return response(200, "Berhasil", True, None)
+    else:
+        return response(200, "Berhasil", True, jpem_schema.dump(jenisPem))
+
+
+# Salesman
+@app.route("/v1/api/salesman", methods=['POST', 'GET'])
+@token_required
+def sales(self):
+    if request.method == 'POST':
+        try:
+            code = request.json['sales_code']
+            name = request.json['sales_name']
+            keterangan = request.json['sales_ket']
+            salesman = JpelMdb(code, name, keterangan)
+            db.session.add(salesman)
+            db.session.commit()
+
+            result = response(200, "Berhasil", True, sales_schema.dump(salesman))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    else:
+        result = SalesMdb.query.all()
+
+        return response(200, "Berhasil", True, saless_schema.dump(result))
+
+
+@app.route("/v1/api/salesman/<int:id>", methods=['PUT', 'GET', 'DELETE'])
+@token_required
+def sales_id(self, id):
+    salesman = SalesMdb.query.filter(SalesMdb.id == id).first()
+    if request.method == 'PUT':
+        try:
+            salesman.sales_code = request.json['sales_code']
+            salesman.sales_name = request.json['sales_name']
+            salesman.sales_ket = request.json['sales_ket']
+            db.session.commit()
+            result = response(200, "Berhasil", True, sales_schema.dump(salesman))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    elif request.method == 'DELETE':
+        db.session.delete(salesman)
+        db.session.commit()
+
+        return response(200, "Berhasil", True, None)
+    else:
+        return response(200, "Berhasil", True, sales_schema.dump(salesman))
+
+
+# Area Penjualan
+@app.route("/v1/api/area-penjualan", methods=['POST', 'GET'])
+@token_required
+def areaPen(self):
+    if request.method == 'POST':
+        try:
+            code = request.json['areaPen_code']
+            name = request.json['areaPen_name']
+            keterangan = request.json['areaPen_ket']
+            areaPen = AreaPenMdb(code, name, keterangan)
+            db.session.add(areaPen)
+            db.session.commit()
+
+            result = response(200, "Berhasil", True, areaPen_schema.dump(areaPen))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    else:
+        result = AreaPenMdb.query.all()
+
+        return response(200, "Berhasil", True, areaPens_schema.dump(result))
+
+
+@app.route("/v1/api/area-penjualan/<int:id>", methods=['PUT', 'GET', 'DELETE'])
+@token_required
+def areaPen_id(self, id):
+    areaPen = AreaPenMdb.query.filter(AreaPenMdb.id == id).first()
+    if request.method == 'PUT':
+        try:
+            areaPen.areaPen_code = request.json['areaPen_code']
+            areaPen.areaPen_name = request.json['areaPen_name']
+            areaPen.areaPen_ket = request.json['areaPen_ket']
+            db.session.commit()
+            result = response(200, "Berhasil", True, areaPen_schema.dump(areaPen))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    elif request.method == 'DELETE':
+        db.session.delete(areaPen)
+        db.session.commit()
+
+        return response(200, "Berhasil", True, None)
+    else:
+        return response(200, "Berhasil", True, areaPen_schema.dump(areaPen))
+
+
+# Sub Area Penjualan
+@app.route("/v1/api/sub-area", methods=['POST', 'GET'])
+@token_required
+def subArea(self):
+    if request.method == 'POST':
+        code = request.json['sub_code']
+        area_code = request.json['sub_areaCode']
+        name = request.json['name']
+        keterangan = request.json['sub_ket']
+        subArea = SubAreaMdb(code, area_code, name, keterangan)
+        db.session.add(subArea)
+        db.session.commit()
+
+        return response(200, "Berhasil", True,subArea_schema.dump(subArea))
+    else:
+        result = db.session.query(SubAreaMdb, AreaPenMdb)\
+            .outerjoin(AreaPenMdb, SubAreaMdb.sub_areaCode == AreaPenMdb.id)\
+            .order_by(SubAreaMdb.sub_areaCode.asc()).order_by(SubAreaMdb.id.asc()).all()
+        print(result)
+        data = [
+            {
+                "subArea": subArea_schema.dump(x[0]),
+                "areaPen": areaPen_schema.dump(x[1])
+            }
+            for x in result
+        ]
+
+        return response(200, "Berhasil", True, data)
+
+
+@app.route("/v1/api/sub-area/<int:id>", methods=['PUT', 'GET', 'DELETE'])
+@token_required
+def subArea_id(self, id):
+    subArea = SubAreaMdb.query.filter(SubAreaMdb.id == id).first()
+    if request.method == 'PUT':
+        subArea.code = request.json['sub_code']
+        subArea.area_code = request.json['sub_areaCode']
+        subArea.name = request.json['sub_name']
+        subArea.keterangan = request.json['sub_ket']
+        db.session.commit()
+
+        return response(200, "Berhasil", True, subArea_schema.dump(subArea))
+    elif request.method == 'DELETE':
+        db.session.delete(subArea)
+        db.session.commit()
+
+        return response(200, "Berhasil", True, None)
+    else:
+        result = db.session.query(SubAreaMdb, AreaPenMdb)\
+            .outerjoin(SubAreaMdb, SubAreaMdb.sub_areaCode == AreaPenMdb.id)\
+            .order_by(SubAreaMdb.id.asc())\
+            .filter(SubAreaMdb.id == id).first()
+        print(result)
+        data = {
+            "subArea": subArea_schema.dump(result[0]),
+            "areaPen": areaPen_schema.dump(result[1])
+        }
+
+        return response(200, "Berhasil", True, data)
+
