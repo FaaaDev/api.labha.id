@@ -639,14 +639,14 @@ def proj_id(self, id):
 def jpel(self):
     if request.method == 'POST':
         try:
-            code = request.json['jpel_code']
-            name = request.json['jpel_name']
-            keterangan = request.json['jpel_ket']
-            jenisPel = JpelMdb(code, name, keterangan)
-            db.session.add(jenisPel)
+            jpel_code = request.json['jpel_code']
+            jpel_name = request.json['jpel_name']
+            jpel_ket = request.json['jpel_ket']
+            jenis_pel = JpelMdb(jpel_code, jpel_name, jpel_ket)
+            db.session.add(jenis_pel)
             db.session.commit()
 
-            result = response(200, "Berhasil", True, jpel_schema.dump(jenisPel))
+            result = response(200, "Berhasil", True, jpel_schema.dump(jenis_pel))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
@@ -661,26 +661,26 @@ def jpel(self):
 @app.route("/v1/api/jenis-pelanggan/<int:id>", methods=['PUT', 'GET', 'DELETE'])
 @token_required
 def jpel_id(self, id):
-    jenisPel = JpelMdb.query.filter(JpelMdb.id == id).first()
+    jenis_pel = JpelMdb.query.filter(JpelMdb.id == id).first()
     if request.method == 'PUT':
         try:
-            jenisPel.code = request.json['jpel_code']
-            jenisPel.name = request.json['jpel_name']
-            jenisPel.keterangan = request.json['jpel_ket']
+            jenis_pel.jpel_code = request.json['jpel_code']
+            jenis_pel.jpel_name = request.json['jpel_name']
+            jenis_pel.jpel_ket = request.json['jpel_ket']
             db.session.commit()
-            result = response(200, "Berhasil", True, jpel_schema.dump(jenisPel))
+            result = response(200, "Berhasil", True, jpel_schema.dump(jenis_pel))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
         finally:
             return result
     elif request.method == 'DELETE':
-        db.session.delete(jenisPel)
+        db.session.delete(jenis_pel)
         db.session.commit()
 
         return response(200, "Berhasil", True, None)
     else:
-        return response(200, "Berhasil", True, jpel_schema.dump(jenisPel))
+        return response(200, "Berhasil", True, jpel_schema.dump(jenis_pel))
 
 
 # Jenis Pemasok
