@@ -287,7 +287,7 @@ def bank_id(self, id):
     bank = BankMdb.query.filter(BankMdb.id == id).first()
     if request.method == 'PUT':
         bank.BANK_CODE = request.json['BANK_CODE']
-        bank.BANK_ACC = request.json['BANK_ACC']
+        bank.acc_id = request.json['ACC_ID']
         bank.BANK_NAMA = request.json['BANK_NAME']
         bank.BANK_DESC = request.json['BANK_DESC']
         db.session.commit()
