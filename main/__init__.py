@@ -1,8 +1,10 @@
+import code
 from crypt import methods
 from fileinput import filename
 from pickle import TRUE
 import re
 from sys import prefix
+from unicodedata import name
 from flask import Flask, redirect, request, url_for, jsonify, make_response
 from main.model.accou_mdb import AccouMdb
 from main.model.adm_menu import AdmMenu
@@ -17,6 +19,9 @@ from main.model.sub_area_mdb import SubAreaMdb
 from main.model.klasi_mdb import KlasiMdb
 from main.model.kateg_mdb import KategMdb
 from main.model.proj_mdb import ProjMdb
+from main.model.currency_mdb import CurrencyMdb
+from main.model.syarat_bayar_mdb import RulesPayMdb
+from main.model.lokasi_mdb import LocationMdb
 from main.schema.ccost_mdb import ccost_schema, ccosts_schema, CcostSchema
 from main.schema.proj_mdb import proj_schema, projs_schema, ProjSchema
 from main.shared.shared import db, ma
@@ -32,6 +37,9 @@ from main.schema.jpem_mdb import jpems_schema, jpem_schema
 from main.schema.sales_mdb import saless_schema, sales_schema
 from main.schema.area_penjualan_mdb import area_penjualans_schema, area_penjualan_schema
 from main.schema.sub_area_mdb import sub_areas_schema, sub_area_schema
+from main.schema.currency_mdb import currencys_schema, currency_schema
+from main.schema.syarat_bayar_mdb import rpays_schema, rpay_schema
+from main.schema.lokasi_mdb import locts_schema, loct_schema
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import and_, or_
 from flask_cors import CORS
@@ -892,3 +900,156 @@ def sub_area_id(self, id):
 
         return response(200, "Berhasil", True, data)
 
+
+# Currency
+@app.route("/v1/api/currency", methods=['POST', 'GET'])
+@token_required
+def currency(self):
+    if request.method == 'POST':
+        try:
+            curren_code = request.json['curren_code']
+            curren_name = request.json['curren_name']
+            curren_date = request.json['curren_date']
+            curren_rate = request.json['curren_rate']
+            currency = CurrencyMdb(curren_code, curren_name, curren_date, curren_rate)
+            db.session.add(currency)
+            db.session.commit()
+
+            result = response(200, "Berhasil", True, currency_schema.dump(currency))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    else:
+        result = CurrencyMdb.query.all()
+
+        return response(200, "Berhasil", True, currencys_schema.dump(result))
+
+
+@app.route("/v1/api/currency/<int:id>", methods=['PUT', 'GET', 'DELETE'])
+@token_required
+def currency_id(self, id):
+    currency = CurrencyMdb.query.filter(CurrencyMdb.id == id).first()
+    if request.method == 'PUT':
+        try:
+            currency.curren_code = request.json['curren_code']
+            currency.curren_name = request.json['curren_name']
+            currency.curren_date = request.json['curren_date']
+            currency.curren_rate= request.json['curren_rate']
+            db.session.commit()
+            result = response(200, "Berhasil", True, currency_schema.dump(area_pen))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    elif request.method == 'DELETE':
+        db.session.delete(currency)
+        db.session.commit()
+
+        return response(200, "Berhasil", True, None)
+    else:
+        return response(200, "Berhasil", True, currency_schema.dump(currency))
+
+
+# Rules Payment
+@app.route("/v1/api/rules-payment", methods=['POST', 'GET'])
+@token_required
+def rules_pay(self):
+    if request.method == 'POST':
+        try:
+            name = request.json['name']
+            day = request.json['day']
+            ket = request.json['ket']
+            rules_pay = RulesPayMdb(name, day, ket)
+            db.session.add(rules_pay)
+            db.session.commit()
+
+            result = response(200, "Berhasil", True, rpay_schema.dump(rules_pay))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    else:
+        result = RulesPayMdb.query.all()
+
+        return response(200, "Berhasil", True, rpays_schema.dump(result))
+
+
+@app.route("/v1/api/rules-payment/<int:id>", methods=['PUT', 'GET', 'DELETE'])
+@token_required
+def rules_pay_id(self, id):
+    rules_pay = RulesPayMdb.query.filter(RulesPayMdb.id == id).first()
+    if request.method == 'PUT':
+        try:
+            rules_pay.name = request.json['name']
+            rules_pay.day = request.json['day']
+            rules_pay.ket = request.json['ket']
+            db.session.commit()
+            result = response(200, "Berhasil", True, rpay_schema.dump(rules_pay))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    elif request.method == 'DELETE':
+        db.session.delete(rules_pay)
+        db.session.commit()
+
+        return response(200, "Berhasil", True, None)
+    else:
+        return response(200, "Berhasil", True, rpay_schema.dump(rules_pay))
+
+
+# Lokasi
+@app.route("/v1/api/lokasi", methods=['POST', 'GET'])
+@token_required
+def lokasi(self):
+    if request.method == 'POST':
+        try:
+            code = request.json['code']
+            name = request.json['name']
+            address = request.json['address']
+            desc = request.json['desc']
+            lokasi = LocationMdb(code, name, address, desc)
+            db.session.add(lokasi)
+            db.session.commit()
+
+            result = response(200, "Berhasil", True, loct_schema.dump(lokasi))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    else:
+        result = LocationMdb.query.all()
+
+        return response(200, "Berhasil", True, locts_schema.dump(result))
+
+
+@app.route("/v1/api/lokasi/<int:id>", methods=['PUT', 'GET', 'DELETE'])
+@token_required
+def lokasi_id(self, id):
+    lokasi = LocationMdb.query.filter(LocationMdb.id == id).first()
+    if request.method == 'PUT':
+        try:
+            lokasi.code = request.json['code']
+            lokasi.name = request.json['name']
+            lokasi.address = request.json['address']
+            lokasi.desc = request.json['desc']
+            db.session.commit()
+            result = response(200, "Berhasil", True, loct_schema.dump(lokasi))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    elif request.method == 'DELETE':
+        db.session.delete(lokasi)
+        db.session.commit()
+
+        return response(200, "Berhasil", True, None)
+    else:
+        return response(200, "Berhasil", True, loct_schema.dump(lokasi))
