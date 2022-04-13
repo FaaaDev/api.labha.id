@@ -12,8 +12,8 @@ from main.model.ccost_mdb import CcostMdb
 from main.model.jpel_mdb import JpelMdb
 from main.model.jpem_mdb import JpemMdb
 from main.model.sales_mdb import SalesMdb
-from main.model.areaPen_mdb import AreaPenMdb
-from main.model.subArea_mdb import SubAreaMdb
+from main.model.area_penjualan_mdb import AreaPenjualanMdb
+from main.model.sub_area_mdb import SubAreaMdb
 from main.model.klasi_mdb import KlasiMdb
 from main.model.kateg_mdb import KategMdb
 from main.model.proj_mdb import ProjMdb
@@ -30,8 +30,8 @@ from main.schema.accou_mdb import accou_schema, accous_schema, AccouSchema
 from main.schema.jpel_mdb import jpels_schema, jpel_schema
 from main.schema.jpem_mdb import jpems_schema, jpem_schema
 from main.schema.sales_mdb import saless_schema, sales_schema
-from main.schema.areaPen_mdb import areaPens_schema, areaPen_schema
-from main.schema.subArea_mdb import subAreas_schema, subArea_schema
+from main.schema.area_penjualan_mdb import area_penjualans_schema, area_penjualan_schema
+from main.schema.sub_area_mdb import sub_areas_schema, sub_area_schema
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import and_, or_
 from flask_cors import CORS
@@ -689,10 +689,10 @@ def jpel_id(self, id):
 def jpem(self):
     if request.method == 'POST':
         try:
-            code = request.json['jpem_code']
-            name = request.json['jpem_name']
-            keterangan = request.json['jpem_ket']
-            jenisPem = JpelMdb(code, name, keterangan)
+            jpem_code = request.json['jpem_code']
+            jpem_name = request.json['jpem_name']
+            jpem_ket = request.json['jpem_ket']
+            jenisPem = JpelMdb(jpem_code, jpem_name, jpem_ket)
             db.session.add(jenisPem)
             db.session.commit()
 
@@ -711,26 +711,26 @@ def jpem(self):
 @app.route("/v1/api/jenis-pemasok/<int:id>", methods=['PUT', 'GET', 'DELETE'])
 @token_required
 def jpem_id(self, id):
-    jenisPem = JpemMdb.query.filter(JpemMdb.id == id).first()
+    jenis_pem = JpemMdb.query.filter(JpemMdb.id == id).first()
     if request.method == 'PUT':
         try:
-            jenisPem.code = request.json['jpem_code']
-            jenisPem.name = request.json['jpem_name']
-            jenisPem.keterangan = request.json['jpem_ket']
+            jenis_pem.jpem_code = request.json['jpem_code']
+            jenis_pem.jpem_name = request.json['jpem_name']
+            jenis_pem.jpem_ket = request.json['jpem_ket']
             db.session.commit()
-            result = response(200, "Berhasil", True, jpem_schema.dump(jenisPem))
+            result = response(200, "Berhasil", True, jpem_schema.dump(jenis_pem))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
         finally:
             return result
     elif request.method == 'DELETE':
-        db.session.delete(jenisPem)
+        db.session.delete(jenis_pem)
         db.session.commit()
 
         return response(200, "Berhasil", True, None)
     else:
-        return response(200, "Berhasil", True, jpem_schema.dump(jenisPem))
+        return response(200, "Berhasil", True, jpem_schema.dump(jenis_pem))
 
 
 # Salesman
@@ -739,10 +739,10 @@ def jpem_id(self, id):
 def sales(self):
     if request.method == 'POST':
         try:
-            code = request.json['sales_code']
-            name = request.json['sales_name']
-            keterangan = request.json['sales_ket']
-            salesman = JpelMdb(code, name, keterangan)
+            sales_code = request.json['sales_code']
+            sales_name = request.json['sales_name']
+            sales_ket = request.json['sales_ket']
+            salesman = JpelMdb(sales_code, sales_name, sales_ket)
             db.session.add(salesman)
             db.session.commit()
 
@@ -786,76 +786,76 @@ def sales_id(self, id):
 # Area Penjualan
 @app.route("/v1/api/area-penjualan", methods=['POST', 'GET'])
 @token_required
-def areaPen(self):
+def area_pen(self):
     if request.method == 'POST':
         try:
-            code = request.json['areaPen_code']
-            name = request.json['areaPen_name']
-            keterangan = request.json['areaPen_ket']
-            areaPen = AreaPenMdb(code, name, keterangan)
-            db.session.add(areaPen)
+            area_pen_code = request.json['area_pen_code']
+            area_pen_name = request.json['area_pen_name']
+            area_pen_ket = request.json['area_pen_ket']
+            area_pen = AreaPenjualanMdb(area_pen_code, area_pen_name, area_pen_ket)
+            db.session.add(area_pen)
             db.session.commit()
 
-            result = response(200, "Berhasil", True, areaPen_schema.dump(areaPen))
+            result = response(200, "Berhasil", True, area_penjualan_schema.dump(area_pen))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
         finally:
             return result
     else:
-        result = AreaPenMdb.query.all()
+        result = AreaPenjualanMdb.query.all()
 
-        return response(200, "Berhasil", True, areaPens_schema.dump(result))
+        return response(200, "Berhasil", True, area_penjualans_schema.dump(result))
 
 
 @app.route("/v1/api/area-penjualan/<int:id>", methods=['PUT', 'GET', 'DELETE'])
 @token_required
-def areaPen_id(self, id):
-    areaPen = AreaPenMdb.query.filter(AreaPenMdb.id == id).first()
+def area_pen_id(self, id):
+    area_pen = AreaPenjualanMdb.query.filter(AreaPenjualanMdb.id == id).first()
     if request.method == 'PUT':
         try:
-            areaPen.areaPen_code = request.json['areaPen_code']
-            areaPen.areaPen_name = request.json['areaPen_name']
-            areaPen.areaPen_ket = request.json['areaPen_ket']
+            area_pen.area_pen_code = request.json['area_pen_code']
+            area_pen.area_pen_name = request.json['area_pen_name']
+            area_pen.area_pen_ket = request.json['area_pen_ket']
             db.session.commit()
-            result = response(200, "Berhasil", True, areaPen_schema.dump(areaPen))
+            result = response(200, "Berhasil", True, area_penjualan_schema.dump(area_pen))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
         finally:
             return result
     elif request.method == 'DELETE':
-        db.session.delete(areaPen)
+        db.session.delete(area_pen)
         db.session.commit()
 
         return response(200, "Berhasil", True, None)
     else:
-        return response(200, "Berhasil", True, areaPen_schema.dump(areaPen))
+        return response(200, "Berhasil", True, area_penjualan_schema.dump(area_pen))
 
 
 # Sub Area Penjualan
 @app.route("/v1/api/sub-area", methods=['POST', 'GET'])
 @token_required
-def subArea(self):
+def sub_area(self):
     if request.method == 'POST':
-        code = request.json['sub_code']
-        area_code = request.json['sub_areaCode']
-        name = request.json['name']
-        keterangan = request.json['sub_ket']
-        subArea = SubAreaMdb(code, area_code, name, keterangan)
-        db.session.add(subArea)
+        sub_code = request.json['sub_code']
+        sub_area_code = request.json['sub_area_code']
+        sub_name = request.json['sub_name']
+        sub_ket= request.json['sub_ket']
+        sub_area = SubAreaMdb(sub_code, sub_area_code, sub_name, sub_ket)
+        db.session.add(sub_area)
         db.session.commit()
 
-        return response(200, "Berhasil", True,subArea_schema.dump(subArea))
+        return response(200, "Berhasil", True,sub_area_schema.dump(sub_area))
     else:
-        result = db.session.query(SubAreaMdb, AreaPenMdb)\
-            .outerjoin(AreaPenMdb, SubAreaMdb.sub_areaCode == AreaPenMdb.id)\
-            .order_by(SubAreaMdb.sub_areaCode.asc()).order_by(SubAreaMdb.id.asc()).all()
+        result = db.session.query(SubAreaMdb, AreaPenjualanMdb)\
+            .outerjoin(AreaPenjualanMdb, SubAreaMdb.sub_area_code == AreaPenjualanMdb.id)\
+            .order_by(SubAreaMdb.sub_area_code.asc()).order_by(SubAreaMdb.id.asc()).all()
         print(result)
         data = [
             {
-                "subArea": subArea_schema.dump(x[0]),
-                "areaPen": areaPen_schema.dump(x[1])
+                "subArea": sub_area_schema.dump(x[0]),
+                "areaPen": area_penjualan_schema.dump(x[1])
             }
             for x in result
         ]
@@ -865,30 +865,30 @@ def subArea(self):
 
 @app.route("/v1/api/sub-area/<int:id>", methods=['PUT', 'GET', 'DELETE'])
 @token_required
-def subArea_id(self, id):
-    subArea = SubAreaMdb.query.filter(SubAreaMdb.id == id).first()
+def sub_area_id(self, id):
+    sub_area = SubAreaMdb.query.filter(SubAreaMdb.id == id).first()
     if request.method == 'PUT':
-        subArea.code = request.json['sub_code']
-        subArea.area_code = request.json['sub_areaCode']
-        subArea.name = request.json['sub_name']
-        subArea.keterangan = request.json['sub_ket']
+        sub_area.sub_code = request.json['sub_code']
+        sub_area.sub_area_code = request.json['sub_areaCode']
+        sub_area.sub_name = request.json['sub_name']
+        sub_area.sub_ket = request.json['sub_ket']
         db.session.commit()
 
-        return response(200, "Berhasil", True, subArea_schema.dump(subArea))
+        return response(200, "Berhasil", True, sub_area_schema.dump(sub_area))
     elif request.method == 'DELETE':
-        db.session.delete(subArea)
+        db.session.delete(sub_area)
         db.session.commit()
 
         return response(200, "Berhasil", True, None)
     else:
-        result = db.session.query(SubAreaMdb, AreaPenMdb)\
-            .outerjoin(SubAreaMdb, SubAreaMdb.sub_areaCode == AreaPenMdb.id)\
+        result = db.session.query(SubAreaMdb, AreaPenjualanMdb)\
+            .outerjoin(SubAreaMdb, SubAreaMdb.sub_area_code == AreaPenjualanMdb.id)\
             .order_by(SubAreaMdb.id.asc())\
             .filter(SubAreaMdb.id == id).first()
         print(result)
         data = {
-            "subArea": subArea_schema.dump(result[0]),
-            "areaPen": areaPen_schema.dump(result[1])
+            "subArea": sub_area_schema.dump(result[0]),
+            "areaPen": area_penjualan_schema.dump(result[1])
         }
 
         return response(200, "Berhasil", True, data)

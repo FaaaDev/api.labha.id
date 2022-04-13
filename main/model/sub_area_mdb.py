@@ -7,13 +7,13 @@ class SubAreaMdb(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     sub_code = db.Column(db.String(255), unique=True)
-    sub_areaCode = db.Column(db.String(255))
+    sub_area_code = db.Column(db.String(255))
     sub_name = db.Column(db.String(255))
     sub_ket = db.Column(db.Text)
     
 
-    def __init__(self, sub_code, sub_areaCode, sub_name, sub_ket):
+    def __init__(self, sub_code, sub_area_code, sub_name, sub_ket):
         self.sub_code = sub_code
-        self.sub_areaCode = sub_areaCode
+        self.sub_area_code = sub_area_code
         self.sub_name = sub_name
         self.sub_ket = sub_ket

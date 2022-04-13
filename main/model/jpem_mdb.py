@@ -3,7 +3,7 @@ from main.shared.shared import db
 
 class JpemMdb(db.Model):
     __table_args__ = {'schema': 'master'}
-    __tablename__ = 'JPEMMDB'
+    __tablename__ = 'TSUPLYMDB'
 
     id = db.Column(db.Integer, primary_key=True)
     jpem_code = db.Column(db.String(255), unique=True)
