@@ -692,7 +692,7 @@ def jpem(self):
             jpem_code = request.json['jpem_code']
             jpem_name = request.json['jpem_name']
             jpem_ket = request.json['jpem_ket']
-            jenisPem = JpelMdb(jpem_code, jpem_name, jpem_ket)
+            jenisPem = JpemMdb(jpem_code, jpem_name, jpem_ket)
             db.session.add(jenisPem)
             db.session.commit()
 
@@ -742,7 +742,7 @@ def sales(self):
             sales_code = request.json['sales_code']
             sales_name = request.json['sales_name']
             sales_ket = request.json['sales_ket']
-            salesman = JpelMdb(sales_code, sales_name, sales_ket)
+            salesman = SalesMdb(sales_code, sales_name, sales_ket)
             db.session.add(salesman)
             db.session.commit()
 
@@ -836,21 +836,21 @@ def area_pen_id(self, id):
 # Sub Area Penjualan
 @app.route("/v1/api/sub-area", methods=['POST', 'GET'])
 @token_required
-def sub_area(self):
+def subArea(self):
     if request.method == 'POST':
         sub_code = request.json['sub_code']
         sub_area_code = request.json['sub_area_code']
         sub_name = request.json['sub_name']
         sub_ket= request.json['sub_ket']
-        sub_area = SubAreaMdb(sub_code, sub_area_code, sub_name, sub_ket)
-        db.session.add(sub_area)
+        subArea = SubAreaMdb(sub_code, sub_area_code, sub_name, sub_ket)
+        db.session.add(subArea)
         db.session.commit()
 
-        return response(200, "Berhasil", True,sub_area_schema.dump(sub_area))
+        return response(200, "Berhasil", True,sub_area_schema.dump(subArea))
     else:
         result = db.session.query(SubAreaMdb, AreaPenjualanMdb)\
             .outerjoin(AreaPenjualanMdb, SubAreaMdb.sub_area_code == AreaPenjualanMdb.id)\
-            .order_by(SubAreaMdb.sub_area_code.asc()).order_by(SubAreaMdb.id.asc()).all()
+            .order_by(SubAreaMdb.id.asc()).all()
         print(result)
         data = [
             {
@@ -866,29 +866,28 @@ def sub_area(self):
 @app.route("/v1/api/sub-area/<int:id>", methods=['PUT', 'GET', 'DELETE'])
 @token_required
 def sub_area_id(self, id):
-    sub_area = SubAreaMdb.query.filter(SubAreaMdb.id == id).first()
+    subArea = SubAreaMdb.query.filter(SubAreaMdb.id == id).first()
     if request.method == 'PUT':
-        sub_area.sub_code = request.json['sub_code']
-        sub_area.sub_area_code = request.json['sub_areaCode']
-        sub_area.sub_name = request.json['sub_name']
-        sub_area.sub_ket = request.json['sub_ket']
+        subArea.sub_code = request.json['sub_code']
+        subArea.sub_area_code = request.json['sub_area_code']
+        subArea.sub_name = request.json['sub_name']
+        subArea.sub_ket = request.json['sub_ket']
         db.session.commit()
 
-        return response(200, "Berhasil", True, sub_area_schema.dump(sub_area))
+        return response(200, "Berhasil", True, sub_area_schema.dump(subArea))
     elif request.method == 'DELETE':
-        db.session.delete(sub_area)
+        db.session.delete(subArea)
         db.session.commit()
 
         return response(200, "Berhasil", True, None)
     else:
         result = db.session.query(SubAreaMdb, AreaPenjualanMdb)\
-            .outerjoin(SubAreaMdb, SubAreaMdb.sub_area_code == AreaPenjualanMdb.id)\
-            .order_by(SubAreaMdb.id.asc())\
-            .filter(SubAreaMdb.id == id).first()
+            .outerjoin(AreaPenjualanMdb, SubAreaMdb.sub_area_code == AreaPenjualanMdb.id)\
+            .order_by(SubAreaMdb.id.asc()).all()
         print(result)
         data = {
-            "subArea": sub_area_schema.dump(result[0]),
-            "areaPen": area_penjualan_schema.dump(result[1])
+            "subArea": sub_area_schema.dump([0]),
+            "areaPen": area_penjualan_schema.dump([1])
         }
 
         return response(200, "Berhasil", True, data)
