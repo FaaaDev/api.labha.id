@@ -51,10 +51,21 @@ import os
 from os.path import join, dirname, realpath
 from werkzeug.utils import secure_filename
 import bcrypt
+from sshtunnel import SSHTunnelForwarder
 
 app = Flask(__name__)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:12345678@localhost:5432/acc_dev'
+server = SSHTunnelForwarder(
+    ('103.179.56.92', 22),
+    ssh_username='andynoer',
+    ssh_password='Kulonuwun450',
+    remote_bind_address=('127.0.0.1', 5432)
+)
+
+server.start()
+local_port = str(server.local_bind_port)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:12345678@127.0.0.1:'+local_port+'/acc_dev'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JSON_SORT_KEYS'] = False
 app.config['UPLOAD_FOLDER'] = join(
