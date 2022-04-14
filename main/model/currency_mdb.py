@@ -5,17 +5,17 @@ import datetime
 
 class CurrencyMdb(db.Model):
     __table_args__ = {'schema': 'master'}
-    __tablename__ = 'CURRENCYMDB'
+    __tablename__ = 'CURRMDB'
 
     id = db.Column(db.Integer, primary_key=True)
-    curren_code = db.Column(db.String(20), unique = True)
-    curren_name = db.Column(db.String(100))
-    curren_date = db.Column(db.Date)
-    curren_rate = db.Column(db.String(200))
+    code = db.Column(db.String(20), unique = True)
+    name = db.Column(db.String(100))
+    date = db.Column(db.DATE)
+    rate = db.Column(db.Integer)
     
 
-    def __init__(self, curren_code, curren_name, curren_date, curren_rate):
-        self.curren_code = curren_code
-        self.curren_name = curren_name
-        self.curren_date = curren_date
-        self.curren_rate = curren_rate
+    def __init__(self, code, name, date, rate):
+        self.code = code
+        self.name = name
+        self.date = date
+        self.rate = rate

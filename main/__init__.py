@@ -5,6 +5,7 @@ from pickle import TRUE
 import re
 from sys import prefix
 from unicodedata import name
+from datetime import datetime
 from flask import Flask, redirect, request, url_for, jsonify, make_response
 from main.model.accou_mdb import AccouMdb
 from main.model.adm_menu import AdmMenu
@@ -223,34 +224,6 @@ def profil(self):
     }
 
     return response(200, "Berhasil", True, menu)
-
-
-# @app.route("/v1/api/bank-code", methods=['POST'])
-# @token_required
-# def bank_code(self):
-#     prefix = request.json['prefix']
-
-#     if len(prefix) == 2:
-
-#         code = 1
-#         bc = prefix+"00"+str(code)
-#         bank = BankMdb.query.filter(BankMdb.BANK_CODE.like(
-#             "%{}%".format(prefix))).order_by(BankMdb.BANK_CODE.desc()).all()
-#         if bank:
-#             code = int(bank[0].BANK_CODE.replace(prefix, ''))+1
-#             if code < 10:
-#                 bc = prefix+"00"+str(code)
-#             else:
-#                 if code > 99:
-#                     bc = prefix+str(code)
-#                 else:
-#                     bc = prefix+"0"+str(code)
-
-#         print(bc)
-
-#         return response(200, "Berhasil", True, {"bank_code": bc.upper()})
-#     else:
-#         return ""
 
 
 @app.route("/v1/api/bank", methods=['POST', 'GET'])
@@ -907,20 +880,20 @@ def sub_area_id(self, id):
 def currency(self):
     if request.method == 'POST':
         try:
-            curren_code = request.json['curren_code']
-            curren_name = request.json['curren_name']
-            curren_date = request.json['curren_date']
-            curren_rate = request.json['curren_rate']
-            currency = CurrencyMdb(curren_code, curren_name, curren_date, curren_rate)
-            db.session.add(currency)
+            code = request.json['code']
+            name = request.json['name']
+            date = request.json['date']
+            rate = request.json['rate']
+            curren = CurrencyMdb(code, name, date, rate)
+            db.session.add(curren)
             db.session.commit()
 
-            result = response(200, "Berhasil", True, currency_schema.dump(currency))
+            result = response(200, "Berhasil", True, currency_schema.dump(curren))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
         finally:
-            return result
+             return result
     else:
         result = CurrencyMdb.query.all()
 
@@ -930,27 +903,27 @@ def currency(self):
 @app.route("/v1/api/currency/<int:id>", methods=['PUT', 'GET', 'DELETE'])
 @token_required
 def currency_id(self, id):
-    currency = CurrencyMdb.query.filter(CurrencyMdb.id == id).first()
+    curren = CurrencyMdb.query.filter(CurrencyMdb.id == id).first()
     if request.method == 'PUT':
         try:
-            currency.curren_code = request.json['curren_code']
-            currency.curren_name = request.json['curren_name']
-            currency.curren_date = request.json['curren_date']
-            currency.curren_rate= request.json['curren_rate']
+            curren.code = request.json['code']
+            curren.name = request.json['name']
+            curren.date = request.json['date']
+            curren.rate= request.json['rate']
             db.session.commit()
-            result = response(200, "Berhasil", True, currency_schema.dump(area_pen))
+            result = response(200, "Berhasil", True, currency_schema.dump(curren))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
         finally:
             return result
     elif request.method == 'DELETE':
-        db.session.delete(currency)
+        db.session.delete(curren)
         db.session.commit()
 
         return response(200, "Berhasil", True, None)
     else:
-        return response(200, "Berhasil", True, currency_schema.dump(currency))
+        return response(200, "Berhasil", True, currency_schema.dump(curren))
 
 
 # Rules Payment
