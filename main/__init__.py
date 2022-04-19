@@ -12,6 +12,7 @@ from main.model.adm_menu import AdmMenu
 from main.model.adm_user_menu import AdmUserMenu
 from main.model.bank_mdb import BankMdb
 from main.model.ccost_mdb import CcostMdb
+from main.model.comp_mdb import CompMdb
 from main.model.jpel_mdb import JpelMdb
 from main.model.jpem_mdb import JpemMdb
 from main.model.sales_mdb import SalesMdb
@@ -41,6 +42,7 @@ from main.schema.sub_area_mdb import sub_areas_schema, sub_area_schema
 from main.schema.currency_mdb import currencys_schema, currency_schema
 from main.schema.syarat_bayar_mdb import rpays_schema, rpay_schema
 from main.schema.lokasi_mdb import locts_schema, loct_schema
+from main.schema.comp_mdb import comp_shcema, comps_schema, CompSchema
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import and_, or_
 from flask_cors import CORS
@@ -65,7 +67,8 @@ server = SSHTunnelForwarder(
 server.start()
 local_port = str(server.local_bind_port)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:12345678@127.0.0.1:'+local_port+'/acc_dev'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:12345678@127.0.0.1:' + \
+    local_port+'/acc_dev'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JSON_SORT_KEYS'] = False
 app.config['UPLOAD_FOLDER'] = join(
@@ -246,7 +249,8 @@ def bank(self):
             ACC_ID = request.json['ACC_ID']
             BANK_NAME = request.json['BANK_NAME']
             BANK_DESC = request.json['BANK_DESC']
-            bank = BankMdb(BANK_CODE, BANK_NAME, BANK_DESC, ACC_ID, self.id, None)
+            bank = BankMdb(BANK_CODE, BANK_NAME, BANK_DESC,
+                           ACC_ID, self.id, None)
             db.session.add(bank)
             db.session.commit()
 
@@ -302,7 +306,6 @@ def bank_id(self, id):
         }
 
         return response(200, "Berhasil", True, data)
-
 
 
 @app.route("/v1/api/klasifikasi", methods=['POST', 'GET'])
@@ -638,7 +641,8 @@ def jpel(self):
             db.session.add(jenis_pel)
             db.session.commit()
 
-            result = response(200, "Berhasil", True, jpel_schema.dump(jenis_pel))
+            result = response(200, "Berhasil", True,
+                              jpel_schema.dump(jenis_pel))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
@@ -660,7 +664,8 @@ def jpel_id(self, id):
             jenis_pel.jpel_name = request.json['jpel_name']
             jenis_pel.jpel_ket = request.json['jpel_ket']
             db.session.commit()
-            result = response(200, "Berhasil", True, jpel_schema.dump(jenis_pel))
+            result = response(200, "Berhasil", True,
+                              jpel_schema.dump(jenis_pel))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
@@ -688,7 +693,8 @@ def jpem(self):
             db.session.add(jenisPem)
             db.session.commit()
 
-            result = response(200, "Berhasil", True, jpem_schema.dump(jenisPem))
+            result = response(200, "Berhasil", True,
+                              jpem_schema.dump(jenisPem))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
@@ -710,7 +716,8 @@ def jpem_id(self, id):
             jenis_pem.jpem_name = request.json['jpem_name']
             jenis_pem.jpem_ket = request.json['jpem_ket']
             db.session.commit()
-            result = response(200, "Berhasil", True, jpem_schema.dump(jenis_pem))
+            result = response(200, "Berhasil", True,
+                              jpem_schema.dump(jenis_pem))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
@@ -738,7 +745,8 @@ def sales(self):
             db.session.add(salesman)
             db.session.commit()
 
-            result = response(200, "Berhasil", True, sales_schema.dump(salesman))
+            result = response(200, "Berhasil", True,
+                              sales_schema.dump(salesman))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
@@ -760,7 +768,8 @@ def sales_id(self, id):
             salesman.sales_name = request.json['sales_name']
             salesman.sales_ket = request.json['sales_ket']
             db.session.commit()
-            result = response(200, "Berhasil", True, sales_schema.dump(salesman))
+            result = response(200, "Berhasil", True,
+                              sales_schema.dump(salesman))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
@@ -784,11 +793,13 @@ def area_pen(self):
             area_pen_code = request.json['area_pen_code']
             area_pen_name = request.json['area_pen_name']
             area_pen_ket = request.json['area_pen_ket']
-            area_pen = AreaPenjualanMdb(area_pen_code, area_pen_name, area_pen_ket)
+            area_pen = AreaPenjualanMdb(
+                area_pen_code, area_pen_name, area_pen_ket)
             db.session.add(area_pen)
             db.session.commit()
 
-            result = response(200, "Berhasil", True, area_penjualan_schema.dump(area_pen))
+            result = response(200, "Berhasil", True,
+                              area_penjualan_schema.dump(area_pen))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
@@ -810,7 +821,8 @@ def area_pen_id(self, id):
             area_pen.area_pen_name = request.json['area_pen_name']
             area_pen.area_pen_ket = request.json['area_pen_ket']
             db.session.commit()
-            result = response(200, "Berhasil", True, area_penjualan_schema.dump(area_pen))
+            result = response(200, "Berhasil", True,
+                              area_penjualan_schema.dump(area_pen))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
@@ -833,12 +845,12 @@ def subArea(self):
         sub_code = request.json['sub_code']
         sub_area_code = request.json['sub_area_code']
         sub_name = request.json['sub_name']
-        sub_ket= request.json['sub_ket']
+        sub_ket = request.json['sub_ket']
         subArea = SubAreaMdb(sub_code, sub_area_code, sub_name, sub_ket)
         db.session.add(subArea)
         db.session.commit()
 
-        return response(200, "Berhasil", True,sub_area_schema.dump(subArea))
+        return response(200, "Berhasil", True, sub_area_schema.dump(subArea))
     else:
         result = db.session.query(SubAreaMdb, AreaPenjualanMdb)\
             .outerjoin(AreaPenjualanMdb, SubAreaMdb.sub_area_code == AreaPenjualanMdb.id)\
@@ -899,12 +911,13 @@ def currency(self):
             db.session.add(curren)
             db.session.commit()
 
-            result = response(200, "Berhasil", True, currency_schema.dump(curren))
+            result = response(200, "Berhasil", True,
+                              currency_schema.dump(curren))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
         finally:
-             return result
+            return result
     else:
         result = CurrencyMdb.query.all()
 
@@ -920,9 +933,10 @@ def currency_id(self, id):
             curren.code = request.json['code']
             curren.name = request.json['name']
             curren.date = request.json['date']
-            curren.rate= request.json['rate']
+            curren.rate = request.json['rate']
             db.session.commit()
-            result = response(200, "Berhasil", True, currency_schema.dump(curren))
+            result = response(200, "Berhasil", True,
+                              currency_schema.dump(curren))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
@@ -950,7 +964,8 @@ def rules_pay(self):
             db.session.add(rules_pay)
             db.session.commit()
 
-            result = response(200, "Berhasil", True, rpay_schema.dump(rules_pay))
+            result = response(200, "Berhasil", True,
+                              rpay_schema.dump(rules_pay))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
@@ -972,7 +987,8 @@ def rules_pay_id(self, id):
             rules_pay.day = request.json['day']
             rules_pay.ket = request.json['ket']
             db.session.commit()
-            result = response(200, "Berhasil", True, rpay_schema.dump(rules_pay))
+            result = response(200, "Berhasil", True,
+                              rpay_schema.dump(rules_pay))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
@@ -1037,3 +1053,104 @@ def lokasi_id(self, id):
         return response(200, "Berhasil", True, None)
     else:
         return response(200, "Berhasil", True, loct_schema.dump(lokasi))
+
+
+@app.route('/v1/api/upload', methods=['POST'])
+@token_required
+def upload(self):
+    file = request.files['image']
+    file_name = secure_filename(file.filename)
+    file.save(os.path.join(app.config['UPLOAD_FOLDER'], file_name))
+
+    return response(200, "Berhasil mengupload gambar", True, file_name)
+
+
+@app.route("/v1/api/company", methods=['POST', 'GET'])
+@token_required
+def company(self):
+    if request.method == 'POST':
+        try:
+            cp_name = request.json['cp_name']
+            cp_addr = request.json['cp_addr']
+            cp_ship_addr = request.json['cp_ship_addr']
+            cp_telp = request.json['cp_telp']
+            cp_email = request.json['cp_email']
+            cp_webs = request.json['cp_webs']
+            cp_npwp = request.json['cp_npwp']
+            cp_coper = request.json['cp_coper']
+            cp_logo = request.json['cp_logo']
+            multi_currency = request.json['multi_currency']
+            appr_po = request.json['appr_po']
+            appr_payment = request.json['appr_payment']
+            company = CompMdb(cp_name, cp_addr, cp_ship_addr, cp_telp, cp_email, cp_webs,
+                              cp_npwp, cp_coper, cp_logo, multi_currency, appr_po, appr_payment)
+            db.session.add(company)
+            db.session.commit()
+
+            user = User.query.filter(User.id == self.id).first()
+            user.company = company.id
+            db.session.commit()
+
+            result = response(200, "Berhasil", True, comp_shcema.dump(company))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    else:
+        result = db.session.query(User, CompMdb)\
+            .outerjoin(CompMdb, User.company == CompMdb.id)\
+            .filter(User.id == self.id).first()
+
+        if result[1]:
+            result[1].cp_logo = request.host_url + 'static/upload/' + \
+                result[1].cp_logo if result[1].cp_logo != "" else ""
+
+        return response(200, "Berhasil", True, comp_shcema.dump(result[1]))
+
+
+@app.route("/v1/api/company/<int:id>", methods=['PUT', 'GET', 'DELETE'])
+@token_required
+def company_id(self, id):
+    company = CompMdb.query.filter(CompMdb.id == id).first()
+    if request.method == 'PUT':
+        try:
+            company.cp_name = request.json['cp_name']
+            company.cp_addr = request.json['cp_addr']
+            company.cp_ship_addr = request.json['cp_ship_addr']
+            company.cp_telp = request.json['cp_telp']
+            company.cp_email = request.json['cp_email']
+            company.cp_webs = request.json['cp_webs']
+            company.cp_npwp = request.json['cp_npwp']
+            company.cp_coper = request.json['cp_coper']
+            
+            if request.host_url + 'static/upload/' in request.json['cp_logo']:
+                cp_logo = request.json['cp_logo'].replace(
+                    request.host_url + 'static/upload/', "")
+            else:
+                cp_logo = request.json['cp_logo']
+
+            if company.cp_logo != cp_logo:
+                if company.cp_logo != "" and company.cp_logo is not None:
+                    if os.path.exists(os.path.join(app.config['UPLOAD_FOLDER'], company.cp_logo)):
+                        os.remove(os.path.join(
+                            app.config['UPLOAD_FOLDER'], company.cp_logo))
+
+            company.cp_logo = cp_logo
+            company.multi_currency = request.json['multi_currency']
+            company.appr_po = request.json['appr_po']
+            company.appr_payment = request.json['appr_payment']
+            db.session.commit()
+            result = response(200, "Berhasil", True, comp_shcema.dump(company))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    elif request.method == 'DELETE':
+        db.session.delete(company)
+        db.session.commit()
+
+        return response(200, "Berhasil", True, None)
+    else:
+        return response(200, "Berhasil", True, comp_shcema.dump(company))

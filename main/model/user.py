@@ -24,6 +24,7 @@ class User(db.Model):
     password_confirmation = db.Column(db.String(255))
     created_at = db.Column(db.TIMESTAMP(timezone=False), default=datetime.datetime.utcnow())
     updated_at = db.Column(db.TIMESTAMP(timezone=False), default=datetime.datetime.utcnow(), onupdate=datetime.datetime.utcnow())
+    company = db.Column(db.Integer, default=None)
 
     def __init__(self, username, name, email, password, confirmation_code, remember_token, password_confirmation):
         self.username = username
