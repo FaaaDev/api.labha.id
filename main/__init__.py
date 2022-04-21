@@ -24,6 +24,8 @@ from main.model.proj_mdb import ProjMdb
 from main.model.currency_mdb import CurrencyMdb
 from main.model.syarat_bayar_mdb import RulesPayMdb
 from main.model.lokasi_mdb import LocationMdb
+from main.model.custom_mdb import CustomerMdb
+from main.model.supplier_mdb import SupplierMdb
 from main.schema.ccost_mdb import ccost_schema, ccosts_schema, CcostSchema
 from main.schema.proj_mdb import proj_schema, projs_schema, ProjSchema
 from main.shared.shared import db, ma
@@ -43,6 +45,8 @@ from main.schema.currency_mdb import currencys_schema, currency_schema
 from main.schema.syarat_bayar_mdb import rpays_schema, rpay_schema
 from main.schema.lokasi_mdb import locts_schema, loct_schema
 from main.schema.comp_mdb import comp_shcema, comps_schema, CompSchema
+from main.schema.custom_mdb import customer_schema, customers_schema
+from main.schema.supplier_mdb import supplier_schema, suppliers_schema
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import and_, or_
 from flask_cors import CORS
@@ -1154,3 +1158,224 @@ def company_id(self, id):
         return response(200, "Berhasil", True, None)
     else:
         return response(200, "Berhasil", True, comp_shcema.dump(company))
+
+
+
+@app.route("/v1/api/customer", methods=['POST', 'GET'])
+@token_required
+def customer(self):
+    if request.method == 'POST':
+        cus_code = request.json['cus_code']
+        cus_name = request.json['cus_name']
+        cus_jpel = request.json['cus_jpel']
+        cus_sub_area = request.json['cus_sub_area']
+        cus_kolektor = request.json['cus_kolektor']
+        cus_npwp = request.json['cus_npwp']
+        cus_address = request.json['cus_address']
+        cus_kota = request.json['cus_kota']
+        cus_kpos = request.json['cus_kpos']
+        cus_telp1 = request.json['cus_telp1']
+        cus_telp2 = request.json['cus_telp2']
+        cus_email = request.json['cus_email']
+        cus_fax = request.json['cus_fax']
+        cus_cp = request.json['cus_cp']
+        cus_curren = request.json['cus_curren']
+        cus_pjk = request.json['cus_pjk']
+        cus_ket = request.json['cus_ket']
+        cus_gl = request.json['cus_gl']
+        cus_uang_muka = request.json['cus_uang_muka']
+        cus_limit = request.json['cus_limit']
+        try:
+            customer = CustomerMdb(cus_code, cus_name, cus_jpel,
+                               cus_sub_area, cus_kolektor, cus_npwp, cus_address, cus_kota,cus_kpos, cus_telp1, cus_telp2, cus_email, cus_fax, cus_cp,
+                               cus_curren, cus_pjk, cus_ket, cus_gl, cus_uang_muka, cus_limit)
+            db.session.add(customer)
+            db.session.commit()
+            result = response(200, "Berhasil", True,
+                              customer_schema.dump(customer))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode akun "+cus_code +
+                              " sudah digunakan", False, None)
+        finally:
+            return result
+    else:
+        result = db.session.query(CustomerMdb, JpelMdb, SubAreaMdb, CurrencyMdb)\
+            .join(CustomerMdb, JpelMdb.id == CustomerMdb.cus_jpel)\
+            .join(CustomerMdb, SubAreaMdb.id == CustomerMdb.cus_sub_area)\
+            .join(CustomerMdb, CurrencyMdb.id == CustomerMdb.cus_curren)\
+            .order_by(JpelMdb.id.asc())\
+            .order_by(CurrencyMdb.id.asc())\
+            .order_by(CustomerMdb.cus_code.asc()).all()
+        print(result)
+        data = [
+            {
+                "customer": customer_schema.dump(x[0]),
+                "jpel": jpel_schema.dump(x[1]),
+                "subArea": sub_area_schema.dump(x[2]),
+                "currency": currency_schema.dump(x[3])
+            }
+            for x in result
+        ]
+
+        return response(200, "Berhasil", True, data)
+
+
+
+
+@app.route("/v1/api/customer/<int:id>", methods=['PUT', 'GET', 'DELETE'])
+@token_required
+def customer_id(self, id):
+    customer = CustomerMdb.query.filter(CustomerMdb.id == id).first()
+    if request.method == 'PUT':
+        customer.cus_code = request.json['cus_code']
+        customer.cus_name = request.json['cus_name']
+        customer.cus_jpel = request.json['cus_jpel']
+        customer.cus_sub_area = request.json['cus_sub_area']
+        customer.cus_kolektor = request.json['cus_kolektor']
+        customer.cus_npwp = request.json['cus_npwp']
+        customer.cus_address = request.json['cus_address']
+        customer.cus_kota = request.json['cus_kota']
+        customer.cus_kpos = request.json['cus_kpos']
+        customer.cus_telp1 = request.json['cus_telp1']
+        customer.cus_telp2 = request.json['cus_telp2']
+        customer.cus_email = request.json['cus_email']
+        customer.cus_fax = request.json['cus_fax']
+        customer.cus_cp = request.json['cus_cp']
+        customer.cus_curren = request.json['cus_curren']
+        customer.cus_pjk = request.json['cus_pjk']
+        customer.cus_ket = request.json['cus_ket']
+        customer.cus_gl = request.json['cus_gl']
+        customer.cus_uang_muka = request.json['cus_uang_muka']
+        customer.cus_limit = request.json['cus_limit']
+        db.session.commit()
+
+        return response(200, "Berhasil", True, customer_schema.dump(customer))
+    elif request.method == 'DELETE':
+        db.session.delete(customer)
+        db.session.commit()
+
+        return response(200, "Berhasil", True, None)
+    else:
+        result = db.session.query(CustomerMdb, JpelMdb, SubAreaMdb, CurrencyMdb)\
+            .join(CustomerMdb, JpelMdb.id == CustomerMdb.cus_jpel)\
+            .join(CustomerMdb, SubAreaMdb.id == CustomerMdb.cus_sub_area)\
+            .join(CustomerMdb, CurrencyMdb.id == CustomerMdb.cus_curren)\
+            .order_by(CustomerMdb.cus_code.asc())\
+            .filter(CustomerMdb.id == id).first()
+
+        print(result)
+        data = {
+                "customer": customer_schema.dump(result[0]),
+                "jpel": jpel_schema.dump(result[1]),
+                "subArea": sub_area_schema.dump(result[2]),
+                "currency": currency_schema.dump(result[3])
+        }
+
+        return response(200, "Berhasil", True, data)
+
+
+
+@app.route("/v1/api/supplier", methods=['POST', 'GET'])
+@token_required
+def supplier(self):
+    if request.method == 'POST':
+        sup_code = request.json['sup_code']
+        sup_name = request.json['sup_name']
+        sup_jpem = request.json['sup_jpem']
+        sup_ppn = request.json['sup_ppn']
+        sup_npwp = request.json['sup_npwp']
+        sup_address = request.json['sup_address']
+        sup_kota = request.json['sup_kota']
+        sup_kpos = request.json['sup_kpos']
+        sup_telp1 = request.json['sup_telp1']
+        sup_telp2 = request.json['sup_telp2']
+        sup_fax = request.json['sup_fax']
+        sup_cp = request.json['sup_cp']
+        sup_curren = request.json['sup_curren']
+        sup_ket = request.json['sup_ket']
+        sup_hutang = request.json['sup_hutang']
+        sup_uang_muka = request.json['sup_uang_muka']
+        sup_limit = request.json['sup_limit']
+        try:
+            supplier = SupplierMdb(sup_code, sup_name, sup_jpem,
+                               sup_ppn, sup_npwp, sup_address, sup_kota, sup_kpos, sup_telp1, sup_telp2, sup_fax, sup_cp,
+                               sup_curren, sup_ket, sup_hutang, sup_uang_muka, sup_limit)
+            db.session.add(supplier)
+            db.session.commit()
+            result = response(200, "Berhasil", True,
+                              supplier_schema.dump(supplier))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode akun "+sup_code +
+                              " sudah digunakan", False, None)
+        finally:
+            return result
+    else:
+        result = db.session.query(SupplierMdb, JpemMdb, CurrencyMdb)\
+            .join(SupplierMdb, JpemMdb.id == SupplierMdb.sup_jpem)\
+            .join(SupplierMdb, CurrencyMdb.id == SupplierMdb.sup_curren)\
+            .order_by(JpelMdb.id.asc())\
+            .order_by(CurrencyMdb.id.asc())\
+            .order_by(SupplierMdb.sup_code.asc()).all()
+        print(result)
+        data = [
+            {
+                "supplier": supplier_schema.dump(x[0]),
+                "jpem": jpem_schema.dump(x[1]),
+                "currency": currency_schema.dump(x[2])
+            }
+            for x in result
+        ]
+
+        return response(200, "Berhasil", True, data)
+
+
+
+
+@app.route("/v1/api/supplier/<int:id>", methods=['PUT', 'GET', 'DELETE'])
+@token_required
+def supplier_id(self, id):
+    supplier = SupplierMdb.query.filter(SupplierMdb.id == id).first()
+    if request.method == 'PUT':
+        supplier.sup_code = request.json['sup_code']
+        supplier.sup_name = request.json['sup_name']
+        supplier.sup_jpem = request.json['sup_jpem']
+        supplier.sup_ppn = request.json['sup_ppn']
+        supplier.sup_npwp = request.json['sup_npwp']
+        supplier.sup_address = request.json['sup_address']
+        supplier.sup_kota = request.json['sup_kota']
+        supplier.sup_kpos = request.json['sup_kpos']
+        supplier.sup_telp1 = request.json['sup_telp1']
+        supplier.sup_telp2 = request.json['sup_telp2']
+        supplier.sup_fax = request.json['sup_fax']
+        supplier.sup_cp = request.json['sup_cp']
+        supplier.sup_curren = request.json['sup_curren']
+        supplier.sup_ket = request.json['sup_ket']
+        supplier.sup_hutang = request.json['sup_hutang']
+        supplier.sup_uang_muka = request.json['sup_uang_muka']
+        supplier.sup_limit = request.json['sup_limit']
+        db.session.commit()
+
+        return response(200, "Berhasil", True, supplier_schema.dump(supplier))
+    elif request.method == 'DELETE':
+        db.session.delete(supplier)
+        db.session.commit()
+
+        return response(200, "Berhasil", True, None)
+    else:
+        result = db.session.query(SupplierMdb, JpelMdb, CurrencyMdb)\
+            .join(SupplierMdb, JpelMdb.id == SupplierMdb.sup_jpem)\
+            .join(SupplierMdb, CurrencyMdb.id == SupplierMdb.sup_curren)\
+            .order_by(SupplierMdb.sup_code.asc())\
+            .filter(SupplierMdb.id == id).first()
+
+        print(result)
+        data = {
+            "supplier": supplier_schema.dump(result[0]),
+            "jpem": jpem_schema.dump(result[1]),
+            "currency": currency_schema.dump(result[2])
+        }
+
+        return response(200, "Berhasil", True, data)
+
