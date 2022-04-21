@@ -7,6 +7,7 @@ from sys import prefix
 from unicodedata import name
 from datetime import datetime
 from flask import Flask, redirect, request, url_for, jsonify, make_response
+import requests
 from main.model.accou_mdb import AccouMdb
 from main.model.adm_menu import AdmMenu
 from main.model.adm_user_menu import AdmUserMenu
@@ -86,6 +87,14 @@ with app.app_context():
 
 def target_url():
     return "https://itungin.id/"
+
+
+def apiKey():
+    return "42e8d306fd11942e83d509b631d52a48"
+
+
+def cityUrl():
+    return "https://api.rajaongkir.com/starter/city"
 
 
 def response(code, message, status, data):
@@ -1082,8 +1091,14 @@ def company(self):
             multi_currency = request.json['multi_currency']
             appr_po = request.json['appr_po']
             appr_payment = request.json['appr_payment']
+            over_stock = request.json['over_stock']
+            discount = request.json['discount']
+            tiered = request.json['tiered']
+            rp = request.json['rp']
+            over_po = request.json['over_po']
+
             company = CompMdb(cp_name, cp_addr, cp_ship_addr, cp_telp, cp_email, cp_webs,
-                              cp_npwp, cp_coper, cp_logo, multi_currency, appr_po, appr_payment)
+                              cp_npwp, cp_coper, cp_logo, multi_currency, appr_po, appr_payment, over_stock, discount, tiered, rp, over_po)
             db.session.add(company)
             db.session.commit()
 
@@ -1140,7 +1155,14 @@ def company_id(self, id):
             company.multi_currency = request.json['multi_currency']
             company.appr_po = request.json['appr_po']
             company.appr_payment = request.json['appr_payment']
+            company.over_stock = request.json['over_stock']
+            company.discount = request.json['discount']
+            company.tiered = request.json['tiered']
+            company.rp = request.json['rp']
+            company.over_po = request.json['over_po']
+
             db.session.commit()
+
             result = response(200, "Berhasil", True, comp_shcema.dump(company))
         except IntegrityError:
             db.session.rollback()
@@ -1154,3 +1176,15 @@ def company_id(self, id):
         return response(200, "Berhasil", True, None)
     else:
         return response(200, "Berhasil", True, comp_shcema.dump(company))
+
+@app.route("/v1/api/city")
+@token_required
+def city(self):
+    api_url = cityUrl()
+    header = {'key': apiKey()}
+    result = requests.get(url=api_url, headers=header).json()
+
+    if result['rajaongkir']['status']['code'] == 200:
+        return response(200, "Berhasil", True, result['rajaongkir']['results'])
+    else:
+        return response(200, "Berhasil", True, None)
