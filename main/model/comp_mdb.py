@@ -17,9 +17,14 @@ class CompMdb(db.Model):
     multi_currency = db.Column(db.Boolean)
     appr_po = db.Column(db.Boolean)
     appr_payment = db.Column(db.Boolean)
+    over_stock = db.Column(db.Boolean)
+    discount = db.Column(db.Boolean)
+    tiered = db.Column(db.Boolean)
+    rp = db.Column(db.Boolean)
+    over_po = db.Column(db.Boolean)
     
 
-    def __init__(self, cp_name, cp_addr, cp_ship_addr, cp_telp, cp_email, cp_webs, cp_npwp, cp_coper, cp_logo, multi_currency, appr_po, appr_payment):
+    def __init__(self, cp_name, cp_addr, cp_ship_addr, cp_telp, cp_email, cp_webs, cp_npwp, cp_coper, cp_logo, multi_currency, appr_po, appr_payment, over_stock, discount, tiered, rp, over_po):
         self.cp_name = cp_name
         self.cp_addr = cp_addr
         self.cp_ship_addr = cp_ship_addr
@@ -32,3 +37,8 @@ class CompMdb(db.Model):
         self.multi_currency = multi_currency
         self.appr_po = appr_po
         self.appr_payment = appr_payment
+        self.over_stock = over_stock
+        self.discount = discount
+        self.tiered = tiered
+        self.rp = rp
+        self.over_po = over_po 
