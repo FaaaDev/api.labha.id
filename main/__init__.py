@@ -1317,9 +1317,9 @@ def customer(self):
     else:
         result = (
             db.session.query(CustomerMdb, JpelMdb, SubAreaMdb, CurrencyMdb)
-            .join(CustomerMdb, JpelMdb.id == CustomerMdb.cus_jpel)
-            .join(CustomerMdb, SubAreaMdb.id == CustomerMdb.cus_sub_area)
-            .join(CustomerMdb, CurrencyMdb.id == CustomerMdb.cus_curren)
+            .outerjoin(JpelMdb, JpelMdb.id == CustomerMdb.cus_jpel)
+            .outerjoin(SubAreaMdb, SubAreaMdb.id == CustomerMdb.cus_sub_area)
+            .outerjoin(CurrencyMdb, CurrencyMdb.id == CustomerMdb.cus_curren)
             .order_by(JpelMdb.id.asc())
             .order_by(CurrencyMdb.id.asc())
             .order_by(CustomerMdb.cus_code.asc())
@@ -1375,9 +1375,9 @@ def customer_id(self, id):
     else:
         result = (
             db.session.query(CustomerMdb, JpelMdb, SubAreaMdb, CurrencyMdb)
-            .join(CustomerMdb, JpelMdb.id == CustomerMdb.cus_jpel)
-            .join(CustomerMdb, SubAreaMdb.id == CustomerMdb.cus_sub_area)
-            .join(CustomerMdb, CurrencyMdb.id == CustomerMdb.cus_curren)
+            .outerjoin(JpelMdb, JpelMdb.id == CustomerMdb.cus_jpel)
+            .outerjoin(SubAreaMdb, SubAreaMdb.id == CustomerMdb.cus_sub_area)
+            .outerjoin(CurrencyMdb, CurrencyMdb.id == CustomerMdb.cus_curren)
             .order_by(CustomerMdb.cus_code.asc())
             .filter(CustomerMdb.id == id)
             .first()
