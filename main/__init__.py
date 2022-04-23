@@ -1265,7 +1265,6 @@ def customer(self):
         cus_name = request.json["cus_name"]
         cus_jpel = request.json["cus_jpel"]
         cus_sub_area = request.json["cus_sub_area"]
-        cus_kolektor = request.json["cus_kolektor"]
         cus_npwp = request.json["cus_npwp"]
         cus_address = request.json["cus_address"]
         cus_kota = request.json["cus_kota"]
@@ -1287,7 +1286,6 @@ def customer(self):
                 cus_name,
                 cus_jpel,
                 cus_sub_area,
-                cus_kolektor,
                 cus_npwp,
                 cus_address,
                 cus_kota,
@@ -1348,7 +1346,6 @@ def customer_id(self, id):
         customer.cus_name = request.json["cus_name"]
         customer.cus_jpel = request.json["cus_jpel"]
         customer.cus_sub_area = request.json["cus_sub_area"]
-        customer.cus_kolektor = request.json["cus_kolektor"]
         customer.cus_npwp = request.json["cus_npwp"]
         customer.cus_address = request.json["cus_address"]
         customer.cus_kota = request.json["cus_kota"]
@@ -1448,9 +1445,9 @@ def supplier(self):
     else:
         result = (
             db.session.query(SupplierMdb, JpemMdb, CurrencyMdb)
-            .join(SupplierMdb, JpemMdb.id == SupplierMdb.sup_jpem)
-            .join(SupplierMdb, CurrencyMdb.id == SupplierMdb.sup_curren)
-            .order_by(JpelMdb.id.asc())
+            .outerjoin(JpemMdb, JpemMdb.id == SupplierMdb.sup_jpem)
+            .outerjoin(CurrencyMdb, CurrencyMdb.id == SupplierMdb.sup_curren)
+            .order_by(JpemMdb.id.asc())
             .order_by(CurrencyMdb.id.asc())
             .order_by(SupplierMdb.sup_code.asc())
             .all()
@@ -1501,8 +1498,8 @@ def supplier_id(self, id):
     else:
         result = (
             db.session.query(SupplierMdb, JpelMdb, CurrencyMdb)
-            .join(SupplierMdb, JpelMdb.id == SupplierMdb.sup_jpem)
-            .join(SupplierMdb, CurrencyMdb.id == SupplierMdb.sup_curren)
+            .join(JpemMdb, JpelMdb.id == SupplierMdb.sup_jpem)
+            .join(CurrencyMdb, CurrencyMdb.id == SupplierMdb.sup_curren)
             .order_by(SupplierMdb.sup_code.asc())
             .filter(SupplierMdb.id == id)
             .first()

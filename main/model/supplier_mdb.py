@@ -10,8 +10,8 @@ class SupplierMdb(db.Model):
     sup_code = db.Column(db.String(20), unique = True)
     sup_name = db.Column(db.String(100))
     sup_jpem = db.Column(db.Integer)
-    sup_ppn = db.Column(db.Integer)
-    sup_npwp = db.Column(db.Integer)
+    sup_ppn = db.Column(db.String(100))
+    sup_npwp = db.Column(db.String(100))
     sup_address = db.Column(db.Text)
     sup_kota = db.Column(db.Integer)
     sup_kpos = db.Column(db.Integer)
@@ -22,7 +22,7 @@ class SupplierMdb(db.Model):
     sup_curren = db.Column(db.Integer)
     sup_ket = db.Column(db.Text)
     sup_hutang = db.Column(db.Integer)
-    sup_uang_muka = db.Column(db.String(50))
+    sup_uang_muka = db.Column(db.Integer)
     sup_limit = db.Column(db.Integer)
     
 

@@ -12,7 +12,6 @@ class CustomerMdb(db.Model):
     cus_name = db.Column(db.String(100))
     cus_jpel = db.Column(db.Integer)
     cus_sub_area = db.Column(db.Integer)
-    cus_kolektor = db.Column(db.Integer)
     cus_npwp = db.Column(db.Integer)
     cus_address = db.Column(db.Text)
     cus_kota = db.Column(db.Integer)
@@ -23,21 +22,20 @@ class CustomerMdb(db.Model):
     cus_fax = db.Column(db.String(20))
     cus_cp = db.Column(db.String(20))
     cus_curren = db.Column(db.Integer)
-    cus_pjk = db.Column(db.Integer)
+    cus_pjk = db.Column(db.String(100))
     cus_ket = db.Column(db.Text)
     cus_gl = db.Column(db.Integer)
     cus_uang_muka = db.Column(db.Integer)
     cus_limit = db.Column(db.Integer)
     
 
-    def __init__(self, cus_code, cus_name, cus_jpel, cus_sub_area, cus_kolektor, cus_npwp,
+    def __init__(self, cus_code, cus_name, cus_jpel, cus_sub_area, cus_npwp,
     cus_address, cus_kota, cus_kpos, cus_telp1, cus_telp2, cus_email, cus_fax, cus_cp, cus_curren,
     cus_pjk, cus_ket, cus_gl, cus_uang_muka, cus_limit):
         self.cus_code = cus_code
         self.cus_name = cus_name
         self.cus_jpel = cus_jpel
         self.cus_sub_area = cus_sub_area
-        self.cus_kolektor = cus_kolektor
         self.cus_npwp = cus_npwp
         self.cus_address = cus_address
         self.cus_kota = cus_kota
