@@ -28,6 +28,7 @@ from main.model.syarat_bayar_mdb import RulesPayMdb
 from main.model.lokasi_mdb import LocationMdb
 from main.model.custom_mdb import CustomerMdb
 from main.model.supplier_mdb import SupplierMdb
+from main.model.divisi_mdb import DivisionMdb
 from main.schema.ccost_mdb import ccost_schema, ccosts_schema, CcostSchema
 from main.schema.proj_mdb import proj_schema, projs_schema, ProjSchema
 from main.shared.shared import db, ma
@@ -53,6 +54,7 @@ from main.schema.lokasi_mdb import locts_schema, loct_schema
 from main.schema.comp_mdb import comp_shcema, comps_schema, CompSchema
 from main.schema.custom_mdb import customer_schema, customers_schema
 from main.schema.supplier_mdb import supplier_schema, suppliers_schema
+from main.schema.divisi_mdb import division_schema, divisions_schema
 from main.schema.setup_mdb import *
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import and_, or_
@@ -1673,3 +1675,53 @@ def setup_account_id(self, id):
             return response(200, "Berhasil", True, setup_dict)
             
         return response(200, "Berhasil", False, None)
+
+
+# Divisi
+@app.route("/v1/api/divisi", methods=["POST", "GET"])
+@token_required
+def divisi(self):
+    if request.method == "POST":
+        try:
+            code = request.json["code"]
+            name = request.json["name"]
+            desc = request.json["desc"]
+            divisi = DivisionMdb(code, name, desc)
+            db.session.add(divisi)
+            db.session.commit()
+
+            result = response(200, "Berhasil", True, division_schema.dump(divisi))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    else:
+        result = DivisionMdb.query.all()
+
+        return response(200, "Berhasil", True, divisions_schema.dump(result))
+
+
+@app.route("/v1/api/divisi/<int:id>", methods=["PUT", "GET", "DELETE"])
+@token_required
+def divisi_id(self, id):
+    divisi = DivisionMdb.query.filter(DivisionMdb.id == id).first()
+    if request.method == "PUT":
+        try:
+            divisi.code = request.json["code"]
+            divisi.name = request.json["name"]
+            divisi.desc = request.json["desc"]
+            db.session.commit()
+            result = response(200, "Berhasil", True, division_schema.dump(divisi))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    elif request.method == "DELETE":
+        db.session.delete(divisi)
+        db.session.commit()
+
+        return response(200, "Berhasil", True, None)
+    else:
+        return response(200, "Berhasil", True, division_schema.dump(divisi))
