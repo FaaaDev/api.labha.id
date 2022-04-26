@@ -14,6 +14,7 @@ from main.model.adm_user_menu import AdmUserMenu
 from main.model.bank_mdb import BankMdb
 from main.model.ccost_mdb import CcostMdb
 from main.model.comp_mdb import CompMdb
+from main.model.group_prod_mdb import GroupProMdb
 from main.model.jpel_mdb import JpelMdb
 from main.model.jpem_mdb import JpemMdb
 from main.model.prod_mdb import ProdMdb
@@ -30,6 +31,8 @@ from main.model.lokasi_mdb import LocationMdb
 from main.model.custom_mdb import CustomerMdb
 from main.model.supplier_mdb import SupplierMdb
 from main.model.unit_mdb import UnitMdb
+from main.model.divisi_mdb import DivisionMdb
+from main.model.group_prod_mdb import GroupProMdb
 from main.schema.ccost_mdb import ccost_schema, ccosts_schema, CcostSchema
 from main.schema.proj_mdb import proj_schema, projs_schema, ProjSchema
 from main.shared.shared import db, ma
@@ -57,6 +60,8 @@ from main.schema.lokasi_mdb import locts_schema, loct_schema
 from main.schema.comp_mdb import comp_shcema, comps_schema, CompSchema
 from main.schema.custom_mdb import customer_schema, customers_schema
 from main.schema.supplier_mdb import supplier_schema, suppliers_schema
+from main.schema.divisi_mdb import division_schema, divisions_schema
+from main.schema.group_prod_mdb import groupPro_schema, groupPros_schema
 from main.schema.setup_mdb import *
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import and_, or_
@@ -1886,3 +1891,155 @@ def product_id(self, id):
             else None
         )
         return response(200, "Berhasil", True, prod_schema.dump(prod))
+
+# Divisi
+@app.route("/v1/api/divisi", methods=["POST", "GET"])
+@token_required
+def divisi(self):
+    if request.method == "POST":
+        try:
+            code = request.json["code"]
+            name = request.json["name"]
+            desc = request.json["desc"]
+            divisi = DivisionMdb(code, name, desc)
+            db.session.add(divisi)
+            db.session.commit()
+
+            result = response(200, "Berhasil", True, division_schema.dump(divisi))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    else:
+        result = DivisionMdb.query.all()
+
+        return response(200, "Berhasil", True, divisions_schema.dump(result))
+
+
+@app.route("/v1/api/divisi/<int:id>", methods=["PUT", "GET", "DELETE"])
+@token_required
+def divisi_id(self, id):
+    divisi = DivisionMdb.query.filter(DivisionMdb.id == id).first()
+    if request.method == "PUT":
+        try:
+            divisi.code = request.json["code"]
+            divisi.name = request.json["name"]
+            divisi.desc = request.json["desc"]
+            db.session.commit()
+            result = response(200, "Berhasil", True, division_schema.dump(divisi))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    elif request.method == "DELETE":
+        db.session.delete(divisi)
+        db.session.commit()
+
+        return response(200, "Berhasil", True, None)
+    else:
+        return response(200, "Berhasil", True, division_schema.dump(divisi))
+
+
+@app.route("/v1/api/group-product", methods=["POST", "GET"])
+@token_required
+def groupPro(self):
+    if request.method == "POST":
+        code = request.json["code"]
+        name = request.json["name"]
+        div_code = request.json["div_code"]
+        acc_sto = request.json["acc_sto"]
+        acc_send = request.json["acc_send"]
+        acc_terima = request.json["acc_terima"]
+        hrg_pokok = request.json["hrg_pokok"]
+        acc_penj = request.json["acc_penj"]
+        potongan = request.json["potongan"]
+        pengembalian = request.json["pengembalian"]
+        selisih = request.json["selisih"]
+        try:
+            groupPro = GroupProMdb(
+                code,
+                name,
+                div_code,
+                acc_sto,
+                acc_send,
+                acc_terima,
+                hrg_pokok,
+                acc_penj,
+                potongan,
+                pengembalian,
+                selisih,
+            )
+            db.session.add(groupPro)
+            db.session.commit()
+            result = response(200, "Berhasil", True, groupPro_schema.dump(groupPro))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(
+                400, "Kode akun " + code + " sudah digunakan", False, None
+            )
+        finally:
+            return result
+    else:
+        result = (
+            db.session.query(GroupProMdb, DivisionMdb)
+            .outerjoin(DivisionMdb, DivisionMdb.id == GroupProMdb.div_code)
+            .order_by(DivisionMdb.id.asc())
+            .order_by(GroupProMdb.div_code.asc())
+            .all()
+        )
+        print(result)
+        data = [
+            {
+                "groupPro": groupPro_schema.dump(x[0]),
+                "divisi": division_schema.dump(x[1]),
+            }
+            for x in result
+        ]
+
+        return response(200, "Berhasil", True, data)
+
+
+@app.route("/v1/api/group-product/<int:id>", methods=["PUT", "GET", "DELETE"])
+@token_required
+def groupPro_id(self, id):
+    groupPro = GroupProMdb.query.filter(GroupProMdb.id == id).first()
+    if request.method == "PUT":
+        groupPro.code = request.json["code"]
+        groupPro.name = request.json["name"]
+        groupPro.div_code = request.json["div_code"]
+        groupPro.acc_sto = request.json["acc_sto"]
+        groupPro.acc_send = request.json["acc_send"]
+        groupPro.acc_terima = request.json["acc_terima"]
+        groupPro.hrg_pokok = request.json["hrg_pokok"]
+        groupPro.acc_penj = request.json["acc_penj"]
+        groupPro.potongan = request.json["potongan"]
+        groupPro.pengembalian = request.json["pengembalian"]
+        groupPro.selisih = request.json["selisih"]
+        db.session.commit()
+
+        return response(200, "Berhasil", True, groupPro_schema.dump(groupPro))
+    elif request.method == "DELETE":
+        db.session.delete(groupPro)
+        db.session.commit()
+
+        return response(200, "Berhasil", True, None)
+    else:
+        result = (
+            db.session.query(GroupProMdb, DivisionMdb)
+            .join(DivisionMdb, DivisionMdb.id == GroupProMdb.div_code)
+            .order_by(GroupProMdb.div_code.asc())
+            .filter(GroupProMdb.id == id)
+            .first()
+        )
+
+        print(result)
+        data = {
+            "groupPro": groupPro_schema.dump(result[0]),
+            "divisi": division_schema.dump(result[1]),
+        }
+
+        return response(200, "Berhasil", True, data)
+
+
