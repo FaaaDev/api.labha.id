@@ -1692,6 +1692,7 @@ def setup_account_id(self, id):
 @app.route("/v1/api/unit", methods=["POST", "GET"])
 @token_required
 def unit(self):
+    units = UnitMdb.query.all()
     if request.method == "POST":
         code = request.json["code"]
         name = request.json["name"]
@@ -1706,13 +1707,19 @@ def unit(self):
                 for x in request.json["konversi"]:
                     qty = x["qty"]
                     unit = x["unit"]
-                    u.append(UnitMdb(code, name, type, desc, active, qty, unit))
-                db.session.add_all(u)
-            else:
-                db.session.add(UnitMdb(code, name, type, desc, active, qty, unit))
+                    for y in units:
+                        if unit == y.id:
+                            new_name = y.code + "/" + code
 
-            db.session.commit()
-            result = response(200, "Berhasil", True, None)
+                    u.append(UnitMdb(code, new_name, type, desc, active, qty, unit))
+                db.session.add_all(u)
+                db.session.commit()
+                result = response(200, "Berhasil", True, units_schema.dump(u))
+            else:
+                u = UnitMdb(code, name, type, desc, active, qty, unit)
+                db.session.add(u)
+                db.session.commit()
+                result = response(200, "Berhasil", True, unit_schema.dump(u))
         except IntegrityError:
             db.session.rollback()
             result = response(
@@ -1721,59 +1728,50 @@ def unit(self):
         finally:
             return result
     else:
-        unit = UnitMdb.query.all()
+        for x in units:
+            if x.type == "k" and x.unit:
+                for y in units:
+                    if x.unit == y.id:
+                        x.unit = UnitSchema(only=["id", "code", "name"]).dump(y)
 
-        return response(200, "Berhasil", True, units_schema.dump(unit))
+        return response(200, "Berhasil", True, units_schema.dump(units))
 
 
-@app.route("/v1/api/satuan/<int:id>", methods=["PUT", "GET", "DELETE"])
+@app.route("/v1/api/unit/<int:id>", methods=["PUT", "GET", "DELETE"])
 @token_required
 def satuan_id(self, id):
-    supplier = SupplierMdb.query.filter(SupplierMdb.id == id).first()
+    units = UnitMdb.query.filter(UnitMdb.id == id).first()
+    result = UnitMdb.query.all()
     if request.method == "PUT":
-        supplier.sup_code = request.json["sup_code"]
-        supplier.sup_name = request.json["sup_name"]
-        supplier.sup_jpem = request.json["sup_jpem"]
-        supplier.sup_ppn = request.json["sup_ppn"]
-        supplier.sup_npwp = request.json["sup_npwp"]
-        supplier.sup_address = request.json["sup_address"]
-        supplier.sup_kota = request.json["sup_kota"]
-        supplier.sup_kpos = request.json["sup_kpos"]
-        supplier.sup_telp1 = request.json["sup_telp1"]
-        supplier.sup_telp2 = request.json["sup_telp2"]
-        supplier.sup_fax = request.json["sup_fax"]
-        supplier.sup_cp = request.json["sup_cp"]
-        supplier.sup_curren = request.json["sup_curren"]
-        supplier.sup_ket = request.json["sup_ket"]
-        supplier.sup_hutang = request.json["sup_hutang"]
-        supplier.sup_uang_muka = request.json["sup_uang_muka"]
-        supplier.sup_limit = request.json["sup_limit"]
+        units.code = request.json["code"]
+        units.name = request.json["name"]
+        units.type = request.json["type"]
+        units.desc = request.json["desc"]
+        units.active = request.json["active"]
+        units.qty = request.json["qty"]
+        units.unit = request.json["unit"]
+        if units.type == "k":
+            for y in result:
+                if units.unit == y.id:
+                    new_name = y.code + "/" + units.code
+                    units.name = new_name
+
         db.session.commit()
 
-        return response(200, "Berhasil", True, supplier_schema.dump(supplier))
+        return response(200, "Berhasil", True, unit_schema.dump(units))
     elif request.method == "DELETE":
-        db.session.delete(supplier)
+        db.session.delete(units)
         db.session.commit()
 
         return response(200, "Berhasil", True, None)
     else:
-        result = (
-            db.session.query(SupplierMdb, JpelMdb, CurrencyMdb)
-            .join(JpemMdb, JpelMdb.id == SupplierMdb.sup_jpem)
-            .join(CurrencyMdb, CurrencyMdb.id == SupplierMdb.sup_curren)
-            .order_by(SupplierMdb.sup_code.asc())
-            .filter(SupplierMdb.id == id)
-            .first()
-        )
+        x = units
+        if x.type == "k" and x.unit:
+            for y in result:
+                if x.unit == y.id:
+                    x.unit = UnitSchema(only=["id", "code", "name"]).dump(y)
 
-        print(result)
-        data = {
-            "supplier": supplier_schema.dump(result[0]),
-            "jpem": jpem_schema.dump(result[1]),
-            "currency": currency_schema.dump(result[2]),
-        }
-
-        return response(200, "Berhasil", True, data)
+        return response(200, "Berhasil", True, unit_schema.dump(units))
 
 
 @app.route("/v1/api/product", methods=["POST", "GET"])
@@ -1826,10 +1824,13 @@ def product(self):
         finally:
             return result
     else:
-        result = db.session.query(ProdMdb, SupplierMdb, UnitMdb, GroupProMdb)\
-            .outerjoin(SupplierMdb, SupplierMdb.id == ProdMdb.suplier)\
-                .outerjoin(UnitMdb, UnitMdb.id == ProdMdb.unit)\
-                .outerjoin(GroupProMdb, GroupProMdb.id == ProdMdb.id).all()
+        result = (
+            db.session.query(ProdMdb, SupplierMdb, UnitMdb, GroupProMdb)
+            .outerjoin(SupplierMdb, SupplierMdb.id == ProdMdb.suplier)
+            .outerjoin(UnitMdb, UnitMdb.id == ProdMdb.unit)
+            .outerjoin(GroupProMdb, GroupProMdb.id == ProdMdb.id)
+            .all()
+        )
 
         data = []
 
@@ -1844,8 +1845,6 @@ def product(self):
                 x[0].unit = unit_schema.dump(x[2]) if x[2] else None
                 x[0].group = groupPro_schema.dump(x[3]) if x[3] else None
                 data.append(prod_schema.dump(x[0]))
-
-        
 
         return response(200, "Berhasil", True, data)
 
@@ -1892,6 +1891,7 @@ def product_id(self, id):
             else None
         )
         return response(200, "Berhasil", True, prod_schema.dump(prod))
+
 
 # Divisi
 @app.route("/v1/api/divisi", methods=["POST", "GET"])
@@ -2042,5 +2042,3 @@ def groupPro_id(self, id):
         }
 
         return response(200, "Berhasil", True, data)
-
-
