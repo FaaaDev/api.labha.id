@@ -17,6 +17,7 @@ class ProdMdb(db.Model):
     b_price = db.Column(db.Integer)
     s_price = db.Column(db.Integer)
     barcode = db.Column(db.String(255))
+    metode = db.Column(db.Integer)
     max_stock = db.Column(db.Integer)
     min_stock = db.Column(db.Integer)
     re_stock = db.Column(db.Integer)
@@ -36,6 +37,7 @@ class ProdMdb(db.Model):
         b_price,
         s_price,
         barcode,
+        metode,
         max_stock,
         min_stock,
         re_stock,
@@ -53,6 +55,7 @@ class ProdMdb(db.Model):
         self.b_price = b_price
         self.s_price = s_price
         self.barcode = barcode
+        self.metode = metode
         self.max_stock = max_stock
         self.min_stock = min_stock
         self.re_stock = re_stock

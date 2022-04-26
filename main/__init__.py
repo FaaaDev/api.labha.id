@@ -1789,6 +1789,7 @@ def product(self):
             b_price = request.json["b_price"]
             s_price = request.json["s_price"]
             barcode = request.json["barcode"]
+            metode = request.json["metode"]
             max_stock = request.json["max_stock"]
             min_stock = request.json["min_stock"]
             re_stock = request.json["re_stock"]
@@ -1807,6 +1808,7 @@ def product(self):
                 b_price,
                 s_price,
                 barcode,
+                metode,
                 max_stock,
                 min_stock,
                 re_stock,
@@ -1828,7 +1830,7 @@ def product(self):
             db.session.query(ProdMdb, SupplierMdb, UnitMdb, GroupProMdb)
             .outerjoin(SupplierMdb, SupplierMdb.id == ProdMdb.suplier)
             .outerjoin(UnitMdb, UnitMdb.id == ProdMdb.unit)
-            .outerjoin(GroupProMdb, GroupProMdb.id == ProdMdb.id)
+            .outerjoin(GroupProMdb, GroupProMdb.id == ProdMdb.group)
             .all()
         )
 
@@ -1865,6 +1867,7 @@ def product_id(self, id):
             prod.b_price = request.json["b_price"]
             prod.s_price = request.json["s_price"]
             prod.barcode = request.json["barcode"]
+            prod.metode = request.json["metode"]
             prod.max_stock = request.json["max_stock"]
             prod.min_stock = request.json["min_stock"]
             prod.re_stock = request.json["re_stock"]

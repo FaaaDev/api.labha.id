@@ -16,6 +16,7 @@ class ProdSchema(ma.Schema):
             "b_price",
             "s_price",
             "barcode",
+            "metode",
             "max_stock",
             "min_stock",
             "re_stock",
