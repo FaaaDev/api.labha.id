@@ -1826,10 +1826,10 @@ def product(self):
         finally:
             return result
     else:
-        result = db.session.query(ProdMdb, SupplierMdb, UnitMdb)\
+        result = db.session.query(ProdMdb, SupplierMdb, UnitMdb, GroupProMdb)\
             .outerjoin(SupplierMdb, SupplierMdb.id == ProdMdb.suplier)\
                 .outerjoin(UnitMdb, UnitMdb.id == ProdMdb.unit)\
-                .all()
+                .outerjoin(GroupProMdb, GroupProMdb.id == ProdMdb.id).all()
 
         data = []
 
@@ -1840,8 +1840,9 @@ def product(self):
                     if x[0].image and x[0].image != ""
                     else None
                 )
-                x[0].suplier = supplier_schema.dump(x[1])
-                x[0].unit = unit_schema.dump(x[2])
+                x[0].suplier = supplier_schema.dump(x[1]) if x[1] else None
+                x[0].unit = unit_schema.dump(x[2]) if x[2] else None
+                x[0].group = groupPro_schema.dump(x[3]) if x[3] else None
                 data.append(prod_schema.dump(x[0]))
 
         
