@@ -12,14 +12,16 @@ class UnitMdb(db.Model):
     desc = db.Column(db.String(255))
     active = db.Column(db.Boolean)
     qty = db.Column(db.Integer)
-    unit = db.Column(db.Integer)
+    u_from = db.Column(db.Integer)
+    u_to= db.Column(db.Integer)
     
 
-    def __init__(self, code, name, type, desc, active, qty, unit):
+    def __init__(self, code, name, type, desc, active, qty, u_from, u_to):
         self.code = code
         self.name = name
         self.type = type
         self.desc = desc
         self.active = active
         self.qty = qty
-        self.unit = unit
+        self.u_from = u_from
+        self.u_to = u_to

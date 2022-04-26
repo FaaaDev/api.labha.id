@@ -92,7 +92,8 @@ app.config["SQLALCHEMY_DATABASE_URI"] = (
 )
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["JSON_SORT_KEYS"] = False
-app.config["UPLOAD_FOLDER"] = join(dirname(realpath(__file__)), "static/upload")
+app.config["UPLOAD_FOLDER"] = join(
+    dirname(realpath(__file__)), "static/upload")
 app.config[
     "SECRET_KEY"
 ] = "IKIKUNCIrahasiasu,rasahkeposia.pokonaulahHayangNYAhosiah.pateniraimu"
@@ -120,7 +121,8 @@ def cityUrl():
 
 def response(code, message, status, data):
     return (
-        jsonify({"code": code, "status": status, "message": message, "data": data}),
+        jsonify({"code": code, "status": status,
+                "message": message, "data": data}),
         code,
     )
 
@@ -179,7 +181,8 @@ def login():
                     {"id": user.id, "exp": datetime.utcnow() + timedelta(hours=5)},
                     app.config["SECRET_KEY"],
                 )
-            data = {"user": user_schema.dump(user), "token": token.decode("utf-8")}
+            data = {"user": user_schema.dump(
+                user), "token": token.decode("utf-8")}
             return response(200, "Berhasil", True, data)
         else:
             return response(403, "Password yang anda masukkan salah", False, None)
@@ -197,7 +200,8 @@ def user(self):
 
             hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
 
-            user = User(username, name, email, hashed.decode(), None, None, None)
+            user = User(username, name, email,
+                        hashed.decode(), None, None, None)
             db.session.add(user)
             db.session.commit()
             result = response(
@@ -277,7 +281,8 @@ def bank(self):
             ACC_ID = request.json["ACC_ID"]
             BANK_NAME = request.json["BANK_NAME"]
             BANK_DESC = request.json["BANK_DESC"]
-            bank = BankMdb(BANK_CODE, BANK_NAME, BANK_DESC, ACC_ID, self.id, None)
+            bank = BankMdb(BANK_CODE, BANK_NAME, BANK_DESC,
+                           ACC_ID, self.id, None)
             db.session.add(bank)
             db.session.commit()
 
@@ -297,7 +302,8 @@ def bank(self):
         )
         print(result)
         data = [
-            {"bank": bank_schema.dump(x[0]), "account": accou_schema.dump(x[1])}
+            {"bank": bank_schema.dump(
+                x[0]), "account": accou_schema.dump(x[1])}
             for x in result
         ]
 
@@ -441,7 +447,8 @@ def account_umum(self, kat_id):
     key = str(kategory[1].id) + "." + str(kat_id)
     last_acc = (
         AccouMdb.query.filter(
-            and_(AccouMdb.acc_code.like("%{}%".format(key)), AccouMdb.dou_type == "U")
+            and_(AccouMdb.acc_code.like("%{}%".format(key)),
+                 AccouMdb.dou_type == "U")
         )
         .order_by(AccouMdb.acc_code.desc())
         .first()
@@ -471,7 +478,8 @@ def account_detail(self, umm_code):
 
     if last_acc != None:
         next_code = (
-            umm_code + "." + str(int(last_acc.acc_code.replace(umm_code + ".", "")) + 1)
+            umm_code + "." +
+            str(int(last_acc.acc_code.replace(umm_code + ".", "")) + 1)
         )
     else:
         next_code = umm_code + "." + "1"
@@ -503,7 +511,8 @@ def account(self):
             )
             db.session.add(account)
             db.session.commit()
-            result = response(200, "Berhasil", True, accou_schema.dump(account))
+            result = response(200, "Berhasil", True,
+                              accou_schema.dump(account))
         except IntegrityError:
             db.session.rollback()
             result = response(
@@ -710,7 +719,8 @@ def jpel(self):
             db.session.add(jenis_pel)
             db.session.commit()
 
-            result = response(200, "Berhasil", True, jpel_schema.dump(jenis_pel))
+            result = response(200, "Berhasil", True,
+                              jpel_schema.dump(jenis_pel))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
@@ -732,7 +742,8 @@ def jpel_id(self, id):
             jenis_pel.jpel_name = request.json["jpel_name"]
             jenis_pel.jpel_ket = request.json["jpel_ket"]
             db.session.commit()
-            result = response(200, "Berhasil", True, jpel_schema.dump(jenis_pel))
+            result = response(200, "Berhasil", True,
+                              jpel_schema.dump(jenis_pel))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
@@ -760,7 +771,8 @@ def jpem(self):
             db.session.add(jenisPem)
             db.session.commit()
 
-            result = response(200, "Berhasil", True, jpem_schema.dump(jenisPem))
+            result = response(200, "Berhasil", True,
+                              jpem_schema.dump(jenisPem))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
@@ -782,7 +794,8 @@ def jpem_id(self, id):
             jenis_pem.jpem_name = request.json["jpem_name"]
             jenis_pem.jpem_ket = request.json["jpem_ket"]
             db.session.commit()
-            result = response(200, "Berhasil", True, jpem_schema.dump(jenis_pem))
+            result = response(200, "Berhasil", True,
+                              jpem_schema.dump(jenis_pem))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
@@ -810,7 +823,8 @@ def sales(self):
             db.session.add(salesman)
             db.session.commit()
 
-            result = response(200, "Berhasil", True, sales_schema.dump(salesman))
+            result = response(200, "Berhasil", True,
+                              sales_schema.dump(salesman))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
@@ -832,7 +846,8 @@ def sales_id(self, id):
             salesman.sales_name = request.json["sales_name"]
             salesman.sales_ket = request.json["sales_ket"]
             db.session.commit()
-            result = response(200, "Berhasil", True, sales_schema.dump(salesman))
+            result = response(200, "Berhasil", True,
+                              sales_schema.dump(salesman))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
@@ -856,7 +871,8 @@ def area_pen(self):
             area_pen_code = request.json["area_pen_code"]
             area_pen_name = request.json["area_pen_name"]
             area_pen_ket = request.json["area_pen_ket"]
-            area_pen = AreaPenjualanMdb(area_pen_code, area_pen_name, area_pen_ket)
+            area_pen = AreaPenjualanMdb(
+                area_pen_code, area_pen_name, area_pen_ket)
             db.session.add(area_pen)
             db.session.commit()
 
@@ -985,7 +1001,8 @@ def currency(self):
             db.session.add(curren)
             db.session.commit()
 
-            result = response(200, "Berhasil", True, currency_schema.dump(curren))
+            result = response(200, "Berhasil", True,
+                              currency_schema.dump(curren))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
@@ -1008,7 +1025,8 @@ def currency_id(self, id):
             curren.date = request.json["date"]
             curren.rate = request.json["rate"]
             db.session.commit()
-            result = response(200, "Berhasil", True, currency_schema.dump(curren))
+            result = response(200, "Berhasil", True,
+                              currency_schema.dump(curren))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
@@ -1036,7 +1054,8 @@ def rules_pay(self):
             db.session.add(rules_pay)
             db.session.commit()
 
-            result = response(200, "Berhasil", True, rpay_schema.dump(rules_pay))
+            result = response(200, "Berhasil", True,
+                              rpay_schema.dump(rules_pay))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
@@ -1058,7 +1077,8 @@ def rules_pay_id(self, id):
             rules_pay.day = request.json["day"]
             rules_pay.ket = request.json["ket"]
             db.session.commit()
-            result = response(200, "Berhasil", True, rpay_schema.dump(rules_pay))
+            result = response(200, "Berhasil", True,
+                              rpay_schema.dump(rules_pay))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
@@ -1233,10 +1253,12 @@ def company_id(self, id):
             if company.cp_logo != cp_logo:
                 if company.cp_logo != "" and company.cp_logo is not None:
                     if os.path.exists(
-                        os.path.join(app.config["UPLOAD_FOLDER"], company.cp_logo)
+                        os.path.join(
+                            app.config["UPLOAD_FOLDER"], company.cp_logo)
                     ):
                         os.remove(
-                            os.path.join(app.config["UPLOAD_FOLDER"], company.cp_logo)
+                            os.path.join(
+                                app.config["UPLOAD_FOLDER"], company.cp_logo)
                         )
 
             company.cp_logo = cp_logo
@@ -1313,7 +1335,8 @@ def customer(self):
             )
             db.session.add(customer)
             db.session.commit()
-            result = response(200, "Berhasil", True, customer_schema.dump(customer))
+            result = response(200, "Berhasil", True,
+                              customer_schema.dump(customer))
         except IntegrityError:
             db.session.rollback()
             result = response(
@@ -1443,7 +1466,8 @@ def supplier(self):
             )
             db.session.add(supplier)
             db.session.commit()
-            result = response(200, "Berhasil", True, supplier_schema.dump(supplier))
+            result = response(200, "Berhasil", True,
+                              supplier_schema.dump(supplier))
         except IntegrityError:
             db.session.rollback()
             result = response(
@@ -1692,34 +1716,22 @@ def setup_account_id(self, id):
 @app.route("/v1/api/unit", methods=["POST", "GET"])
 @token_required
 def unit(self):
-    units = UnitMdb.query.all()
+    units = UnitMdb.query.order_by(UnitMdb.id.asc()).all()
     if request.method == "POST":
         code = request.json["code"]
         name = request.json["name"]
         type = request.json["type"]
         desc = request.json["desc"]
         active = request.json["active"]
-        qty = 1
-        unit = None
-        try:
-            if "konversi" in request.json:
-                u = []
-                for x in request.json["konversi"]:
-                    qty = x["qty"]
-                    unit = x["unit"]
-                    for y in units:
-                        if unit == y.id:
-                            new_name = y.code + "/" + code
+        qty = request.json["qty"]
+        u_from = request.json["u_from"]
+        u_to = request.json["u_to"]
 
-                    u.append(UnitMdb(code, new_name, type, desc, active, qty, unit))
-                db.session.add_all(u)
-                db.session.commit()
-                result = response(200, "Berhasil", True, units_schema.dump(u))
-            else:
-                u = UnitMdb(code, name, type, desc, active, qty, unit)
-                db.session.add(u)
-                db.session.commit()
-                result = response(200, "Berhasil", True, unit_schema.dump(u))
+        try:
+            u = UnitMdb(code, name, type, desc, active, qty, u_from, u_to)
+            db.session.add(u)
+            db.session.commit()
+            result = response(200, "Berhasil", True, unit_schema.dump(u))
         except IntegrityError:
             db.session.rollback()
             result = response(
@@ -1729,12 +1741,34 @@ def unit(self):
             return result
     else:
         for x in units:
-            if x.type == "k" and x.unit:
+            if x.type == "k" and x.u_from:
                 for y in units:
-                    if x.unit == y.id:
-                        x.unit = UnitSchema(only=["id", "code", "name"]).dump(y)
+                    if x.u_from == y.id:
+                        x.u_from = UnitSchema(
+                            only=["id", "code", "name"]).dump(y)
+            if x.type == "k" and x.u_to:
+                for y in units:
+                    if x.u_to == y.id:
+                        x.u_to = UnitSchema(
+                            only=["id", "code", "name"]).dump(y)
 
         return response(200, "Berhasil", True, units_schema.dump(units))
+
+
+@app.route("/v1/api/unit-konversi", methods=["POST"])
+@token_required
+def unit_convert(self):
+    konversi = request.json['konversi']
+    u = []
+    for x in konversi:
+        if x['code'] and x['qty'] and x['u_from'] and x['u_to']:
+            u.append(UnitMdb(x['code'], x['code'], "k", None,
+                     True, x['qty'], x['u_from'], x['u_to']))
+
+    db.session.add_all(u)
+    db.session.commit()
+
+    return response(200, "Berhasil", True, units_schema.dump(u))
 
 
 @app.route("/v1/api/unit/<int:id>", methods=["PUT", "GET", "DELETE"])
@@ -1749,12 +1783,8 @@ def satuan_id(self, id):
         units.desc = request.json["desc"]
         units.active = request.json["active"]
         units.qty = request.json["qty"]
-        units.unit = request.json["unit"]
-        if units.type == "k":
-            for y in result:
-                if units.unit == y.id:
-                    new_name = y.code + "/" + units.code
-                    units.name = new_name
+        units.u_from = request.json["u_from"]
+        units.u_to = request.json["u_to"]
 
         db.session.commit()
 
@@ -1766,10 +1796,16 @@ def satuan_id(self, id):
         return response(200, "Berhasil", True, None)
     else:
         x = units
-        if x.type == "k" and x.unit:
+        if x.type == "k" and x.u_from:
             for y in result:
-                if x.unit == y.id:
-                    x.unit = UnitSchema(only=["id", "code", "name"]).dump(y)
+                if x.u_from == y.id:
+                    x.u_from = UnitSchema(
+                        only=["id", "code", "name"]).dump(y)
+        if x.type == "k" and x.u_to:
+            for y in result:
+                if x.u_to == y.id:
+                    x.u_to = UnitSchema(
+                        only=["id", "code", "name"]).dump(y)
 
         return response(200, "Berhasil", True, unit_schema.dump(units))
 
@@ -1909,7 +1945,8 @@ def divisi(self):
             db.session.add(divisi)
             db.session.commit()
 
-            result = response(200, "Berhasil", True, division_schema.dump(divisi))
+            result = response(200, "Berhasil", True,
+                              division_schema.dump(divisi))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
@@ -1931,7 +1968,8 @@ def divisi_id(self, id):
             divisi.name = request.json["name"]
             divisi.desc = request.json["desc"]
             db.session.commit()
-            result = response(200, "Berhasil", True, division_schema.dump(divisi))
+            result = response(200, "Berhasil", True,
+                              division_schema.dump(divisi))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
@@ -1977,7 +2015,8 @@ def groupPro(self):
             )
             db.session.add(groupPro)
             db.session.commit()
-            result = response(200, "Berhasil", True, groupPro_schema.dump(groupPro))
+            result = response(200, "Berhasil", True,
+                              groupPro_schema.dump(groupPro))
         except IntegrityError:
             db.session.rollback()
             result = response(
