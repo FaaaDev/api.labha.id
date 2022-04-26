@@ -16,6 +16,7 @@ from main.model.ccost_mdb import CcostMdb
 from main.model.comp_mdb import CompMdb
 from main.model.jpel_mdb import JpelMdb
 from main.model.jpem_mdb import JpemMdb
+from main.model.prod_mdb import ProdMdb
 from main.model.sales_mdb import SalesMdb
 from main.model.area_penjualan_mdb import AreaPenjualanMdb
 from main.model.setup_mdb import SetupMdb
@@ -28,12 +29,15 @@ from main.model.syarat_bayar_mdb import RulesPayMdb
 from main.model.lokasi_mdb import LocationMdb
 from main.model.custom_mdb import CustomerMdb
 from main.model.supplier_mdb import SupplierMdb
+from main.model.unit_mdb import UnitMdb
 from main.schema.ccost_mdb import ccost_schema, ccosts_schema, CcostSchema
 from main.schema.proj_mdb import proj_schema, projs_schema, ProjSchema
 from main.shared.shared import db, ma
 from main.model.user import User
 from main.schema.user import user_schema, users_schema
 from main.schema.bank_mdb import banks_schema, bank_schema
+from main.schema.unit_mdb import unit_schema, units_schema, UnitSchema
+from main.schema.prod_mdb import prod_schema, prods_schema, ProdSchema
 from main.schema.adm_user_menu import (
     adm_user_menu_schema,
     adm_user_menus_schema,
@@ -1558,8 +1562,8 @@ def setup_account(self):
             sto = request.json["sto"]
             sto_broken = request.json["sto_broken"]
             sto_hpp_diff = request.json["sto_hpp_diff"]
-            sto_general =request.json["sto_general"]
-            sto_production=request.json["sto_production"]
+            sto_general = request.json["sto_general"]
+            sto_production = request.json["sto_production"]
             fixed_assets = request.json["fixed_assets"]
 
             setup = SetupMdb(
@@ -1604,20 +1608,23 @@ def setup_account(self):
         setup = SetupMdb.query.filter(SetupMdb.cp_id == user.company).first()
         account = AccouMdb.query.all()
 
-        if(setup):
-            setup_dict = dict((col, getattr(setup, col)) for col in setup.__table__.columns.keys())
+        if setup:
+            setup_dict = dict(
+                (col, getattr(setup, col)) for col in setup.__table__.columns.keys()
+            )
 
             for key, value in setup_dict.items():
-                if key != 'id' and key != "cp_id":
+                if key != "id" and key != "cp_id":
                     for x in account:
                         if value:
                             if value == x.id:
                                 setup_dict[key] = accou_schema.dump(x)
-            
+
             return response(200, "Berhasil", True, setup_dict)
-            
+
         return response(200, "Berhasil", False, None)
-        
+
+
 @app.route("/v1/api/setup/account/<int:id>", methods=["PUT", "GET", "DELETE"])
 @token_required
 def setup_account_id(self, id):
@@ -1645,8 +1652,8 @@ def setup_account_id(self, id):
         setup.pur_tax = request.json["pur_tax"]
         setup.sto = request.json["sto"]
         setup.sto_broken = request.json["sto_broken"]
-        setup.sto_general =request.json["sto_general"]
-        setup.sto_production=request.json["sto_production"]
+        setup.sto_general = request.json["sto_general"]
+        setup.sto_production = request.json["sto_production"]
         setup.sto_hpp_diff = request.json["sto_hpp_diff"]
         setup.fixed_assets = request.json["fixed_assets"]
         db.session.commit()
@@ -1661,15 +1668,221 @@ def setup_account_id(self, id):
         account = AccouMdb.query.all()
 
         if setup:
-            setup_dict = dict((col, getattr(setup, col)) for col in setup.__table__.columns.keys())
+            setup_dict = dict(
+                (col, getattr(setup, col)) for col in setup.__table__.columns.keys()
+            )
 
             for key, value in setup_dict.items():
-                if key != 'id' and key != "cp_id":
+                if key != "id" and key != "cp_id":
                     for x in account:
                         if value:
                             if value == x.id:
                                 setup_dict[key] = accou_schema.dump(x)
 
             return response(200, "Berhasil", True, setup_dict)
-            
+
         return response(200, "Berhasil", False, None)
+
+
+@app.route("/v1/api/unit", methods=["POST", "GET"])
+@token_required
+def unit(self):
+    if request.method == "POST":
+        code = request.json["code"]
+        name = request.json["name"]
+        type = request.json["type"]
+        desc = request.json["desc"]
+        active = request.json["active"]
+        qty = 1
+        unit = None
+        try:
+            if "konversi" in request.json:
+                u = []
+                for x in request.json["konversi"]:
+                    qty = x["qty"]
+                    unit = x["unit"]
+                    u.append(UnitMdb(code, name, type, desc, active, qty, unit))
+                db.session.add_all(u)
+            else:
+                db.session.add(UnitMdb(code, name, type, desc, active, qty, unit))
+
+            db.session.commit()
+            result = response(200, "Berhasil", True, None)
+        except IntegrityError:
+            db.session.rollback()
+            result = response(
+                400, "Kode satuan " + code + " sudah digunakan", False, None
+            )
+        finally:
+            return result
+    else:
+        unit = UnitMdb.query.all()
+
+        return response(200, "Berhasil", True, units_schema.dump(unit))
+
+
+@app.route("/v1/api/satuan/<int:id>", methods=["PUT", "GET", "DELETE"])
+@token_required
+def satuan_id(self, id):
+    supplier = SupplierMdb.query.filter(SupplierMdb.id == id).first()
+    if request.method == "PUT":
+        supplier.sup_code = request.json["sup_code"]
+        supplier.sup_name = request.json["sup_name"]
+        supplier.sup_jpem = request.json["sup_jpem"]
+        supplier.sup_ppn = request.json["sup_ppn"]
+        supplier.sup_npwp = request.json["sup_npwp"]
+        supplier.sup_address = request.json["sup_address"]
+        supplier.sup_kota = request.json["sup_kota"]
+        supplier.sup_kpos = request.json["sup_kpos"]
+        supplier.sup_telp1 = request.json["sup_telp1"]
+        supplier.sup_telp2 = request.json["sup_telp2"]
+        supplier.sup_fax = request.json["sup_fax"]
+        supplier.sup_cp = request.json["sup_cp"]
+        supplier.sup_curren = request.json["sup_curren"]
+        supplier.sup_ket = request.json["sup_ket"]
+        supplier.sup_hutang = request.json["sup_hutang"]
+        supplier.sup_uang_muka = request.json["sup_uang_muka"]
+        supplier.sup_limit = request.json["sup_limit"]
+        db.session.commit()
+
+        return response(200, "Berhasil", True, supplier_schema.dump(supplier))
+    elif request.method == "DELETE":
+        db.session.delete(supplier)
+        db.session.commit()
+
+        return response(200, "Berhasil", True, None)
+    else:
+        result = (
+            db.session.query(SupplierMdb, JpelMdb, CurrencyMdb)
+            .join(JpemMdb, JpelMdb.id == SupplierMdb.sup_jpem)
+            .join(CurrencyMdb, CurrencyMdb.id == SupplierMdb.sup_curren)
+            .order_by(SupplierMdb.sup_code.asc())
+            .filter(SupplierMdb.id == id)
+            .first()
+        )
+
+        print(result)
+        data = {
+            "supplier": supplier_schema.dump(result[0]),
+            "jpem": jpem_schema.dump(result[1]),
+            "currency": currency_schema.dump(result[2]),
+        }
+
+        return response(200, "Berhasil", True, data)
+
+
+@app.route("/v1/api/product", methods=["POST", "GET"])
+@token_required
+def product(self):
+    if request.method == "POST":
+        try:
+            code = request.json["code"]
+            name = request.json["name"]
+            group = request.json["group"]
+            type = request.json["type"]
+            codeb = request.json["codeb"]
+            unit = request.json["unit"]
+            suplier = request.json["suplier"]
+            b_price = request.json["b_price"]
+            s_price = request.json["s_price"]
+            barcode = request.json["barcode"]
+            max_stock = request.json["max_stock"]
+            min_stock = request.json["min_stock"]
+            re_stock = request.json["re_stock"]
+            lt_stock = request.json["lt_stock"]
+            max_order = request.json["max_order"]
+            image = request.json["image"]
+
+            prod = ProdMdb(
+                code,
+                name,
+                group,
+                type,
+                codeb,
+                unit,
+                suplier,
+                b_price,
+                s_price,
+                barcode,
+                max_stock,
+                min_stock,
+                re_stock,
+                lt_stock,
+                max_order,
+                image,
+            )
+            db.session.add(prod)
+            db.session.commit()
+
+            result = response(200, "Berhasil", True, prod_schema.dump(prod))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    else:
+        result = db.session.query(ProdMdb, SupplierMdb, UnitMdb)\
+            .outerjoin(SupplierMdb, SupplierMdb.id == ProdMdb.suplier)\
+                .outerjoin(UnitMdb, UnitMdb.id == ProdMdb.unit)\
+                .all()
+
+        data = []
+
+        if result:
+            for x in result:
+                x[0].image = (
+                    request.host_url + "static/upload/" + x[0].image
+                    if x[0].image and x[0].image != ""
+                    else None
+                )
+                x[0].suplier = supplier_schema.dump(x[1])
+                x[0].unit = unit_schema.dump(x[2])
+                data.append(prod_schema.dump(x[0]))
+
+        
+
+        return response(200, "Berhasil", True, data)
+
+
+@app.route("/v1/api/product/<int:id>", methods=["PUT", "GET", "DELETE"])
+@token_required
+def product_id(self, id):
+    prod = ProdMdb.query.filter(ProdMdb.id == id).first()
+    if request.method == "PUT":
+        try:
+            prod.code = request.json["code"]
+            prod.name = request.json["name"]
+            prod.group = request.json["group"]
+            prod.type = request.json["type"]
+            prod.codeb = request.json["codeb"]
+            prod.unit = request.json["unit"]
+            prod.suplier = request.json["suplier"]
+            prod.b_price = request.json["b_price"]
+            prod.s_price = request.json["s_price"]
+            prod.barcode = request.json["barcode"]
+            prod.max_stock = request.json["max_stock"]
+            prod.min_stock = request.json["min_stock"]
+            prod.re_stock = request.json["re_stock"]
+            prod.lt_stock = request.json["lt_stock"]
+            prod.max_order = request.json["max_order"]
+            prod.image = request.json["image"]
+            db.session.commit()
+
+            result = response(200, "Berhasil", True, prod_schema.dump(prod))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    elif request.method == "DELETE":
+        db.session.delete(prod)
+        db.session.commit()
+
+        return response(200, "Berhasil", True, None)
+    else:
+        prod.image = (
+            request.host_url + "static/upload/" + prod.image
+            if prod.image and prod.image != ""
+            else None
+        )
+        return response(200, "Berhasil", True, prod_schema.dump(prod))
