@@ -1867,6 +1867,7 @@ def product(self):
             .outerjoin(SupplierMdb, SupplierMdb.id == ProdMdb.suplier)
             .outerjoin(UnitMdb, UnitMdb.id == ProdMdb.unit)
             .outerjoin(GroupProMdb, GroupProMdb.id == ProdMdb.group)
+            .order_by(ProdMdb.id.asc())
             .all()
         )
 
@@ -1909,7 +1910,27 @@ def product_id(self, id):
             prod.re_stock = request.json["re_stock"]
             prod.lt_stock = request.json["lt_stock"]
             prod.max_order = request.json["max_order"]
-            prod.image = request.json["image"]
+
+            if request.host_url + "static/upload/" in request.json["image"]:
+                image = request.json["image"].replace(
+                    request.host_url + "static/upload/", ""
+                )
+            else:
+                image = request.json["image"]
+
+            if prod.image != image:
+                if prod.image != "" and prod.image is not None:
+                    if os.path.exists(
+                        os.path.join(
+                            app.config["UPLOAD_FOLDER"], prod.image)
+                    ):
+                        os.remove(
+                            os.path.join(
+                                app.config["UPLOAD_FOLDER"], prod.image)
+                        )
+
+            prod.image = image
+
             db.session.commit()
 
             result = response(200, "Berhasil", True, prod_schema.dump(prod))
@@ -2028,8 +2049,7 @@ def groupPro(self):
         result = (
             db.session.query(GroupProMdb, DivisionMdb)
             .outerjoin(DivisionMdb, DivisionMdb.id == GroupProMdb.div_code)
-            .order_by(DivisionMdb.id.asc())
-            .order_by(GroupProMdb.div_code.asc())
+            .order_by(GroupProMdb.id.asc())
             .all()
         )
         print(result)
