@@ -1728,10 +1728,22 @@ def unit(self):
         u_to = request.json["u_to"]
 
         try:
-            u = UnitMdb(code, name, type, desc, active, qty, u_from, u_to)
-            db.session.add(u)
-            db.session.commit()
-            result = response(200, "Berhasil", True, unit_schema.dump(u))
+            if "konversi" in request.json:
+                konversi = request.json['konversi']
+                u = []
+                for x in konversi:
+                    if x['u_from'] and x['u_to']:
+                        u.append(UnitMdb(code, name, type, desc,
+                                active, x['qty'], x['u_from'], x['u_to']))
+                if len(u) > 0:
+                    db.session.add_all(u)
+                    db.session.commit()
+                    result = response(200, "Berhasil", True, units_schema.dump(u))
+                else:
+                    u = UnitMdb(code, name, type, desc, active, qty, u_from, u_to)
+                    db.session.add(u)
+                    db.session.commit()
+                    result = response(200, "Berhasil", True, unit_schema.dump(u))
         except IntegrityError:
             db.session.rollback()
             result = response(
