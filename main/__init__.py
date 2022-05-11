@@ -1593,6 +1593,7 @@ def setup_account(self):
             sto_hpp_diff = request.json["sto_hpp_diff"]
             sto_general = request.json["sto_general"]
             sto_production = request.json["sto_production"]
+            sto_wip = request.json["sto_wip"]
             fixed_assets = request.json["fixed_assets"]
 
             setup = SetupMdb(
@@ -1622,6 +1623,7 @@ def setup_account(self):
                 sto_general,
                 sto_production,
                 sto_hpp_diff,
+                sto_wip,
                 fixed_assets,
             )
             db.session.add(setup)
@@ -1684,6 +1686,7 @@ def setup_account_id(self, id):
         setup.sto_general = request.json["sto_general"]
         setup.sto_production = request.json["sto_production"]
         setup.sto_hpp_diff = request.json["sto_hpp_diff"]
+        setup.sto_wip = request.json["sto_wip"]
         setup.fixed_assets = request.json["fixed_assets"]
         db.session.commit()
 
@@ -1734,16 +1737,19 @@ def unit(self):
                 for x in konversi:
                     if x['u_from'] and x['u_to']:
                         u.append(UnitMdb(code, name, type, desc,
-                                active, x['qty'], x['u_from'], x['u_to']))
+                                         active, x['qty'], x['u_from'], x['u_to']))
                 if len(u) > 0:
                     db.session.add_all(u)
                     db.session.commit()
-                    result = response(200, "Berhasil", True, units_schema.dump(u))
+                    result = response(200, "Berhasil", True,
+                                      units_schema.dump(u))
                 else:
-                    u = UnitMdb(code, name, type, desc, active, qty, u_from, u_to)
+                    u = UnitMdb(code, name, type, desc,
+                                active, qty, u_from, u_to)
                     db.session.add(u)
                     db.session.commit()
-                    result = response(200, "Berhasil", True, unit_schema.dump(u))
+                    result = response(200, "Berhasil", True,
+                                      unit_schema.dump(u))
         except IntegrityError:
             db.session.rollback()
             result = response(
@@ -1789,16 +1795,53 @@ def satuan_id(self, id):
     units = UnitMdb.query.filter(UnitMdb.id == id).first()
     result = UnitMdb.query.all()
     if request.method == "PUT":
-        units.code = request.json["code"]
-        units.name = request.json["name"]
-        units.type = request.json["type"]
-        units.desc = request.json["desc"]
-        units.active = request.json["active"]
-        units.qty = request.json["qty"]
-        units.u_from = request.json["u_from"]
-        units.u_to = request.json["u_to"]
+        code = request.json["code"]
+        name = request.json["name"]
+        type = request.json["type"]
+        desc = request.json["desc"]
+        active = request.json["active"]
 
-        db.session.commit()
+        old_ids = []
+        new_unit = []
+        if 'konversi' in request.json:
+            konversi = request.json['konversi']
+            for x in konversi:
+                if x['u_from'] and x['u_to']:
+                    if x['id'] != 0:
+                        old_ids.append(x['id'])
+                    else:
+                        new_unit.append(
+                            UnitMdb(code, name, type, desc, active, x['qty'], x['u_from'], x['u_to']))
+            if len(old_ids) > 0:
+                old_units = (db.session.query(UnitMdb)
+                             .filter(UnitMdb.id.in_(old_ids))
+                             .all())
+                for x in old_units:
+                    x.code = code
+                    x.name = name
+                    x.type = type
+                    x.desc = desc
+                    x.active = active
+                    for y in konversi:
+                        if y['id'] == x.id:
+                            x.qty = y['qty']
+                            x.u_from = y['u_from']
+                            x.u_to = y['u_to']
+
+            if len(new_unit) > 0:
+                db.session.add_all(new_unit)
+
+            if len(new_unit) == 0 and len(old_ids) == 0:
+                units.code = code
+                units.name = name
+                units.type = type
+                units.desc = desc
+                units.active = active
+                units.qty = request.json["qty"]
+                units.u_from = request.json["u_from"]
+                units.u_to = request.json["u_to"]
+
+            db.session.commit()
 
         return response(200, "Berhasil", True, unit_schema.dump(units))
     elif request.method == "DELETE":
