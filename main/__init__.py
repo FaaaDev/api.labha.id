@@ -15,6 +15,7 @@ from main.model.bank_mdb import BankMdb
 from main.model.ccost_mdb import CcostMdb
 from main.model.comp_mdb import CompMdb
 from main.model.group_prod_mdb import GroupProMdb
+from main.model.jasa_mdb import JasaMdb
 from main.model.jpel_mdb import JpelMdb
 from main.model.jpem_mdb import JpemMdb
 from main.model.prod_mdb import ProdMdb
@@ -33,6 +34,7 @@ from main.model.supplier_mdb import SupplierMdb
 from main.model.unit_mdb import UnitMdb
 from main.model.divisi_mdb import DivisionMdb
 from main.model.group_prod_mdb import GroupProMdb
+from main.model.pajak_mdb import PajakMdb
 from main.schema.ccost_mdb import ccost_schema, ccosts_schema, CcostSchema
 from main.schema.proj_mdb import proj_schema, projs_schema, ProjSchema
 from main.shared.shared import db, ma
@@ -62,6 +64,8 @@ from main.schema.custom_mdb import customer_schema, customers_schema
 from main.schema.supplier_mdb import supplier_schema, suppliers_schema
 from main.schema.divisi_mdb import division_schema, divisions_schema
 from main.schema.group_prod_mdb import groupPro_schema, groupPros_schema
+from main.schema.pajak_mdb import pajk_schema, pajks_schema
+from main.schema.jasa_mdb import jasa_schema, jasas_schema
 from main.schema.setup_mdb import *
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import and_, or_
@@ -2113,6 +2117,138 @@ def groupPro_id(self, id):
         data = {
             "groupPro": groupPro_schema.dump(result[0]),
             "divisi": division_schema.dump(result[1]),
+        }
+
+        return response(200, "Berhasil", True, data)
+
+
+# Pajak
+@app.route("/v1/api/pajak", methods=["POST", "GET"])
+@token_required
+def pajak(self):
+    if request.method == "POST":
+        try:
+            code = request.json["code"]
+            name = request.json["name"]
+            nilai = request.json["nilai"]
+            pajak = PajakMdb(code, name, nilai)
+            db.session.add(pajak)
+            db.session.commit()
+
+            result = response(200, "Berhasil", True,
+                              pajk_schema.dump(pajak))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    else:
+        result = PajakMdb.query.all()
+
+        return response(200, "Berhasil", True, pajks_schema.dump(result))
+
+
+@app.route("/v1/api/pajak/<int:id>", methods=["PUT", "GET", "DELETE"])
+@token_required
+def pajak_id(self, id):
+    pajak = PajakMdb.query.filter(PajakMdb.id == id).first()
+    if request.method == "PUT":
+        try:
+            pajak.code = request.json["code"]
+            pajak.name = request.json["name"]
+            pajak.nilai = request.json["nilai"]
+            db.session.commit()
+            result = response(200, "Berhasil", True,
+                              pajk_schema.dump(pajak))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    elif request.method == "DELETE":
+        db.session.delete(pajak)
+        db.session.commit()
+
+        return response(200, "Berhasil", True, None)
+    else:
+        return response(200, "Berhasil", True, pajk_schema.dump(pajak))
+
+
+# Jasa
+@app.route("/v1/api/jasa", methods=["POST", "GET"])
+@token_required
+def jasa(self):
+    if request.method == "POST":
+        try:
+            code = request.json["code"]
+            name = request.json["name"]
+            desc = request.json["desc"]
+            acc_id = request.json["acc_id"]
+            jasa = JasaMdb(code, name, desc, acc_id)
+            db.session.add(jasa)
+            db.session.commit()
+
+            result = response(200, "Berhasil", True,
+                              jasa_schema.dump(jasa))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    else:
+        result = (
+            db.session.query(JasaMdb, AccouMdb)
+            .outerjoin(AccouMdb, AccouMdb.id == JasaMdb.acc_id)
+            .order_by(JasaMdb.id.asc())
+            .all()
+        )
+        print(result)
+        data = [
+            {
+                "jasa": jasa_schema.dump(x[0]),
+                "account": accou_schema.dump(x[1]),
+            }
+            for x in result
+        ]
+
+        return response(200, "Berhasil", True, data)
+
+
+@app.route("/v1/api/jasa/<int:id>", methods=["PUT", "GET", "DELETE"])
+@token_required
+def jasa_id(self, id):
+    jasa = JasaMdb.query.filter(JasaMdb.id == id).first()
+    if request.method == "PUT":
+        try:
+            jasa.code = request.json["code"]
+            jasa.name = request.json["name"]
+            jasa.desc = request.json["desc"]
+            jasa.acc_id = request.json["acc_id"]
+            db.session.commit()
+            result = response(200, "Berhasil", True,
+                              jasa_schema.dump(jasa))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    elif request.method == "DELETE":
+        db.session.delete(jasa)
+        db.session.commit()
+
+        return response(200, "Berhasil", True, None)
+    else:
+        result = (
+            db.session.query(JasaMdb, AccouMdb)
+            .outerjoin(AccouMdb, AccouMdb.id == JasaMdb.acc_id)
+            .order_by(JasaMdb.id.asc())
+            .filter(JasaMdb.id == id)
+            .first()
+        )
+        print(result)
+        data = {
+            "jasa": jasa_schema.dump(result[0]),
+            "account": accou_schema.dump(result[1]),
         }
 
         return response(200, "Berhasil", True, data)
