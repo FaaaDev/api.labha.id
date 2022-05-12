@@ -32,6 +32,7 @@ class SetupSchema(ma.Schema):
             "sto_general",
             "sto_production",
             "sto_hpp_diff",
+            "sto_wip",
             "fixed_assets",
         )
 

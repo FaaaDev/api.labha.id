@@ -32,6 +32,7 @@ class SetupMdb(db.Model):
     sto_general = db.Column(db.Integer)
     sto_production = db.Column(db.Integer)
     sto_hpp_diff = db.Column(db.Integer)
+    sto_wip = db.Column(db.Integer)
     fixed_assets = db.Column(db.Integer)
 
     def __init__(
@@ -62,6 +63,7 @@ class SetupMdb(db.Model):
         sto_general,
         sto_production,
         sto_hpp_diff,
+        sto_wip,
         fixed_assets,
     ):
         self.cp_id = cp_id
@@ -90,4 +92,5 @@ class SetupMdb(db.Model):
         self.sto_general = sto_general
         self.sto_production = sto_production
         self.sto_hpp_diff = sto_hpp_diff
+        self.sto_wip = sto_wip
         self.fixed_assets = fixed_assets
