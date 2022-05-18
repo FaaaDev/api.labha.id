@@ -2184,7 +2184,8 @@ def pajak(self):
             acc_sls_fax = request.json["acc_sls_fax"]
             acc_pur_fax = request.json["acc_pur_fax"]
             combined = request.json["combined"]
-            pajak = PajakMdb(type, name, nilai, cutting, acc_sls_fax, acc_pur_fax, combined)
+            pajak = PajakMdb(type, name, nilai, cutting,
+                             acc_sls_fax, acc_pur_fax, combined)
             db.session.add(pajak)
             db.session.commit()
 
@@ -2334,7 +2335,7 @@ def rp(self):
                 db.session.add_all(all_prod)
                 db.session.commit()
 
-            rjasa = request.json['jasa']
+            rjasa = request.json['rjasa']
             all_jasa = []
             for x in rjasa:
                 if x['jasa_id'] and x['qty'] and x['unit_id']:
@@ -2345,26 +2346,224 @@ def rp(self):
                 db.session.add_all(all_jasa)
                 db.session.commit()
 
-            result = response(200, "Berhasil", True, jasa_schema.dump(jasa))
+            result = response(200, "Berhasil", True, preq_schema.dump(rp))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
         finally:
             return result
     else:
-        result = (
-            db.session.query(JasaMdb, AccouMdb)
-            .outerjoin(AccouMdb, AccouMdb.id == JasaMdb.acc_id)
-            .order_by(JasaMdb.id.asc())
+        preq = (
+            db.session.query(PreqMdb, CcostMdb, SupplierMdb)
+            .outerjoin(CcostMdb, CcostMdb.id == PreqMdb.req_dep)
+            .outerjoin(SupplierMdb, SupplierMdb.id == PreqMdb.ref_sup)
             .all()
         )
-        print(result)
-        data = [
-            {
-                "jasa": jasa_schema.dump(x[0]),
-                "account": accou_schema.dump(x[1]),
-            }
-            for x in result
-        ]
+        rprod = (
+            db.session.query(RprodMdb, ProdMdb, UnitMdb)
+            .outerjoin(ProdMdb, ProdMdb.id == RprodMdb.prod_id)
+            .outerjoin(UnitMdb, UnitMdb.id == RprodMdb.unit_id)
+            .all()
+        )
+        rjasa = (
+            db.session.query(RjasaMdb, JasaMdb, UnitMdb)
+            .outerjoin(JasaMdb, JasaMdb.id == RjasaMdb.jasa_id)
+            .outerjoin(UnitMdb, UnitMdb.id == RjasaMdb.unit_id)
+            .all()
+        )
 
-        return response(200, "Berhasil", True, data)
+        final = []
+
+        for x in preq:
+            product = []
+            for y in rprod:
+                if y[0].preq_id == x[0].id:
+                    y[0].prod_id = prod_schema.dump(y[1])
+                    y[0].unit_id = unit_schema.dump(y[2])
+                    product.append(rprod_schema.dump(y[0]))
+
+            jasa = []
+            for z in rjasa:
+                if z[0].preq_id == x[0].id:
+                    z[0].jasa_id = jasa_schema.dump(z[1])
+                    z[0].unit_id = unit_schema.dump(z[2])
+                    jasa.append(rjasa_schema.dump(z[0]))
+
+            final.append(
+                {
+                    "id": x[0].id,
+                    "req_code": x[0].req_code,
+                    "req_date": x[0].req_date,
+                    "req_dep": ccost_schema.dump(x[1]),
+                    "req_ket": x[0].req_ket,
+                    "refrence": x[0].refrence,
+                    "ref_sup": supplier_schema.dump(x[2]),
+                    "ref_ket": x[0].ref_ket,
+                    "rprod": product,
+                    "rjasa": jasa
+                }
+            )
+
+        return response(200, "Berhasil", True, final)
+
+
+@app.route("/v1/api/rp/<int:id>", methods=["GET", "PUT", "DELETE"])
+@token_required
+def rp_id(self, id):
+    preq = PreqMdb.query.filter(PreqMdb.id == id).first()
+    product = RprodMdb.query.filter(RprodMdb.preq_id == id).all()
+    jasa = RjasaMdb.query.filter(RjasaMdb.preq_id == id).all()
+    if request.method == "PUT":
+        req_code = request.json["req_code"]
+        req_date = request.json["req_date"]
+        req_dep = request.json["req_dep"]
+        req_ket = request.json["req_ket"]
+        refrence = request.json["refrence"]
+        ref_sup = request.json["ref_sup"]
+        ref_ket = request.json["ref_ket"]
+        rprod = request.json['rprod']
+        rjasa = request.json['rjasa']
+
+        preq.req_code = req_code
+        preq.req_date = req_date
+        preq.req_dep = req_dep
+        preq.req_ket = req_ket
+        preq.refrence = refrence
+        preq.ref_sup = ref_sup
+        preq.ref_ket = ref_ket
+
+        old_prod = []
+        new_prod = []
+
+        for x in rprod:
+            if x['prod_id'] and x['unit_id'] and x['request']:
+                if x['id'] != 0:
+                    old_prod.append(x['id'])
+                else:
+                    new_prod.append(RprodMdb(
+                        preq.id, x['prod_id'], x['unit_id'], x['request'], None, None, None, None, None, None))
+
+        if len(old_prod) > 0:
+            for x in old_prod:
+                for y in product:
+                    if y.id not in old_prod:
+                        db.session.delete(y)
+                    else:
+                        if y.id == x:
+                            for z in rprod:
+                                if z['id'] == x:
+                                    y.prod_id = z['prod_id']
+                                    y.unit_id = z['unit_id']
+                                    y.request = z['request']
+
+        if len(new_prod) > 0:
+            db.session.add_all(new_prod)
+
+        old_jasa = []
+        new_jasa = []
+
+        for x in rjasa:
+            if x['jasa_id'] and x['qty'] and x['unit_id']:
+                if x['id'] != 0:
+                    old_jasa.append(x['id'])
+                else:
+                    new_jasa.append(RjasaMdb(
+                        preq.id, None, x['jasa_id'], x['unit_id'], x['qty'], None, None, None))
+
+        if len(old_jasa) > 0:
+            for x in old_jasa:
+                for y in jasa:
+                    if y.id not in old_jasa:
+                        db.session.delete(y)
+                    else:
+                        if y.id == x:
+                            for z in rjasa:
+                                if z['id'] == x:
+                                    y.jasa_id = z['jasa_id']
+                                    y.unit_id = z['unit_id']
+                                    y.qty = z['qty']
+
+        if len(new_jasa) > 0:
+            db.session.add_all(new_jasa)
+
+        db.session.commit()
+
+        preq = PreqMdb.query.filter(PreqMdb.id == id).first()
+        product = RprodMdb.query.filter(RprodMdb.preq_id == id).all()
+        jasa = RjasaMdb.query.filter(RjasaMdb.preq_id == id).all()
+        final = {
+            "id": preq.id,
+            "req_code": preq.req_code,
+            "req_date": preq.req_date,
+            "req_dep": preq.req_dep,
+            "req_ket": preq.req_ket,
+            "refrence": preq.refrence,
+            "ref_sup": preq.ref_sup,
+            "ref_ket": preq.ref_ket,
+            "rprod": rprods_schema.dump(product),
+            "rjasa": rjasas_schema.dump(jasa)
+        }
+
+        return response(200, "Berhasil", True, final)
+    elif request.method == "DELETE":
+        if preq:
+            db.session.delete(preq)
+            for x in product:
+                db.session.delete(x)
+            for x in jasa:
+                db.session.delete(x)
+            db.session.commit()
+
+        return response(200, "Berhasil", True, None)
+    else:
+        preq = (
+            db.session.query(PreqMdb, CcostMdb, SupplierMdb)
+            .outerjoin(CcostMdb, CcostMdb.id == PreqMdb.req_dep)
+            .outerjoin(SupplierMdb, SupplierMdb.id == PreqMdb.ref_sup)
+            .filter(PreqMdb.id == id)
+            .first()
+        )
+
+        rprod = (
+            db.session.query(RprodMdb, ProdMdb, UnitMdb)
+            .outerjoin(ProdMdb, ProdMdb.id == RprodMdb.prod_id)
+            .outerjoin(UnitMdb, UnitMdb.id == RprodMdb.unit_id)
+            .filter(RprodMdb.preq_id == id)
+            .all()
+        )
+        print(rprod)
+
+        rjasa = (
+            db.session.query(RjasaMdb, JasaMdb, UnitMdb)
+            .outerjoin(JasaMdb, JasaMdb.id == RjasaMdb.jasa_id)
+            .outerjoin(UnitMdb, UnitMdb.id == RjasaMdb.unit_id)
+            .filter(RjasaMdb.preq_id == id)
+            .all()
+        )
+
+        prods = []
+        for y in rprod:
+            y[0].prod_id = prod_schema.dump(y[1])
+            y[0].unit_id = unit_schema.dump(y[2])
+            prods.append(rprod_schema.dump(y[0]))
+
+        jasas = []
+        for z in rjasa:
+            z[0].jasa_id = jasa_schema.dump(z[1])
+            z[0].unit_id = unit_schema.dump(z[2])
+            jasas.append(rjasa_schema.dump(z[0]))
+
+        final = {
+            "id": preq[0].id,
+            "req_code": preq[0].req_code,
+            "req_date": preq[0].req_date,
+            "req_dep": preq[0].req_dep,
+            "req_ket": preq[0].req_ket,
+            "refrence": preq[0].refrence,
+            "ref_sup": preq[0].ref_sup,
+            "ref_ket": preq[0].ref_ket,
+            "rprod": prods,
+            "rjasa": jasas
+        }
+
+        return response(200, "Berhasil", True, final)
