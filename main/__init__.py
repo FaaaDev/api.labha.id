@@ -18,7 +18,10 @@ from main.model.group_prod_mdb import GroupProMdb
 from main.model.jasa_mdb import JasaMdb
 from main.model.jpel_mdb import JpelMdb
 from main.model.jpem_mdb import JpemMdb
+from main.model.preq_mdb import PreqMdb
 from main.model.prod_mdb import ProdMdb
+from main.model.rjasa_mdb import RjasaMdb
+from main.model.rprod_mdb import RprodMdb
 from main.model.sales_mdb import SalesMdb
 from main.model.area_penjualan_mdb import AreaPenjualanMdb
 from main.model.setup_mdb import SetupMdb
@@ -66,6 +69,9 @@ from main.schema.divisi_mdb import division_schema, divisions_schema
 from main.schema.group_prod_mdb import groupPro_schema, groupPros_schema
 from main.schema.pajak_mdb import pajk_schema, pajks_schema
 from main.schema.jasa_mdb import jasa_schema, jasas_schema
+from main.schema.preq_mdb import preq_schema, preqs_schema, PreqSchema
+from main.schema.rprod_mdb import rprod_schema, rprods_schema, RprodSchema
+from main.schema.rjasa_mdb import rjasa_schema, rjasas_schema, RjasaSchema
 from main.schema.setup_mdb import *
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import and_, or_
@@ -2293,5 +2299,70 @@ def jasa_id(self, id):
             "jasa": jasa_schema.dump(result[0]),
             "account": accou_schema.dump(result[1]),
         }
+
+        return response(200, "Berhasil", True, data)
+
+
+@app.route("/v1/api/rp", methods=["POST", "GET"])
+@token_required
+def rp(self):
+    if request.method == "POST":
+        try:
+            req_code = request.json["req_code"]
+            req_date = request.json["req_date"]
+            req_dep = request.json["req_dep"]
+            req_ket = request.json["req_ket"]
+            refrence = request.json["refrence"]
+            ref_sup = request.json["ref_sup"]
+            ref_ket = request.json["ref_ket"]
+
+            rp = PreqMdb(req_code, req_date, req_dep,
+                         req_ket, refrence, ref_sup, ref_ket)
+            db.session.add(rp)
+            db.session.commit()
+
+            rprod = request.json['rprod']
+            all_prod = []
+            for x in rprod:
+                if x['prod_id'] and x['unit_id'] and x['request']:
+                    all_prod.append(RprodMdb(rp.id, x['prod_id'], x['unit_id'], x['request'],
+                                    None, None, None, None, None, None))
+
+            if len(all_prod) > 0:
+                db.session.add_all(all_prod)
+                db.session.commit()
+
+            rjasa = request.json['jasa']
+            all_jasa = []
+            for x in rjasa:
+                if x['jasa_id'] and x['qty'] and x['unit_id']:
+                    all_jasa.append(RjasaMdb(
+                        rp.id, None, x['jasa_id'], x['unit_id'], x['qty'], None, None, None))
+
+            if len(all_jasa) > 0:
+                db.session.add_all(all_jasa)
+                db.session.commit()
+
+            result = response(200, "Berhasil", True, jasa_schema.dump(jasa))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    else:
+        result = (
+            db.session.query(JasaMdb, AccouMdb)
+            .outerjoin(AccouMdb, AccouMdb.id == JasaMdb.acc_id)
+            .order_by(JasaMdb.id.asc())
+            .all()
+        )
+        print(result)
+        data = [
+            {
+                "jasa": jasa_schema.dump(x[0]),
+                "account": accou_schema.dump(x[1]),
+            }
+            for x in result
+        ]
 
         return response(200, "Berhasil", True, data)
