@@ -2177,18 +2177,19 @@ def groupPro_id(self, id):
 def pajak(self):
     if request.method == "POST":
         try:
-            code = request.json["code"]
+            type = request.json["type"]
             name = request.json["name"]
             nilai = request.json["nilai"]
-            pajak = PajakMdb(code, name, nilai)
+            cutting = request.json["cutting"]
+            acc_sls_fax = request.json["acc_sls_fax"]
+            acc_pur_fax = request.json["acc_pur_fax"]
+            combined = request.json["combined"]
+            pajak = PajakMdb(type, name, nilai, cutting, acc_sls_fax, acc_pur_fax, combined)
             db.session.add(pajak)
             db.session.commit()
 
             result = response(200, "Berhasil", True,
                               pajk_schema.dump(pajak))
-        except IntegrityError:
-            db.session.rollback()
-            result = response(400, "Kode sudah digunakan", False, None)
         finally:
             return result
     else:
@@ -2203,15 +2204,16 @@ def pajak_id(self, id):
     pajak = PajakMdb.query.filter(PajakMdb.id == id).first()
     if request.method == "PUT":
         try:
-            pajak.code = request.json["code"]
+            pajak.type = request.json["type"]
             pajak.name = request.json["name"]
             pajak.nilai = request.json["nilai"]
+            pajak.cutting = request.json["cutting"]
+            pajak.acc_sls_fax = request.json["acc_sls_fax"]
+            pajak.acc_pur_fax = request.json["acc_pur_fax"]
+            pajak.combined = request.json["combined"]
             db.session.commit()
             result = response(200, "Berhasil", True,
                               pajk_schema.dump(pajak))
-        except IntegrityError:
-            db.session.rollback()
-            result = response(400, "Kode sudah digunakan", False, None)
         finally:
             return result
     elif request.method == "DELETE":
