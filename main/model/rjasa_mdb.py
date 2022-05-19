@@ -3,8 +3,8 @@ from main.shared.shared import db
 
 
 class RjasaMdb(db.Model):
-    __table_args__ = {'schema': 'master'}
-    __tablename__ = 'RJASAMDB'
+    __table_args__ = {'schema': 'AP'}
+    __tablename__ = 'RJASADDB'
 
     id = db.Column(db.Integer, primary_key=True)
     preq_id = db.Column(db.Integer)

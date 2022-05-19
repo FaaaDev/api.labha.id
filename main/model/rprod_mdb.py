@@ -3,8 +3,8 @@ from main.shared.shared import db
 
 
 class RprodMdb(db.Model):
-    __table_args__ = {'schema': 'master'}
-    __tablename__ = 'RPRODMDB'
+    __table_args__ = {'schema': 'AP'}
+    __tablename__ = 'RPRODDDB'
 
     id = db.Column(db.Integer, primary_key=True)
     preq_id = db.Column(db.Integer)
