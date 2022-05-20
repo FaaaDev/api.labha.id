@@ -2393,7 +2393,7 @@ def rp(self):
                 {
                     "id": x[0].id,
                     "req_code": x[0].req_code,
-                    "req_date": x[0].req_date,
+                    "req_date": PreqSchema(only=['req_date']).dump(x[0])['req_date'],
                     "req_dep": ccost_schema.dump(x[1]),
                     "req_ket": x[0].req_ket,
                     "refrence": x[0].refrence,

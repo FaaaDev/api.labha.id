@@ -7,7 +7,7 @@ class PreqMdb(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     req_code = db.Column(db.String(255), unique=True)
-    req_date = db.Column(db.DATE)
+    req_date = db.Column(db.TIMESTAMP)
     req_dep = db.Column(db.Integer)
     req_ket = db.Column(db.Text)
     refrence = db.Column(db.Boolean)
