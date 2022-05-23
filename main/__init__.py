@@ -2397,10 +2397,10 @@ def rp(self):
                     "id": x[0].id,
                     "req_code": x[0].req_code,
                     "req_date": PreqSchema(only=['req_date']).dump(x[0])['req_date'],
-                    "req_dep": ccost_schema.dump(x[1]),
+                    "req_dep": ccost_schema.dump(x[1]) if x[1] else None,
                     "req_ket": x[0].req_ket,
                     "refrence": x[0].refrence,
-                    "ref_sup": supplier_schema.dump(x[2]),
+                    "ref_sup": supplier_schema.dump(x[2]) if x[2] else None,
                     "ref_ket": x[0].ref_ket,
                     "status": x[0].status,
                     "rprod": product,
@@ -2515,14 +2515,16 @@ def rp_id(self, id):
             return response(400, "Tidak dapat mengedit karena status", False, None)
     elif request.method == "DELETE":
         if preq:
-            db.session.delete(preq)
-            for x in product:
-                db.session.delete(x)
-            for x in jasa:
-                db.session.delete(x)
-            db.session.commit()
+            if preq.status == 0:
+                db.session.delete(preq)
+                for x in product:
+                    db.session.delete(x)
+                for x in jasa:
+                    db.session.delete(x)
+                db.session.commit()
+                return response(200, "Berhasil", True, None)
 
-        return response(200, "Berhasil", True, None)
+        return response(400, "Tidak dapat mengedit karena status tidak open", False, None)
     else:
         preq = (
             db.session.query(PreqMdb, CcostMdb, SupplierMdb)
@@ -2706,10 +2708,10 @@ def po(self):
                     "id": x[1].id,
                     "req_code": x[1].req_code,
                     "req_date": PreqSchema(only=['req_date']).dump(x[1])['req_date'],
-                    "req_dep": ccost_schema.dump(x[2]),
+                    "req_dep": ccost_schema.dump(x[2]) if x[2] else None,
                     "req_ket": x[1].req_ket,
                     "status": x[1].status,
-                },
+                } if x[1] else None,
                 "sup_id": supplier_schema.dump(x[3]),
                 "top": rpay_schema.dump(x[4]),
                 "due_date": PoSchema(only=['due_date']).dump(x[0])['due_date'],
