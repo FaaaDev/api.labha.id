@@ -2644,9 +2644,9 @@ def po(self):
                 db.session.add_all(new_jasa)
 
             if remain == 0:
-                preq.status = 2
-            else:
                 preq.status = 1
+            else:
+                preq.status = 0
 
             db.session.commit()
 
@@ -2722,5 +2722,170 @@ def po(self):
                 "rprod": product,
                 "rjasa": jasa,
             })
+
+        return response(200, "Berhasil", True, final)
+
+
+@app.route("/v1/api/po/<int:id>", methods=["PUT", "GET", "DELETE"])
+@token_required
+def po_id(self, id):
+    po = PoMdb.query.filter(PoMdb.id == id).first()
+    if request.method == "PUT":
+        if po.print == 0 and po.status == 0:
+            try:
+                po_code = request.json['po_code']
+                po_date = request.json['po_date']
+                preq_id = request.json['preq_id']
+                sup_id = request.json['sup_id']
+                ppn_type = request.json['ppn_type']
+                top = request.json['top']
+                due_date = request.json['due_date']
+                split_inv = request.json['split_inv']
+                prod_disc = request.json['prod_disc']
+                jasa_disc = request.json['jasa_disc']
+                total_disc = request.json['total_disc']
+                rprod = request.json['rprod']
+                rjasa = request.json['rjasa']
+
+                po.po_code = po_code
+                po.po_date = po_date
+                po.preq_id = preq_id
+                po.sup_id = sup_id
+                po.ppn_type = ppn_type
+                po.top = top
+                po.due_date = due_date
+                po.split_inv = split_inv
+                po.prod_disc = prod_disc
+                po.jasa_disc = jasa_disc
+                po.total_disc = total_disc
+
+                preq = PreqMdb.query.filter(PreqMdb.id == po.preq_id).first()
+                product = RprodMdb.query.filter(
+                    RprodMdb.preq_id == po.preq_id).all()
+                jasa = RjasaMdb.query.filter(
+                    RjasaMdb.preq_id == po.preq_id).all()
+
+                new_prod = []
+                remain = 0
+                for x in rprod:
+                    for y in product:
+                        if x['id'] == y.id:
+                            y.order = x['order']
+                            y.remain = y.request-x['order']
+                            y.price = x['price']
+                            y.disc = x['disc']
+                            y.nett_price = x['nett_price']
+                            y.total = x['total']
+                            remain += y.request-x['order']
+                        elif x['id'] == 0:
+                            if preq.status == 0:
+                                new_prod.append(RprodMdb(preq_id, x['prod_id'], x['unit_id'], x['request'],
+                                                x['order'], x['request']-x['order'], x['price'], x['disc'], x['nett_price'], x['total']))
+                                remain += x['request']-x['order']
+
+                new_jasa = []
+                for x in rjasa:
+                    for y in jasa:
+                        if x['id'] == y.id:
+                            y.sup_id = x['sup_id']
+                            y.price = x['price']
+                            y.disx = x['disc']
+                            y.total = x['total']
+                        elif x['id'] == 0:
+                            if preq.status == 0:
+                                new_jasa.append(RjasaMdb(
+                                    preq_id, x['sup_id'], x['jasa_id'], x['unit_id'], x['qty'], x['price'], x['disc'], x['total']))
+
+                if len(new_prod) > 0:
+                    db.session.add_all(new_prod)
+
+                if len(new_jasa) > 0:
+                    db.session.add_all(new_jasa)
+
+                if remain == 0:
+                    preq.status = 1
+                else:
+                    preq.status = 0
+
+                db.session.commit()
+
+                result = response(200, "Berhasil", True, po_schema.dump(po))
+            except IntegrityError:
+                db.session.rollback()
+                result = response(400, "Kode sudah digunakan", False, None)
+            finally:
+                return result
+
+    elif request.method == "DELETE":
+        if po.status == 0:
+            db.session.delete(po)
+            db.session.commit()
+            result = response(200, "Berhasil", True, None)
+    else:
+        x = (
+            db.session.query(PoMdb, PreqMdb, CcostMdb,
+                             SupplierMdb, RulesPayMdb)
+            .outerjoin(PreqMdb, PreqMdb.id == PoMdb.preq_id)
+            .outerjoin(CcostMdb, CcostMdb.id == PreqMdb.req_dep)
+            .outerjoin(SupplierMdb, SupplierMdb.id == PoMdb.sup_id)
+            .outerjoin(RulesPayMdb, RulesPayMdb.id == PoMdb.top)
+            .filter(PoMdb.id == id)
+            .first()
+        )
+
+        rprod = (
+            db.session.query(RprodMdb, ProdMdb, UnitMdb)
+            .outerjoin(ProdMdb, ProdMdb.id == RprodMdb.prod_id)
+            .outerjoin(UnitMdb, UnitMdb.id == RprodMdb.unit_id)
+            .filter(RprodMdb.preq_id == x[0].preq_id)
+            .all()
+        )
+
+        rjasa = (
+            db.session.query(RjasaMdb, JasaMdb, UnitMdb)
+            .outerjoin(JasaMdb, JasaMdb.id == RjasaMdb.jasa_id)
+            .outerjoin(UnitMdb, UnitMdb.id == RjasaMdb.unit_id)
+            .filter(RjasaMdb.preq_id == x[0].preq_id)
+            .all()
+        )
+
+        product = []
+        for y in rprod:
+            if y[0].preq_id == x[0].preq_id:
+                y[0].prod_id = prod_schema.dump(y[1])
+                y[0].unit_id = unit_schema.dump(y[2])
+                product.append(rprod_schema.dump(y[0]))
+
+        jasa = []
+        for z in rjasa:
+            if z[0].preq_id == x[0].preq_id:
+                z[0].jasa_id = jasa_schema.dump(z[1])
+                z[0].unit_id = unit_schema.dump(z[2])
+                jasa.append(rjasa_schema.dump(z[0]))
+
+        final = {
+            "id": x[0].id,
+            "po_code": x[0].po_code,
+            "po_date": PoSchema(only=['po_date']).dump(x[0])['po_date'],
+            "preq_id": {
+                "id": x[1].id,
+                "req_code": x[1].req_code,
+                "req_date": PreqSchema(only=['req_date']).dump(x[1])['req_date'],
+                "req_dep": ccost_schema.dump(x[2]),
+                "req_ket": x[1].req_ket,
+                "status": x[1].status,
+            },
+            "sup_id": supplier_schema.dump(x[3]),
+            "top": rpay_schema.dump(x[4]),
+            "due_date": PoSchema(only=['due_date']).dump(x[0])['due_date'],
+            "split_inv": x[0].split_inv,
+            "prod_disc": x[0].prod_disc,
+            "jasa_disc": x[0].jasa_disc,
+            "total_disc": x[0].total_disc,
+            "status": x[0].status,
+            "print": x[0].print,
+            "rprod": product,
+            "rjasa": jasa,
+        }
 
         return response(200, "Berhasil", True, final)
