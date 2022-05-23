@@ -1,29 +1,34 @@
+from email.policy import default
 from enum import unique
 from main.shared.shared import db
+
 
 class PoMdb(db.Model):
     __table_args__ = {'schema': 'AP'}
     __tablename__ = 'PORDHDB'
 
     id = db.Column(db.Integer, primary_key=True)
-    req_code = db.Column(db.String(255), unique=True)
-    req_date = db.Column(db.DATE)
+    po_code = db.Column(db.String(255), unique=True)
+    po_date = db.Column(db.TIMESTAMP)
     preq_id = db.Column(db.Integer)
-    sup_id = db.Column(db.Text)
-    ppn_type = db.Column(db.Boolean)
+    sup_id = db.Column(db.Integer)
+    ppn_type = db.Column(db.String(255))
     top = db.Column(db.Integer)
-    due_date = db.Column(db.Text)
+    due_date = db.Column(db.TIMESTAMP)
     split_inv = db.Column(db.Boolean)
-    prod_disc = db.Column(db.Boolean)
-    jasa_disc = db.Column(db.Boolean)
-    total_disc = db.Column(db.Boolean)
-    
+    prod_disc = db.Column(db.Integer)
+    jasa_disc = db.Column(db.Integer)
+    total_disc = db.Column(db.Integer)
 
-    def __init__(self, req_code, req_date, req_dep, req_ket, refrence, ref_sup, ref_ket):
-        self.req_code = req_code
-        self.req_date = req_date
-        self.req_dep = req_dep
-        self.req_ket = req_ket
-        self.refrence = refrence
-        self.ref_sup = ref_sup
-        self.ref_ket = ref_ket
+    def __init__(self, po_code, po_date, preq_id, sup_id, ppn_type, top, due_date, split_inv, prod_disc, jasa_disc, total_disc):
+        self.po_code = po_code
+        self.po_date = po_date
+        self.preq_id = preq_id
+        self.sup_id = sup_id
+        self.ppn_type = ppn_type
+        self.top = top
+        self.due_date = due_date
+        self.split_inv = split_inv
+        self.prod_disc = prod_disc
+        self.jasa_disc = jasa_disc
+        self.total_disc = total_disc

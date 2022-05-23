@@ -1,3 +1,4 @@
+from email.policy import default
 from enum import unique
 from main.shared.shared import db
 
@@ -13,9 +14,10 @@ class PreqMdb(db.Model):
     refrence = db.Column(db.Boolean)
     ref_sup = db.Column(db.Integer)
     ref_ket = db.Column(db.Text)
+    status = db.Column(db.Integer, default=0)
     
 
-    def __init__(self, req_code, req_date, req_dep, req_ket, refrence, ref_sup, ref_ket):
+    def __init__(self, req_code, req_date, req_dep, req_ket, refrence, ref_sup, ref_ket, status):
         self.req_code = req_code
         self.req_date = req_date
         self.req_dep = req_dep
@@ -23,3 +25,4 @@ class PreqMdb(db.Model):
         self.refrence = refrence
         self.ref_sup = ref_sup
         self.ref_ket = ref_ket
+        self.status = status
