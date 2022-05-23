@@ -2597,7 +2597,7 @@ def po(self):
             rjasa = request.json['rjasa']
 
             po = PoMdb(po_code, po_date, preq_id, sup_id, ppn_type, top,
-                       due_date, split_inv, prod_disc, jasa_disc, total_disc)
+                       due_date, split_inv, prod_disc, jasa_disc, total_disc, 0, 0)
 
             db.session.add(po)
 
@@ -2610,7 +2610,7 @@ def po(self):
             remain = 0
             for x in rprod:
                 for y in product:
-                    if x['id'] == y[0].id:
+                    if x['id'] == y.id:
                         y.order = x['order']
                         y.remain = y.request-x['order']
                         y.price = x['price']
@@ -2686,14 +2686,14 @@ def po(self):
         for x in po:
             product = []
             for y in rprod:
-                if y[0].preq_id == x[0].id:
+                if y[0].preq_id == x[0].preq_id:
                     y[0].prod_id = prod_schema.dump(y[1])
                     y[0].unit_id = unit_schema.dump(y[2])
                     product.append(rprod_schema.dump(y[0]))
 
             jasa = []
             for z in rjasa:
-                if z[0].preq_id == x[0].id:
+                if z[0].preq_id == x[0].preq_id:
                     z[0].jasa_id = jasa_schema.dump(z[1])
                     z[0].unit_id = unit_schema.dump(z[2])
                     jasa.append(rjasa_schema.dump(z[0]))
@@ -2717,8 +2717,10 @@ def po(self):
                 "prod_disc": x[0].prod_disc,
                 "jasa_disc": x[0].jasa_disc,
                 "total_disc": x[0].total_disc,
+                "status": x[0].status,
+                "print": x[0].print,
                 "rprod": product,
-                "rjasa": rjasa,
+                "rjasa": jasa,
             })
 
         return response(200, "Berhasil", True, final)
