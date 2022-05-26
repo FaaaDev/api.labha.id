@@ -16,9 +16,9 @@ class PoMdb(db.Model):
     top = db.Column(db.Integer)
     due_date = db.Column(db.TIMESTAMP)
     split_inv = db.Column(db.Boolean)
-    prod_disc = db.Column(db.Integer)
-    jasa_disc = db.Column(db.Integer)
-    total_disc = db.Column(db.Integer)
+    prod_disc = db.Column(db.Float)
+    jasa_disc = db.Column(db.Float)
+    total_disc = db.Column(db.Float)
     status = db.Column(db.Integer, default=0)
     print = db.Column(db.Integer, default=0)
 
