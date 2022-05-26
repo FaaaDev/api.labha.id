@@ -2984,10 +2984,10 @@ def so(self):
             new_prod = []
             remain = 0
             for x in sprod:
-                if x['prod_id'] and x['unit_id'] and x['request']:
+                if x['prod_id'] and x['unit_id'] and x['order']:
                     new_prod.append(SprodDdb(so.id, x['prod_id'], x['unit_id'], x['request'],
-                                    x['order'], x['request']-x['order'], x['price'], x['disc'], x['nett_price'], x['total']))
-                    remain += x['request']-x['order']
+                                    x['order'], None, x['price'], x['disc'], x['nett_price'], x['total']))
+                    
 
             new_jasa = []
             for x in sjasa:
