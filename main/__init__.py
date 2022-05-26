@@ -2647,7 +2647,7 @@ def po(self):
                 for y in jasa:
                     if x['id'] == y.id:
                         y.remain = y.remain-int(x['order'])
-                if x['sup_id'] and x['jasa_id'] and x['unit_id'] and x['order'] and int(x['order']) > 0 and x['price'] and x['price'] > 0:
+                if x['sup_id'] and x['jasa_id'] and x['unit_id'] and x['order'] and int(x['order']) > 0 and x['price'] and int(x['price']) > 0:
                     new_jasa.append(PjasaDdb(po.id,
                                              preq_id, x['id'] if x['id'] != 0 else None, x['sup_id'], x['jasa_id'], x['unit_id'], x['order'], x['price'], x['disc'], x['total']))
 
@@ -2884,7 +2884,7 @@ def po_id(self, id):
 
             db.session.delete(po)
             db.session.commit()
-            result = response(200, "Berhasil", True, None)
+            return response(200, "Berhasil", True, None)
     else:
         x = (
             db.session.query(PoMdb, PreqMdb, CcostMdb,
