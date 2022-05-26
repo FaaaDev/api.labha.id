@@ -7,6 +7,7 @@ class PjasaDdb(db.Model):
     __tablename__ = 'PJASADDB'
 
     id = db.Column(db.Integer, primary_key=True)
+    po_id = db.Column(db.Integer)
     preq_id = db.Column(db.Integer)
     rjasa_id = db.Column(db.Integer)
     sup_id = db.Column(db.Integer)
@@ -17,7 +18,8 @@ class PjasaDdb(db.Model):
     disc = db.Column(db.Float)
     total = db.Column(db.Float)
 
-    def __init__(self, preq_id, rjasa_id, sup_id, jasa_id, unit_id, order, price, disc, total):
+    def __init__(self, po_id, preq_id, rjasa_id, sup_id, jasa_id, unit_id, order, price, disc, total):
+        self.po_id = po_id
         self.preq_id = preq_id
         self.rjasa_id = rjasa_id
         self.sup_id = sup_id
