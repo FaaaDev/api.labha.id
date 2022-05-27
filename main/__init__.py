@@ -1,6 +1,7 @@
 import code
 from crypt import methods
 from fileinput import filename
+from math import prod
 from pickle import TRUE
 import re
 from sys import prefix
@@ -1368,7 +1369,8 @@ def customer(self):
             return result
     else:
         result = (
-            db.session.query(CustomerMdb, JpelMdb, SubAreaMdb, CurrencyMdb, PajakMdb)
+            db.session.query(CustomerMdb, JpelMdb, SubAreaMdb,
+                             CurrencyMdb, PajakMdb)
             .outerjoin(JpelMdb, JpelMdb.id == CustomerMdb.cus_jpel)
             .outerjoin(SubAreaMdb, SubAreaMdb.id == CustomerMdb.cus_sub_area)
             .outerjoin(CurrencyMdb, CurrencyMdb.id == CustomerMdb.cus_curren)
@@ -1437,7 +1439,8 @@ def customer_id(self, id):
         cus = CustomerMdb.query.all()
 
         result = (
-            db.session.query(CustomerMdb, JpelMdb, SubAreaMdb, CurrencyMdb, PajakMdb)
+            db.session.query(CustomerMdb, JpelMdb, SubAreaMdb,
+                             CurrencyMdb, PajakMdb)
             .outerjoin(JpelMdb, JpelMdb.id == CustomerMdb.cus_jpel)
             .outerjoin(SubAreaMdb, SubAreaMdb.id == CustomerMdb.cus_sub_area)
             .outerjoin(CurrencyMdb, CurrencyMdb.id == CustomerMdb.cus_curren)
@@ -2991,7 +2994,6 @@ def so(self):
                 if x['prod_id'] and x['unit_id'] and x['order']:
                     new_prod.append(SprodDdb(so.id, x['prod_id'], x['unit_id'], x['request'],
                                     x['order'], None, x['price'], x['disc'], x['nett_price'], x['total']))
-                    
 
             new_jasa = []
             for x in sjasa:
@@ -3122,20 +3124,37 @@ def so_id(self, id):
             so.jasa_disc = jasa_disc
             so.total_disc = total_disc
 
-            db.session.add(so)
-            db.session.commit()
+            product = SprodDdb.query.filter(SprodDdb.so_id == so.id)
+            jasa = SjasaDdb.query.filter(SjasaDdb.so_id == so.id)
 
             new_prod = []
-            remain = 0
             for x in sprod:
-                if x['prod_id'] and x['unit_id'] and x['request']:
+                for y in product:
+                    if x['id'] == y.id:
+                        y.prod_id = x['prod_id']
+                        y.unit_id = x['unit_id']
+                        y.request = x['request']
+                        y.order = x['order']
+                        y.price = x['price']
+                        y.disc = x['disc']
+                        y.nett_price = x['nett_price']
+                        y.total = x['total']
+                if x['id'] == 0 and x['prod_id'] and x['unit_id'] and x['order']:
                     new_prod.append(SprodDdb(so.id, x['prod_id'], x['unit_id'], x['request'],
-                                    x['order'], x['request']-x['order'], x['price'], x['disc'], x['nett_price'], x['total']))
-                    remain += x['request']-x['order']
+                                    x['order'], None, x['price'], x['disc'], x['nett_price'], x['total']))
 
             new_jasa = []
             for x in sjasa:
-                if x['sup_id'] and x['jasa_id'] and x['unit_id'] and x['qty']:
+                for y in jasa:
+                    if x['id'] == y.id:
+                        y.sup_id = x['sup_id']
+                        y.jasa_id = x['jasa_id']
+                        y.unit_id = x['unit_id']
+                        y.qty = x['qty']
+                        y.price = x['price']
+                        y.disc = x['disc']
+                        y.total = x['total']
+                if x['id'] == 0 and x['sup_id'] and x['jasa_id'] and x['unit_id'] and x['qty']:
                     new_jasa.append(SjasaDdb(
                         so.id, x['sup_id'], x['jasa_id'], x['unit_id'], x['qty'], x['price'], x['disc'], x['total']))
 
@@ -3156,75 +3175,85 @@ def so_id(self, id):
             return result
 
     elif request.method == "DELETE":
-        if po.status == 0:
-            db.session.delete(po)
-            db.session.commit()
-            result = response(200, "Berhasil", True, None)
+        product = SprodDdb.query.filter(SprodDdb.so_id == so.id)
+        jasa = SjasaDdb.query.filter(SjasaDdb.so_id == so.id)
+
+        for x in product:
+            db.session.delete(x)
+
+        for x in jasa:
+            db.session.delete(x)
+
+        db.session.delete(po)
+        db.session.commit()
+
+        return response(200, "Berhasil", True, None)
     else:
         x = (
-            db.session.query(PoMdb, PreqMdb, CcostMdb,
-                             SupplierMdb, RulesPayMdb)
-            .outerjoin(PreqMdb, PreqMdb.id == PoMdb.preq_id)
-            .outerjoin(CcostMdb, CcostMdb.id == PreqMdb.req_dep)
-            .outerjoin(SupplierMdb, SupplierMdb.id == PoMdb.sup_id)
-            .outerjoin(RulesPayMdb, RulesPayMdb.id == PoMdb.top)
-            .filter(PoMdb.id == id)
+            db.session.query(SordHdb, RulesPayMdb)
+            .outerjoin(RulesPayMdb, RulesPayMdb.id == SordHdb.top)
+            .filter(SordHdb.id == id)
             .first()
         )
 
-        rprod = (
-            db.session.query(RprodMdb, ProdMdb, UnitMdb)
-            .outerjoin(ProdMdb, ProdMdb.id == RprodMdb.prod_id)
-            .outerjoin(UnitMdb, UnitMdb.id == RprodMdb.unit_id)
-            .filter(RprodMdb.preq_id == x[0].preq_id)
+        cust = CustomerMdb.query.all()
+
+        sprod = (
+            db.session.query(SprodDdb, ProdMdb, UnitMdb)
+            .outerjoin(ProdMdb, ProdMdb.id == SprodDdb.prod_id)
+            .outerjoin(UnitMdb, UnitMdb.id == SprodDdb.unit_id)
             .all()
         )
 
-        rjasa = (
-            db.session.query(RjasaMdb, JasaMdb, UnitMdb)
-            .outerjoin(JasaMdb, JasaMdb.id == RjasaMdb.jasa_id)
-            .outerjoin(UnitMdb, UnitMdb.id == RjasaMdb.unit_id)
-            .filter(RjasaMdb.preq_id == x[0].preq_id)
+        sjasa = (
+            db.session.query(SjasaDdb, JasaMdb, UnitMdb)
+            .outerjoin(JasaMdb, JasaMdb.id == SjasaDdb.jasa_id)
+            .outerjoin(UnitMdb, UnitMdb.id == SjasaDdb.unit_id)
             .all()
         )
 
         product = []
-        for y in rprod:
-            if y[0].preq_id == x[0].preq_id:
+        for y in sprod:
+            if y[0].so_id == x[0].id:
                 y[0].prod_id = prod_schema.dump(y[1])
                 y[0].unit_id = unit_schema.dump(y[2])
-                product.append(rprod_schema.dump(y[0]))
+                product.append(sprod_schema.dump(y[0]))
 
         jasa = []
-        for z in rjasa:
-            if z[0].preq_id == x[0].preq_id:
+        for z in sjasa:
+            if z[0].so_id == x[0].id:
                 z[0].jasa_id = jasa_schema.dump(z[1])
                 z[0].unit_id = unit_schema.dump(z[2])
-                jasa.append(rjasa_schema.dump(z[0]))
+                jasa.append(sjasa_schema.dump(z[0]))
+
+        for a in cust:
+            if a.id == x[0].pel_id:
+                x[0].pel_id = customer_schema.dump(a)
+
+        if x[0].sub_addr:
+            for b in cust:
+                if b.id == x[0].sub_id:
+                    x[0].sub_id = customer_schema.dump(b)
 
         final = {
             "id": x[0].id,
-            "po_code": x[0].po_code,
-            "po_date": PoSchema(only=['po_date']).dump(x[0])['po_date'],
-            "preq_id": {
-                "id": x[1].id,
-                "req_code": x[1].req_code,
-                "req_date": PreqSchema(only=['req_date']).dump(x[1])['req_date'],
-                "req_dep": ccost_schema.dump(x[2]),
-                "req_ket": x[1].req_ket,
-                "status": x[1].status,
-            },
-            "sup_id": supplier_schema.dump(x[3]),
-            "top": rpay_schema.dump(x[4]),
-            "due_date": PoSchema(only=['due_date']).dump(x[0])['due_date'],
+            "so_code": x[0].so_code,
+            "so_date": SordSchema(only=['so_date']).dump(x[0])['so_date'],
+            "pel_id": x[0].pel_id,
+            "ppn_type": x[0].ppn_type,
+            "sub_addr": x[0].sub_addr,
+            "sub_id": x[0].sub_id,
+            "req_date": SordSchema(only=['req_date']).dump(x[0])['req_date'],
+            "top": rpay_schema.dump(x[1]),
+            "due_date": SordSchema(only=['due_date']).dump(x[0])['due_date'],
             "split_inv": x[0].split_inv,
             "prod_disc": x[0].prod_disc,
             "jasa_disc": x[0].jasa_disc,
             "total_disc": x[0].total_disc,
             "status": x[0].status,
             "print": x[0].print,
-            "rprod": product,
-            "rjasa": jasa,
+            "sprod": product,
+            "sjasa": jasa,
         }
 
         return response(200, "Berhasil", True, final)
