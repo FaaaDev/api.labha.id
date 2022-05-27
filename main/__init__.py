@@ -2786,7 +2786,7 @@ def po_id(self, id):
                 po.total_disc = total_disc
 
                 preq = PreqMdb.query.filter(PreqMdb.id == preq_id).first()
-                
+
                 product = RprodMdb.query.filter(
                     RprodMdb.preq_id == po.preq_id).all()
                 jasa = RjasaMdb.query.filter(
@@ -2808,9 +2808,9 @@ def po_id(self, id):
                                     z.order = x['order']
                                     z.price = x['price']
                                     z.nett_price = x['nett_price']
-                                    z.disc = x ['disc']
+                                    z.disc = x['disc']
                                     z.total = x['total']
-                    if x['id'] == 0 and x['prod_id'] and x['unit_id'] and x['order'] and int(x['order']) > 0 and x['price'] and x['price'] > 0:
+                    if x['id'] == 0 and x['prod_id'] and x['unit_id'] and x['order'] and int(x['order']) > 0 and x['price'] and int(x['price']) > 0:
                         new_prod.append(PprodDdb(po.id, preq_id, None if x['id'] != 0 else None, x['prod_id'], x['unit_id'],
                                                  x['order'], x['price'], x['disc'], x['nett_price'], x['total']))
 
@@ -2826,9 +2826,9 @@ def po_id(self, id):
                                     z.unit_id = x['unit_id']
                                     z.order = x['order']
                                     z.price = x['price']
-                                    z.disc = x ['disc']
+                                    z.disc = x['disc']
                                     z.total = x['total']
-                    if x['id'] == 0 and x['sup_id'] and x['jasa_id'] and x['unit_id'] and x['order'] and int(x['order']) > 0 and x['price'] and x['price'] > 0:
+                    if x['id'] == 0 and x['sup_id'] and x['jasa_id'] and x['unit_id'] and x['order'] and int(x['order']) > 0 and x['price'] and int(x['price']) > 0:
                         new_jasa.append(PjasaDdb(
                             po.id, preq_id, None if x['id'] != 0 else None, x['sup_id'], x['jasa_id'], x['unit_id'], x['order'], x['price'], x['disc'], x['total']))
 
@@ -2873,7 +2873,7 @@ def po_id(self, id):
             for y in product:
                 for z in pprod:
                     if z.rprod_id == y.id:
-                        y.remain += z.order 
+                        y.remain += z.order
                     db.session.delete(z)
 
             for y in jasa:
@@ -3085,92 +3085,71 @@ def so(self):
 @app.route("/v1/api/so/<int:id>", methods=["PUT", "GET", "DELETE"])
 @token_required
 def so_id(self, id):
-    po = PoMdb.query.filter(PoMdb.id == id).first()
+    so = SordHdb.query.filter(SordHdb.id == id).first()
     if request.method == "PUT":
-        if po.print == 0 and po.status == 0:
-            try:
-                po_code = request.json['po_code']
-                po_date = request.json['po_date']
-                preq_id = request.json['preq_id']
-                sup_id = request.json['sup_id']
-                ppn_type = request.json['ppn_type']
-                top = request.json['top']
-                due_date = request.json['due_date']
-                split_inv = request.json['split_inv']
-                prod_disc = request.json['prod_disc']
-                jasa_disc = request.json['jasa_disc']
-                total_disc = request.json['total_disc']
-                rprod = request.json['rprod']
-                rjasa = request.json['rjasa']
+        try:
+            so_code = request.json['so_code']
+            so_date = request.json['so_date']
+            pel_id = request.json['pel_id']
+            ppn_type = request.json['ppn_type']
+            sub_addr = request.json['sub_addr']
+            sub_id = request.json['sub_id']
+            req_date = request.json['req_date']
+            top = request.json['top']
+            due_date = request.json['due_date']
+            split_inv = request.json['split_inv']
+            prod_disc = request.json['prod_disc']
+            jasa_disc = request.json['jasa_disc']
+            total_disc = request.json['total_disc']
+            sprod = request.json['sprod']
+            sjasa = request.json['sjasa']
 
-                po.po_code = po_code
-                po.po_date = po_date
-                po.preq_id = preq_id
-                po.sup_id = sup_id
-                po.ppn_type = ppn_type
-                po.top = top
-                po.due_date = due_date
-                po.split_inv = split_inv
-                po.prod_disc = prod_disc
-                po.jasa_disc = jasa_disc
-                po.total_disc = total_disc
+            so.so_code = so_code
+            so.so_date = so_date
+            so.pel_id = pel_id
+            so.ppn_type = ppn_type
+            so.sub_addr = sub_addr
+            so.sub_id = sub_id
+            so.req_date = req_date
+            so.top = top
+            so.due_date = due_date
+            so.split_inv = split_inv
+            so.prod_disc = prod_disc
+            so.jasa_disc = jasa_disc
+            so.total_disc = total_disc
 
-                preq = PreqMdb.query.filter(PreqMdb.id == po.preq_id).first()
-                product = RprodMdb.query.filter(
-                    RprodMdb.preq_id == po.preq_id).all()
-                jasa = RjasaMdb.query.filter(
-                    RjasaMdb.preq_id == po.preq_id).all()
+            db.session.add(so)
+            db.session.commit()
 
-                new_prod = []
-                remain = 0
-                for x in rprod:
-                    for y in product:
-                        if x['id'] == y.id:
-                            y.order = x['order']
-                            y.remain = y.request-x['order']
-                            y.price = x['price']
-                            y.disc = x['disc']
-                            y.nett_price = x['nett_price']
-                            y.total = x['total']
-                            remain += y.request-x['order']
-                        elif x['id'] == 0:
-                            if preq.status == 0:
-                                new_prod.append(RprodMdb(preq_id, x['prod_id'], x['unit_id'], x['request'],
-                                                x['order'], x['request']-x['order'], x['price'], x['disc'], x['nett_price'], x['total']))
-                                remain += x['request']-x['order']
+            new_prod = []
+            remain = 0
+            for x in sprod:
+                if x['prod_id'] and x['unit_id'] and x['request']:
+                    new_prod.append(SprodDdb(so.id, x['prod_id'], x['unit_id'], x['request'],
+                                    x['order'], x['request']-x['order'], x['price'], x['disc'], x['nett_price'], x['total']))
+                    remain += x['request']-x['order']
 
-                new_jasa = []
-                for x in rjasa:
-                    for y in jasa:
-                        if x['id'] == y.id:
-                            y.sup_id = x['sup_id']
-                            y.price = x['price']
-                            y.disx = x['disc']
-                            y.total = x['total']
-                        elif x['id'] == 0:
-                            if preq.status == 0:
-                                new_jasa.append(RjasaMdb(
-                                    preq_id, x['sup_id'], x['jasa_id'], x['unit_id'], x['qty'], x['price'], x['disc'], x['total']))
+            new_jasa = []
+            for x in sjasa:
+                if x['sup_id'] and x['jasa_id'] and x['unit_id'] and x['qty']:
+                    new_jasa.append(SjasaDdb(
+                        so.id, x['sup_id'], x['jasa_id'], x['unit_id'], x['qty'], x['price'], x['disc'], x['total']))
 
-                if len(new_prod) > 0:
-                    db.session.add_all(new_prod)
+            if len(new_prod) > 0:
+                db.session.add_all(new_prod)
 
-                if len(new_jasa) > 0:
-                    db.session.add_all(new_jasa)
+            if len(new_jasa) > 0:
+                db.session.add_all(new_jasa)
 
-                if remain == 0:
-                    preq.status = 1
-                else:
-                    preq.status = 0
+            db.session.commit()
 
-                db.session.commit()
+            result = response(200, "Berhasil", True, sord_schema.dump(so))
 
-                result = response(200, "Berhasil", True, po_schema.dump(po))
-            except IntegrityError:
-                db.session.rollback()
-                result = response(400, "Kode sudah digunakan", False, None)
-            finally:
-                return result
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
 
     elif request.method == "DELETE":
         if po.status == 0:
