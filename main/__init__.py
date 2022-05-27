@@ -1368,10 +1368,11 @@ def customer(self):
             return result
     else:
         result = (
-            db.session.query(CustomerMdb, JpelMdb, SubAreaMdb, CurrencyMdb)
+            db.session.query(CustomerMdb, JpelMdb, SubAreaMdb, CurrencyMdb, PajakMdb)
             .outerjoin(JpelMdb, JpelMdb.id == CustomerMdb.cus_jpel)
             .outerjoin(SubAreaMdb, SubAreaMdb.id == CustomerMdb.cus_sub_area)
             .outerjoin(CurrencyMdb, CurrencyMdb.id == CustomerMdb.cus_curren)
+            .outerjoin(PajakMdb, PajakMdb.id == CustomerMdb.cus_pjk)
             .order_by(JpelMdb.id.asc())
             .order_by(CurrencyMdb.id.asc())
             .order_by(CustomerMdb.cus_code.asc())
@@ -1390,6 +1391,7 @@ def customer(self):
                 "jpel": jpel_schema.dump(x[1]),
                 "subArea": sub_area_schema.dump(x[2]),
                 "currency": currency_schema.dump(x[3]),
+                "pajak": pajk_schema.dump(x[4]),
             }
             for x in result
         ]
@@ -1435,10 +1437,11 @@ def customer_id(self, id):
         cus = CustomerMdb.query.all()
 
         result = (
-            db.session.query(CustomerMdb, JpelMdb, SubAreaMdb, CurrencyMdb)
+            db.session.query(CustomerMdb, JpelMdb, SubAreaMdb, CurrencyMdb, PajakMdb)
             .outerjoin(JpelMdb, JpelMdb.id == CustomerMdb.cus_jpel)
             .outerjoin(SubAreaMdb, SubAreaMdb.id == CustomerMdb.cus_sub_area)
             .outerjoin(CurrencyMdb, CurrencyMdb.id == CustomerMdb.cus_curren)
+            .outerjoin(PajakMdb, PajakMdb.id == CustomerMdb.cus_pjk)
             .order_by(CustomerMdb.cus_code.asc())
             .filter(CustomerMdb.id == id)
             .first()
@@ -1454,6 +1457,7 @@ def customer_id(self, id):
             "jpel": jpel_schema.dump(result[1]),
             "subArea": sub_area_schema.dump(result[2]),
             "currency": currency_schema.dump(result[3]),
+            "pajak": pajk_schema.dump(result[4]),
         }
 
         return response(200, "Berhasil", True, data)
@@ -2984,10 +2988,10 @@ def so(self):
             new_prod = []
             remain = 0
             for x in sprod:
-                if x['prod_id'] and x['unit_id'] and x['request']:
+                if x['prod_id'] and x['unit_id'] and x['order']:
                     new_prod.append(SprodDdb(so.id, x['prod_id'], x['unit_id'], x['request'],
-                                    x['order'], x['request']-x['order'], x['price'], x['disc'], x['nett_price'], x['total']))
-                    remain += x['request']-x['order']
+                                    x['order'], None, x['price'], x['disc'], x['nett_price'], x['total']))
+                    
 
             new_jasa = []
             for x in sjasa:

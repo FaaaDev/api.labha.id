@@ -25,7 +25,7 @@ class CustomerMdb(db.Model):
     cus_fax = db.Column(db.String(20))
     cus_cp = db.Column(db.String(20))
     cus_curren = db.Column(db.Integer)
-    cus_pjk = db.Column(db.String(100))
+    cus_pjk = db.Column(db.Integer)
     cus_ket = db.Column(db.Text)
     cus_gl = db.Column(db.Integer)
     cus_uang_muka = db.Column(db.Integer)
