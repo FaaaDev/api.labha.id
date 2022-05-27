@@ -3184,7 +3184,7 @@ def so_id(self, id):
         for x in jasa:
             db.session.delete(x)
 
-        db.session.delete(po)
+        db.session.delete(so)
         db.session.commit()
 
         return response(200, "Berhasil", True, None)
