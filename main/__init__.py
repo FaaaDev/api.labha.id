@@ -15,6 +15,9 @@ from main.model.adm_user_menu import AdmUserMenu
 from main.model.bank_mdb import BankMdb
 from main.model.ccost_mdb import CcostMdb
 from main.model.comp_mdb import CompMdb
+from main.model.djasa_ddb import DjasaDdb
+from main.model.dord_hdb import DordHdb
+from main.model.dprod_ddb import DprodDdb
 from main.model.group_prod_mdb import GroupProMdb
 from main.model.jasa_mdb import JasaMdb
 from main.model.jpel_mdb import JpelMdb
@@ -81,6 +84,9 @@ from main.schema.sprod_ddb import sprod_schema, sprods_schema, SprodSchema
 from main.schema.sjasa_ddb import sjasa_schema, sjasas_schema, SjasaSchema
 from main.schema.po_mdb import po_schema, pos_schema, PoSchema
 from main.schema.sord_hdb import sord_schema, sords_schema, SordSchema
+from main.schema.dord_hdb import dord_schema, dords_schema, DordSchema
+from main.schema.dprod_ddb import dprod_schema, dprods_schema, DprodSchema
+from main.schema.djasa_ddb import djasa_schema, djasas_schema, DjasaSchema
 from main.schema.setup_mdb import *
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import and_, or_
@@ -3255,5 +3261,112 @@ def so_id(self, id):
             "sprod": product,
             "sjasa": jasa,
         }
+
+        return response(200, "Berhasil", True, final)
+
+
+@app.route("/v1/api/do", methods=["POST", "GET"])
+@token_required
+def do(self):
+    if request.method == "POST":
+        try:
+            do_code = request.json['do_code']
+            do_date = request.json['do_date']
+            dep_id = request.json['dep_id']
+            sup_id = request.json['sup_id']
+            top = request.json['top']
+            due_date = request.json['due_date']
+            split_inv = request.json['split_inv']
+            prod_disc = request.json['prod_disc']
+            jasa_disc = request.json['jasa_disc']
+            total_disc = request.json['total_disc']
+            dprod = request.json['dprod']
+            djasa = request.json['djasa']
+
+            do = DordHdb(do_code, do_date, dep_id, sup_id, top, due_date, split_inv, prod_disc, jasa_disc, total_disc, 0, 0)
+
+            db.session.add(do)
+            db.session.commit()
+
+            new_product = []
+            for x in dprod:
+                if x['prod_id'] and x['unit_id'] and x['order']:
+                    new_product.append(DprodDdb(do.id, x['prod_id'], x['unit_id'], x['order'], x['price'], x['disc'], x['nett_price'], x['total']))
+            
+            new_jasa = []
+            for x in djasa:
+                if x['jasa_id'] and x['sup_id'] and x['unit_id'] and x['order']:
+                    new_jasa.append(DjasaDdb(do.id, x['sup_id'], x['jasa_id'], x['unit_id'], x['order'], x['price'], x['disc'], x['total']))
+
+            if len(new_product) > 0:
+                db.session.add_all(new_product)
+
+            if len(new_jasa) > 0:
+                db.session.add_all(new_jasa)
+
+            db.session.commit()
+
+            result = response(200, "Berhasil", True, dord_schema.dump(do))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    else:
+        do = (
+            db.session.query(DordHdb, CcostMdb, SupplierMdb, RulesPayMdb)
+            .outerjoin(CcostMdb, CcostMdb.id == DordHdb.dep_id)
+            .outerjoin(SupplierMdb, SupplierMdb.id == DordHdb.sup_id)
+            .outerjoin(RulesPayMdb, RulesPayMdb.id == DordHdb.top)
+            .all()
+        )
+
+        dprod = (
+            db.session.query(DprodDdb, ProdMdb, UnitMdb)
+            .outerjoin(ProdMdb, ProdMdb.id == DprodDdb.prod_id)
+            .outerjoin(UnitMdb, UnitMdb.id == DprodDdb.unit_id)
+            .all()
+        )
+
+        djasa = (
+            db.session.query(DjasaDdb, JasaMdb, UnitMdb)
+            .outerjoin(JasaMdb, JasaMdb.id == DjasaDdb.jasa_id)
+            .outerjoin(UnitMdb, UnitMdb.id == DjasaDdb.unit_id)
+            .all()
+        )
+
+        final = []
+        for x in do:
+            product = []
+            for y in dprod:
+                if y[0].do_id == x[0].id:
+                    y[0].prod_id = prod_schema.dump(y[1])
+                    y[0].unit_id = unit_schema.dump(y[2])
+                    product.append(dprod_schema.dump(y[0]))
+
+            jasa = []
+            for z in djasa:
+                if z[0].do_id == x[0].id:
+                    z[0].jasa_id = jasa_schema.dump(z[1])
+                    z[0].unit_id = unit_schema.dump(z[2])
+                    jasa.append(djasa_schema.dump(z[0]))
+
+            final.append({
+                "id": x[0].id,
+                "do_code": x[0].do_code,
+                "do_date": DordSchema(only=['do_date']).dump(x[0])['do_date'],
+                "dep_id": ccost_schema.dump(x[1]),
+                "sup_id": supplier_schema.dump(x[2]),
+                "top": rpay_schema.dump(x[3]),
+                "due_date": DordSchema(only=['due_date']).dump(x[0])['due_date'],
+                "split_inv": x[0].split_inv,
+                "prod_disc": x[0].prod_disc,
+                "jasa_disc": x[0].jasa_disc,
+                "total_disc": x[0].total_disc,
+                "status": x[0].status,
+                "print": x[0].print,
+                "dprod": product,
+                "djasa": jasa,
+            })
 
         return response(200, "Berhasil", True, final)
