@@ -3446,7 +3446,7 @@ def do_id(self, id):
 
             db.session.commit()
 
-            result = response(200, "Berhasil", True, sord_schema.dump(so))
+            result = response(200, "Berhasil", True, dord_schema.dump(do))
 
         except IntegrityError:
             db.session.rollback()
@@ -3474,7 +3474,7 @@ def do_id(self, id):
             .outerjoin(CcostMdb, CcostMdb.id == DordHdb.dep_id)
             .outerjoin(SupplierMdb, SupplierMdb.id == DordHdb.sup_id)
             .outerjoin(RulesPayMdb, RulesPayMdb.id == DordHdb.top)
-            .all()
+            .filter(DordHdb.id == id).first()
         )
 
         dprod = (
