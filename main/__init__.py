@@ -3286,7 +3286,7 @@ def order(self):
             djasa = request.json['djasa']
 
             do = OrdpbHdb(ord_code, ord_date, faktur, po_id, dep_id, sup_id, top, due_date,
-                         split_inv, prod_disc, jasa_disc, total_disc, 0, 0)
+                          split_inv, prod_disc, jasa_disc, total_disc, 0, 0)
 
             db.session.add(do)
             db.session.commit()
@@ -3513,6 +3513,8 @@ def ord_id(self, id):
             "id": x[0].id,
             "ord_code": x[0].ord_code,
             "ord_date": DordSchema(only=['ord_date']).dump(x[0])['ord_date'],
+            "faktur": x[0].faktur,
+            "po_id": x[0].po_id,
             "dep_id": ccost_schema.dump(x[1]),
             "sup_id": supplier_schema.dump(x[2]),
             "top": rpay_schema.dump(x[3]),
