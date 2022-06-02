@@ -3,13 +3,15 @@ from enum import unique
 from main.shared.shared import db
 
 
-class DordHdb(db.Model):
+class OrdpbHdb(db.Model):
     __table_args__ = {'schema': 'AP'}
-    __tablename__ = 'DORDHDB'
+    __tablename__ = 'ORDPBHDB'
 
     id = db.Column(db.Integer, primary_key=True)
-    do_code = db.Column(db.String(255), unique=True)
-    do_date = db.Column(db.TIMESTAMP)
+    ord_code = db.Column(db.String(255), unique=True)
+    ord_date = db.Column(db.TIMESTAMP)
+    faktur = db.Column(db.Boolean)
+    po_id = db.Column(db.Integer)
     dep_id = db.Column(db.Integer)
     sup_id = db.Column(db.Integer)
     top = db.Column(db.Integer)
@@ -21,9 +23,11 @@ class DordHdb(db.Model):
     status = db.Column(db.Integer, default=0)
     print = db.Column(db.Integer, default=0)
 
-    def __init__(self, do_code, do_date, dep_id, sup_id, top, due_date, split_inv, prod_disc, jasa_disc, total_disc, status, print):
-        self.do_code = do_code
-        self.do_date = do_date
+    def __init__(self, ord_code, ord_date, faktur, po_id, dep_id, sup_id, top, due_date, split_inv, prod_disc, jasa_disc, total_disc, status, print):
+        self.ord_code = ord_code
+        self.ord_date = ord_date
+        self.faktur = faktur
+        self.po_id = po_id
         self.dep_id = dep_id
         self.sup_id = sup_id
         self.top = top

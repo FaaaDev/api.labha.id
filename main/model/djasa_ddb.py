@@ -4,10 +4,10 @@ from main.shared.shared import db
 
 class DjasaDdb(db.Model):
     __table_args__ = {'schema': 'AP'}
-    __tablename__ = 'DJASADDB'
+    __tablename__ = 'OJASADDB'
 
     id = db.Column(db.Integer, primary_key=True)
-    do_id = db.Column(db.Integer)
+    ord_id = db.Column(db.Integer)
     sup_id = db.Column(db.Integer)
     jasa_id = db.Column(db.Integer)
     unit_id = db.Column(db.Integer)
@@ -16,8 +16,8 @@ class DjasaDdb(db.Model):
     disc = db.Column(db.Float)
     total = db.Column(db.Float)
 
-    def __init__(self, do_id, sup_id, jasa_id, unit_id, order, price, disc, total):
-        self.do_id = do_id
+    def __init__(self, ord_id, sup_id, jasa_id, unit_id, order, price, disc, total):
+        self.ord_id = ord_id
         self.sup_id = sup_id
         self.jasa_id = jasa_id
         self.unit_id = unit_id

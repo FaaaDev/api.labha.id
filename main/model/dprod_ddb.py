@@ -4,10 +4,10 @@ from main.shared.shared import db
 
 class DprodDdb(db.Model):
     __table_args__ = {'schema': 'AP'}
-    __tablename__ = 'DPRODDDB'
+    __tablename__ = 'OPRODDDB'
 
     id = db.Column(db.Integer, primary_key=True)
-    do_id = db.Column(db.Integer)
+    ord_id = db.Column(db.Integer)
     prod_id = db.Column(db.Integer)
     unit_id = db.Column(db.Integer)
     order = db.Column(db.Integer)
@@ -17,7 +17,7 @@ class DprodDdb(db.Model):
     total = db.Column(db.Integer)
 
     def __init__(self,
-                 do_id,
+                 ord_id,
                  prod_id,
                  unit_id,
                  order,
@@ -25,7 +25,7 @@ class DprodDdb(db.Model):
                  disc,
                  nett_price,
                  total):
-        self.do_id = do_id
+        self.ord_id = ord_id
         self.prod_id = prod_id
         self.unit_id = unit_id
         self.order = order

@@ -16,7 +16,7 @@ from main.model.bank_mdb import BankMdb
 from main.model.ccost_mdb import CcostMdb
 from main.model.comp_mdb import CompMdb
 from main.model.djasa_ddb import DjasaDdb
-from main.model.dord_hdb import DordHdb
+from main.model.ordpb_hdb import OrdpbHdb
 from main.model.dprod_ddb import DprodDdb
 from main.model.group_prod_mdb import GroupProMdb
 from main.model.jasa_mdb import JasaMdb
@@ -3265,13 +3265,15 @@ def so_id(self, id):
         return response(200, "Berhasil", True, final)
 
 
-@app.route("/v1/api/do", methods=["POST", "GET"])
+@app.route("/v1/api/order", methods=["POST", "GET"])
 @token_required
-def do(self):
+def order(self):
     if request.method == "POST":
         try:
-            do_code = request.json['do_code']
-            do_date = request.json['do_date']
+            ord_code = request.json['ord_code']
+            ord_date = request.json['ord_date']
+            faktur = request.json['faktur']
+            po_id = request.json['po_id']
             dep_id = request.json['dep_id']
             sup_id = request.json['sup_id']
             top = request.json['top']
@@ -3283,7 +3285,7 @@ def do(self):
             dprod = request.json['dprod']
             djasa = request.json['djasa']
 
-            do = DordHdb(do_code, do_date, dep_id, sup_id, top, due_date,
+            do = OrdpbHdb(ord_code, ord_date, faktur, po_id, dep_id, sup_id, top, due_date,
                          split_inv, prod_disc, jasa_disc, total_disc, 0, 0)
 
             db.session.add(do)
@@ -3317,10 +3319,10 @@ def do(self):
             return result
     else:
         do = (
-            db.session.query(DordHdb, CcostMdb, SupplierMdb, RulesPayMdb)
-            .outerjoin(CcostMdb, CcostMdb.id == DordHdb.dep_id)
-            .outerjoin(SupplierMdb, SupplierMdb.id == DordHdb.sup_id)
-            .outerjoin(RulesPayMdb, RulesPayMdb.id == DordHdb.top)
+            db.session.query(OrdpbHdb, CcostMdb, SupplierMdb, RulesPayMdb)
+            .outerjoin(CcostMdb, CcostMdb.id == OrdpbHdb.dep_id)
+            .outerjoin(SupplierMdb, SupplierMdb.id == OrdpbHdb.sup_id)
+            .outerjoin(RulesPayMdb, RulesPayMdb.id == OrdpbHdb.top)
             .all()
         )
 
@@ -3342,22 +3344,24 @@ def do(self):
         for x in do:
             product = []
             for y in dprod:
-                if y[0].do_id == x[0].id:
+                if y[0].ord_id == x[0].id:
                     y[0].prod_id = prod_schema.dump(y[1])
                     y[0].unit_id = unit_schema.dump(y[2])
                     product.append(dprod_schema.dump(y[0]))
 
             jasa = []
             for z in djasa:
-                if z[0].do_id == x[0].id:
+                if z[0].ord_id == x[0].id:
                     z[0].jasa_id = jasa_schema.dump(z[1])
                     z[0].unit_id = unit_schema.dump(z[2])
                     jasa.append(djasa_schema.dump(z[0]))
 
             final.append({
                 "id": x[0].id,
-                "do_code": x[0].do_code,
-                "do_date": DordSchema(only=['do_date']).dump(x[0])['do_date'],
+                "ord_code": x[0].ord_code,
+                "ord_date": DordSchema(only=['ord_date']).dump(x[0])['ord_date'],
+                "faktur": x[0].faktur,
+                "po_id": x[0].po_id,
                 "dep_id": ccost_schema.dump(x[1]),
                 "sup_id": supplier_schema.dump(x[2]),
                 "top": rpay_schema.dump(x[3]),
@@ -3375,14 +3379,14 @@ def do(self):
         return response(200, "Berhasil", True, final)
 
 
-@app.route("/v1/api/do/<int:id>", methods=["PUT", "GET", "DELETE"])
+@app.route("/v1/api/order/<int:id>", methods=["PUT", "GET", "DELETE"])
 @token_required
-def do_id(self, id):
-    do = DordHdb.query.filter(DordHdb.id == id).first()
+def ord_id(self, id):
+    do = OrdpbHdb.query.filter(OrdpbHdb.id == id).first()
     if request.method == "PUT":
         try:
-            do_code = request.json['do_code']
-            do_date = request.json['do_date']
+            ord_code = request.json['ord_code']
+            ord_date = request.json['ord_date']
             dep_id = request.json['dep_id']
             sup_id = request.json['sup_id']
             top = request.json['top']
@@ -3394,8 +3398,8 @@ def do_id(self, id):
             dprod = request.json['dprod']
             djasa = request.json['djasa']
 
-            do.do_code = do_code
-            do.do_date = do_date
+            do.ord_code = ord_code
+            do.ord_date = ord_date
             do.dep_id = dep_id
             do.sup_id = sup_id
             do.top = top
@@ -3405,8 +3409,8 @@ def do_id(self, id):
             do.jasa_disc = jasa_disc
             do.total_disc = total_disc
 
-            product = DprodDdb.query.filter(DprodDdb.do_id == do.id)
-            jasa = DjasaDdb.query.filter(DjasaDdb.do_id == do.id)
+            product = DprodDdb.query.filter(DprodDdb.ord_id == do.id)
+            jasa = DjasaDdb.query.filter(DjasaDdb.ord_id == do.id)
 
             new_prod = []
             for x in dprod:
@@ -3455,8 +3459,8 @@ def do_id(self, id):
             return result
 
     elif request.method == "DELETE":
-        product = DprodDdb.query.filter(DprodDdb.do_id == do.id)
-        jasa = DjasaDdb.query.filter(DjasaDdb.do_id == do.id)
+        product = DprodDdb.query.filter(DprodDdb.ord_id == do.id)
+        jasa = DjasaDdb.query.filter(DjasaDdb.ord_id == do.id)
 
         for x in product:
             db.session.delete(x)
@@ -3470,11 +3474,11 @@ def do_id(self, id):
         return response(200, "Berhasil", True, None)
     else:
         x = (
-            db.session.query(DordHdb, CcostMdb, SupplierMdb, RulesPayMdb)
-            .outerjoin(CcostMdb, CcostMdb.id == DordHdb.dep_id)
-            .outerjoin(SupplierMdb, SupplierMdb.id == DordHdb.sup_id)
-            .outerjoin(RulesPayMdb, RulesPayMdb.id == DordHdb.top)
-            .filter(DordHdb.id == id).first()
+            db.session.query(OrdpbHdb, CcostMdb, SupplierMdb, RulesPayMdb)
+            .outerjoin(CcostMdb, CcostMdb.id == OrdpbHdb.dep_id)
+            .outerjoin(SupplierMdb, SupplierMdb.id == OrdpbHdb.sup_id)
+            .outerjoin(RulesPayMdb, RulesPayMdb.id == OrdpbHdb.top)
+            .filter(OrdpbHdb.id == id).first()
         )
 
         dprod = (
@@ -3493,22 +3497,22 @@ def do_id(self, id):
 
         product = []
         for y in dprod:
-            if y[0].do_id == x[0].id:
+            if y[0].ord_id == x[0].id:
                 y[0].prod_id = prod_schema.dump(y[1])
                 y[0].unit_id = unit_schema.dump(y[2])
                 product.append(dprod_schema.dump(y[0]))
 
         jasa = []
         for z in djasa:
-            if z[0].do_id == x[0].id:
+            if z[0].ord_id == x[0].id:
                 z[0].jasa_id = jasa_schema.dump(z[1])
                 z[0].unit_id = unit_schema.dump(z[2])
                 jasa.append(djasa_schema.dump(z[0]))
 
         final = {
             "id": x[0].id,
-            "do_code": x[0].do_code,
-            "do_date": DordSchema(only=['do_date']).dump(x[0])['do_date'],
+            "ord_code": x[0].ord_code,
+            "ord_date": DordSchema(only=['ord_date']).dump(x[0])['ord_date'],
             "dep_id": ccost_schema.dump(x[1]),
             "sup_id": supplier_schema.dump(x[2]),
             "top": rpay_schema.dump(x[3]),

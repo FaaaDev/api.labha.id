@@ -5,8 +5,10 @@ class DordSchema(ma.Schema):
     class Meta:
         ordered = True
         fields = ('id',
-                  'do_code',
-                  'do_date',
+                  'ord_code',
+                  'ord_date',
+                  'faktur',
+                  'po_id',
                   'dep_id',
                   'sup_id',
                   'top',
