@@ -5,6 +5,7 @@ from math import prod
 from pickle import TRUE
 import re
 from sys import prefix
+import time
 from unicodedata import name
 from datetime import datetime
 from flask import Flask, redirect, request, url_for, jsonify, make_response
@@ -16,6 +17,7 @@ from main.model.bank_mdb import BankMdb
 from main.model.ccost_mdb import CcostMdb
 from main.model.comp_mdb import CompMdb
 from main.model.djasa_ddb import DjasaDdb
+from main.model.fkpb_hdb import FkpbHdb
 from main.model.ordpb_hdb import OrdpbHdb
 from main.model.dprod_ddb import DprodDdb
 from main.model.group_prod_mdb import GroupProMdb
@@ -87,6 +89,7 @@ from main.schema.sord_hdb import sord_schema, sords_schema, SordSchema
 from main.schema.dord_hdb import dord_schema, dords_schema, DordSchema
 from main.schema.dprod_ddb import dprod_schema, dprods_schema, DprodSchema
 from main.schema.djasa_ddb import djasa_schema, djasas_schema, DjasaSchema
+from main.schema.fkpb_hdb import fkpbs_schema, fkpb_schema, FkpbSchema
 from main.schema.setup_mdb import *
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import and_, or_
@@ -3295,7 +3298,7 @@ def order(self):
             for x in dprod:
                 if x['prod_id'] and x['unit_id'] and x['order']:
                     new_product.append(DprodDdb(
-                        do.id, x['prod_id'], x['unit_id'], x['order'], x['price'], x['disc'], x['nett_price'], x['total']))
+                        do.id, x['prod_id'], x['unit_id'], x['order'], x['price'], x['disc'], x['location'], x['nett_price'], x['total']))
 
             new_jasa = []
             for x in djasa:
@@ -3319,17 +3322,20 @@ def order(self):
             return result
     else:
         do = (
-            db.session.query(OrdpbHdb, CcostMdb, SupplierMdb, RulesPayMdb)
+            db.session.query(OrdpbHdb, CcostMdb,
+                             SupplierMdb, RulesPayMdb, PoMdb)
             .outerjoin(CcostMdb, CcostMdb.id == OrdpbHdb.dep_id)
             .outerjoin(SupplierMdb, SupplierMdb.id == OrdpbHdb.sup_id)
             .outerjoin(RulesPayMdb, RulesPayMdb.id == OrdpbHdb.top)
+            .outerjoin(PoMdb, PoMdb.id == OrdpbHdb.po_id)
             .all()
         )
 
         dprod = (
-            db.session.query(DprodDdb, ProdMdb, UnitMdb)
+            db.session.query(DprodDdb, ProdMdb, UnitMdb, LocationMdb)
             .outerjoin(ProdMdb, ProdMdb.id == DprodDdb.prod_id)
             .outerjoin(UnitMdb, UnitMdb.id == DprodDdb.unit_id)
+            .outerjoin(LocationMdb, LocationMdb.id == DprodDdb.location)
             .all()
         )
 
@@ -3347,6 +3353,7 @@ def order(self):
                 if y[0].ord_id == x[0].id:
                     y[0].prod_id = prod_schema.dump(y[1])
                     y[0].unit_id = unit_schema.dump(y[2])
+                    y[0].location = loct_schema.dump(y[3]) if y[0].location else None
                     product.append(dprod_schema.dump(y[0]))
 
             jasa = []
@@ -3361,7 +3368,7 @@ def order(self):
                 "ord_code": x[0].ord_code,
                 "ord_date": DordSchema(only=['ord_date']).dump(x[0])['ord_date'],
                 "faktur": x[0].faktur,
-                "po_id": x[0].po_id,
+                "po_id": po_schema.dump(x[4]),
                 "dep_id": ccost_schema.dump(x[1]),
                 "sup_id": supplier_schema.dump(x[2]),
                 "top": rpay_schema.dump(x[3]),
@@ -3423,9 +3430,10 @@ def ord_id(self, id):
                         y.disc = x['disc']
                         y.nett_price = x['nett_price']
                         y.total = x['total']
+                        y.location = x['location']
                 if x['id'] == 0 and x['prod_id'] and x['unit_id'] and x['order']:
                     new_prod.append(DprodDdb(
-                        do.id, x['prod_id'], x['unit_id'], x['order'], x['price'], x['disc'], x['nett_price'], x['total']))
+                        do.id, x['prod_id'], x['unit_id'], x['order'], x['price'], x['disc'], x['location'], x['nett_price'], x['total']))
 
             new_jasa = []
             for x in djasa:
@@ -3474,17 +3482,20 @@ def ord_id(self, id):
         return response(200, "Berhasil", True, None)
     else:
         x = (
-            db.session.query(OrdpbHdb, CcostMdb, SupplierMdb, RulesPayMdb)
+            db.session.query(OrdpbHdb, CcostMdb,
+                             SupplierMdb, RulesPayMdb, PoMdb)
             .outerjoin(CcostMdb, CcostMdb.id == OrdpbHdb.dep_id)
             .outerjoin(SupplierMdb, SupplierMdb.id == OrdpbHdb.sup_id)
             .outerjoin(RulesPayMdb, RulesPayMdb.id == OrdpbHdb.top)
+            .outerjoin(PoMdb, PoMdb.id == OrdpbHdb.po_id)
             .filter(OrdpbHdb.id == id).first()
         )
 
         dprod = (
-            db.session.query(DprodDdb, ProdMdb, UnitMdb)
+            db.session.query(DprodDdb, ProdMdb, UnitMdb, LocationMdb)
             .outerjoin(ProdMdb, ProdMdb.id == DprodDdb.prod_id)
             .outerjoin(UnitMdb, UnitMdb.id == DprodDdb.unit_id)
+            .outerjoin(LocationMdb, LocationMdb.id == DprodDdb.location)
             .all()
         )
 
@@ -3500,6 +3511,7 @@ def ord_id(self, id):
             if y[0].ord_id == x[0].id:
                 y[0].prod_id = prod_schema.dump(y[1])
                 y[0].unit_id = unit_schema.dump(y[2])
+                y[0].lcoation = unit_schema.dump(y[3]) if y[0].location else None
                 product.append(dprod_schema.dump(y[0]))
 
         jasa = []
@@ -3514,7 +3526,7 @@ def ord_id(self, id):
             "ord_code": x[0].ord_code,
             "ord_date": DordSchema(only=['ord_date']).dump(x[0])['ord_date'],
             "faktur": x[0].faktur,
-            "po_id": x[0].po_id,
+            "po_id": po_schema.dump(x[4]),
             "dep_id": ccost_schema.dump(x[1]),
             "sup_id": supplier_schema.dump(x[2]),
             "top": rpay_schema.dump(x[3]),
@@ -3530,3 +3542,161 @@ def ord_id(self, id):
         }
 
         return response(200, "Berhasil", True, final)
+
+
+@app.route("/v1/api/faktur/code", methods=["POST", "GET"])
+@token_required
+def faktur_code(self):
+    now = datetime.now().strftime("%d%m%y")
+    fk = "FK/" + now + "/" + str(round(time.time() * 10000))[-6:]
+    return response(200, "success", True, fk)
+
+
+@app.route("/v1/api/faktur", methods=["POST", "GET"])
+@token_required
+def faktur(self):
+    if request.method == 'POST':
+        fk_code = request.json['fk_code']
+        fk_date = request.json['fk_date']
+        ord_id = request.json['ord_id']
+        fk_tax = request.json['fk_tax']
+        fk_ppn = request.json['fk_ppn']
+
+        faktur = FkpbHdb(fk_code, fk_date, ord_id, fk_tax, fk_ppn)
+
+        db.session.add(faktur)
+
+        db.session.commit()
+
+        return response(200, "success", True, fkpb_schema.dump(faktur))
+    else:
+        fk = (
+            db.session.query(FkpbHdb, OrdpbHdb)
+            .outerjoin(OrdpbHdb, OrdpbHdb.id == FkpbHdb.ord_id)
+            .all()
+        )
+        dprod = (
+            db.session.query(DprodDdb, ProdMdb, UnitMdb, LocationMdb)
+            .outerjoin(ProdMdb, ProdMdb.id == DprodDdb.prod_id)
+            .outerjoin(UnitMdb, UnitMdb.id == DprodDdb.unit_id)
+            .outerjoin(LocationMdb, LocationMdb.id == DprodDdb.location)
+            .all()
+        )
+
+        djasa = (
+            db.session.query(DjasaDdb, JasaMdb, UnitMdb)
+            .outerjoin(JasaMdb, JasaMdb.id == DjasaDdb.jasa_id)
+            .outerjoin(UnitMdb, UnitMdb.id == DjasaDdb.unit_id)
+            .all()
+        )
+
+        final = []
+        for x in fk:
+            product = []
+            for y in dprod:
+                if y[0].ord_id == x[1].id:
+                    y[0].prod_id = prod_schema.dump(y[1])
+                    y[0].unit_id = unit_schema.dump(y[2])
+                    y[0].location = loct_schema.dump(
+                        y[3]) if y[0].location else None
+                    product.append(dprod_schema.dump(y[0]))
+
+            jasa = []
+            for z in djasa:
+                if z[0].ord_id == x[1].id:
+                    z[0].jasa_id = jasa_schema.dump(z[1])
+                    z[0].unit_id = unit_schema.dump(z[2])
+                    jasa.append(djasa_schema.dump(z[0]))
+
+            final.append({
+                "fk_code": x[0].fk_code,
+                "fk_date": FkpbSchema(only=['fk_date']).dump(x[0])['fk_date'] if x[0].fk_date else None,
+                "fk_tax": x[0].fk_tax,
+                "fk_ppn": x[0].fk_ppn,
+                "fk_lunas": x[0].fk_lunas,
+                "ord_id": dord_schema.dump(x[1]),
+                "product": product,
+                "jasa": jasa,
+            })
+
+        return response(200, "success", True, final)
+
+
+@app.route("/v1/api/faktur/<int:id>", methods=["PUT", "GET", 'DELETE'])
+@token_required
+def faktur_id(self, id):
+    fk = FkpbHdb.query.filter(FkpbHdb.id == id).first()
+    if request.method == 'PUT':
+        fk_date = request.json['fk_date']
+        ord_id = request.json['ord_id']
+        fk_tax = request.json['fk_tax']
+        fk_ppn = request.json['fk_ppn']
+
+        fk.fk_date = fk_date
+        fk.ord_id = ord_id
+        fk.fk_tax = fk_tax
+        fk.fk_ppn = fk_ppn
+
+        db.session.commit()
+
+        return response(200, "success", True, fkpb_schema.dump(fk))
+    elif request.method == 'DELETE':
+        prod = DprodDdb.query.filter(DprodDdb.ord_id == fk.ord_id).all()
+
+        for x in prod:
+            x.location = None
+
+        db.session.delete(fk)
+        db.session.commit()
+
+        return response(200, "success", True, None)
+    else:
+        x = (
+            db.session.query(FkpbHdb, OrdpbHdb)
+            .outerjoin(OrdpbHdb, OrdpbHdb.id == FkpbHdb.ord_id)
+            .filter(FkpbHdb.id == id)
+            .first()
+        )
+        dprod = (
+            db.session.query(DprodDdb, ProdMdb, UnitMdb, LocationMdb)
+            .outerjoin(ProdMdb, ProdMdb.id == DprodDdb.prod_id)
+            .outerjoin(UnitMdb, UnitMdb.id == DprodDdb.unit_id)
+            .outerjoin(LocationMdb, LocationMdb.id == DprodDdb.location)
+            .all()
+        )
+
+        djasa = (
+            db.session.query(DjasaDdb, JasaMdb, UnitMdb)
+            .outerjoin(JasaMdb, JasaMdb.id == DjasaDdb.jasa_id)
+            .outerjoin(UnitMdb, UnitMdb.id == DjasaDdb.unit_id)
+            .all()
+        )
+
+        product = []
+        for y in dprod:
+            if y[0].ord_id == x[1].id:
+                y[0].prod_id = prod_schema.dump(y[1])
+                y[0].unit_id = unit_schema.dump(y[2])
+                y[0].location = loct_schema.dump(
+                    y[3]) if y[0].location else None
+                product.append(dprod_schema.dump(y[0]))
+
+        jasa = []
+        for z in djasa:
+            if z[0].ord_id == x[1].id:
+                z[0].jasa_id = jasa_schema.dump(z[1])
+                z[0].unit_id = unit_schema.dump(z[2])
+                jasa.append(djasa_schema.dump(z[0]))
+
+        final = {
+            "fk_code": x[0].fk_code,
+            "fk_date": FkpbSchema(only=['fk_date']).dump(x[0])['fk_date'] if x[0].fk_date else None,
+            "fk_tax": x[0].fk_tax,
+            "fk_ppn": x[0].fk_ppn,
+            "fk_lunas": x[0].fk_lunas,
+            "ord_id": dord_schema.dump(x[1]),
+            "product": product,
+            "jasa": jasa,
+        }
+
+        return response(200, "success", True, final)

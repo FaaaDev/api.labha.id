@@ -13,6 +13,7 @@ class DprodDdb(db.Model):
     order = db.Column(db.Integer)
     price = db.Column(db.Integer)
     disc = db.Column(db.Integer)
+    location = db.Column(db.Integer)
     nett_price = db.Column(db.Integer)
     total = db.Column(db.Integer)
 
@@ -23,6 +24,7 @@ class DprodDdb(db.Model):
                  order,
                  price,
                  disc,
+                 location,
                  nett_price,
                  total):
         self.ord_id = ord_id
@@ -31,5 +33,6 @@ class DprodDdb(db.Model):
         self.order = order
         self.price = price
         self.disc = disc
+        self.location = location
         self.nett_price = nett_price
         self.total = total
