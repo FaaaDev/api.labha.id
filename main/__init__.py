@@ -29,6 +29,8 @@ from main.model.po_mdb import PoMdb
 from main.model.pprod_ddb import PprodDdb
 from main.model.preq_mdb import PreqMdb
 from main.model.prod_mdb import ProdMdb
+from main.model.reprod_ddb import ReprodDdb
+from main.model.retord_hdb import RetordHdb
 from main.model.rjasa_mdb import RjasaMdb
 from main.model.rprod_mdb import RprodMdb
 from main.model.sales_mdb import SalesMdb
@@ -90,6 +92,8 @@ from main.schema.dord_hdb import dord_schema, dords_schema, DordSchema
 from main.schema.dprod_ddb import dprod_schema, dprods_schema, DprodSchema
 from main.schema.djasa_ddb import djasa_schema, djasas_schema, DjasaSchema
 from main.schema.fkpb_hdb import fkpbs_schema, fkpb_schema, FkpbSchema
+from main.schema.retord_hdb import retord_schema, retords_schema, RetordSchema
+from main.schema.reprod_ddb import reprod_schema, reprods_schema, ReprodSchema
 from main.schema.setup_mdb import *
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import and_, or_
@@ -3353,7 +3357,8 @@ def order(self):
                 if y[0].ord_id == x[0].id:
                     y[0].prod_id = prod_schema.dump(y[1])
                     y[0].unit_id = unit_schema.dump(y[2])
-                    y[0].location = loct_schema.dump(y[3]) if y[0].location else None
+                    y[0].location = loct_schema.dump(
+                        y[3]) if y[0].location else None
                     product.append(dprod_schema.dump(y[0]))
 
             jasa = []
@@ -3511,7 +3516,8 @@ def ord_id(self, id):
             if y[0].ord_id == x[0].id:
                 y[0].prod_id = prod_schema.dump(y[1])
                 y[0].unit_id = unit_schema.dump(y[2])
-                y[0].lcoation = unit_schema.dump(y[3]) if y[0].location else None
+                y[0].lcoation = unit_schema.dump(
+                    y[3]) if y[0].location else None
                 product.append(dprod_schema.dump(y[0]))
 
         jasa = []
@@ -3609,6 +3615,7 @@ def faktur(self):
                     jasa.append(djasa_schema.dump(z[0]))
 
             final.append({
+                "id": x[0].id,
                 "fk_code": x[0].fk_code,
                 "fk_date": FkpbSchema(only=['fk_date']).dump(x[0])['fk_date'] if x[0].fk_date else None,
                 "fk_tax": x[0].fk_tax,
@@ -3700,3 +3707,82 @@ def faktur_id(self, id):
         }
 
         return response(200, "success", True, final)
+
+
+@app.route("/v1/api/retur-order", methods=["POST", "GET"])
+@token_required
+def retur_order(self):
+    if request.method == 'POST':
+        try:
+            ret_code = request.json['ret_code']
+            ret_date = request.json['ret_date']
+            fk_id = request.json['fk_id']
+            product = request.json['product']
+
+            retur = RetordHdb(ret_code, ret_date, fk_id)
+
+            db.session.add(retur)
+            db.session.commit()
+
+            new_prod = []
+            for x in product:
+                if x['prod_id'] and x['unit_id'] and x['retur'] and int(x['retur']) > 0:
+                    new_prod.append(ReprodDdb(
+                        retur.id, x['prod_id'], x['unit_id'], x['retur'], x['price'], x['disc'], x['nett_price'], x['total']))
+
+            db.session.add_all(new_prod)
+            db.session.commit()
+
+            result = response(200, "success", True, retord_schema.dump(retur))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    else:
+        retur = (
+            db.session.query(RetordHdb, FkpbHdb, OrdpbHdb)
+            .outerjoin(FkpbHdb, FkpbHdb.id == RetordHdb.fk_id)
+            .outerjoin(OrdpbHdb, OrdpbHdb.id == FkpbHdb.ord_id)
+            .all()
+        )
+
+        product = (
+            db.session.query(ReprodDdb, ProdMdb, UnitMdb)
+            .outerjoin(ProdMdb, ProdMdb.id == ReprodDdb.prod_id)
+            .outerjoin(UnitMdb, UnitMdb.id == ReprodDdb.unit_id)
+            .all()
+        )
+
+        result = []
+        for x in retur:
+            prod = []
+            for y in product:
+                if x[0].id == y[0].ret_id:
+                    y[0].prod_id = prod_schema.dump(y[1])
+                    y[0].unit_id = unit_schema.dump(y[2])
+                    prod.append(reprod_schema.dump(y[0]))
+
+            if x[1]:
+                x[1].ord_id = dord_schema.dump(x[2])
+            result.append({
+                "id": x[0].id,
+                "ret_code": x[0].ret_code,
+                "ret_date": x[0].ret_date,
+                "fk_id": fkpb_schema.dump(x[1]),
+                "product": prod
+            })
+
+
+        return response(200, 'success', True, result)
+
+# @app.route("/v1/api/faktur/<int:id>", methods=["PUT", "GET", 'DELETE'])
+# @token_required
+# def faktur_id(self, id):
+# 
+#     if request.method == 'PUT':
+#         
+#     elif request.method == 'DELETE':
+#         
+#     else:
+
