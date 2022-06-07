@@ -3011,7 +3011,7 @@ def so(self):
             remain = 0
             for x in sprod:
                 if x['prod_id'] and x['unit_id'] and x['order']:
-                    new_prod.append(SprodDdb(so.id, x['prod_id'], x['unit_id'], x['request'],
+                    new_prod.append(SprodDdb(so.id, x['prod_id'], x['unit_id'], x['location'], x['request'],
                                     x['order'], None, x['price'], x['disc'], x['nett_price'], x['total']))
 
             new_jasa = []
@@ -3152,6 +3152,7 @@ def so_id(self, id):
                     if x['id'] == y.id:
                         y.prod_id = x['prod_id']
                         y.unit_id = x['unit_id']
+                        y.location = x['location']
                         y.request = x['request']
                         y.order = x['order']
                         y.price = x['price']
@@ -3159,7 +3160,7 @@ def so_id(self, id):
                         y.nett_price = x['nett_price']
                         y.total = x['total']
                 if x['id'] == 0 and x['prod_id'] and x['unit_id'] and x['order']:
-                    new_prod.append(SprodDdb(so.id, x['prod_id'], x['unit_id'], x['request'],
+                    new_prod.append(SprodDdb(so.id, x['prod_id'], x['unit_id'], x['location'], x['request'],
                                     x['order'], None, x['price'], x['disc'], x['nett_price'], x['total']))
 
             new_jasa = []
