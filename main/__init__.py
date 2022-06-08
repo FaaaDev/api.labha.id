@@ -11,12 +11,15 @@ from datetime import datetime
 from flask import Flask, redirect, request, url_for, jsonify, make_response
 import requests
 from main.model.accou_mdb import AccouMdb
+from main.model.acq_ddb import AcqDdb
 from main.model.adm_menu import AdmMenu
 from main.model.adm_user_menu import AdmUserMenu
 from main.model.bank_mdb import BankMdb
 from main.model.ccost_mdb import CcostMdb
 from main.model.comp_mdb import CompMdb
 from main.model.djasa_ddb import DjasaDdb
+from main.model.exp_ddb import ExpDdb
+from main.model.exp_hdb import ExpHdb
 from main.model.fkpb_hdb import FkpbHdb
 from main.model.jjasa_ddb import JjasaDdb
 from main.model.jprod_ddb import JprodDdb
@@ -100,6 +103,9 @@ from main.schema.reprod_ddb import reprod_schema, reprods_schema, ReprodSchema
 from main.schema.ordpj_hdb import ordpj_schema, ordpjs_schema, OrdpjSchema
 from main.schema.jprod_ddb import jprod_schema, jprods_schema, JprodSchema
 from main.schema.jjasa_ddb import jjasa_schema, jjasas_schema, JjasaSchema
+from main.schema.exp_hdb import exp_schema, exps_schema, ExpSchema
+from main.schema.dexp_ddb import dexp_schema, dexps_schema, DexpSchema
+from main.schema.dacq_ddb import dacq_schema, dacqs_schema, DacqSchema
 from main.schema.setup_mdb import *
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import and_, or_
@@ -4114,3 +4120,121 @@ def sls_id(self, id):
         }
 
         return response(200, "Berhasil", True, final)
+
+
+@app.route("/v1/api/expense", methods=["POST", "GET"])
+@token_required
+def expense(self):
+    if request.method == "POST":
+        try:
+            exp_code = request.json['exp_code']
+            exp_date = request.json['exp_date']
+            exp_type = request.json['exp_type']
+            exp_acc = request.json['exp_acc']
+            exp_prj = request.json['exp_prj']
+            acq_sup = request.json['acq_sup']
+            acq_pay = request.json['acq_pay']
+            kas_acc = request.json['kas_acc']
+            bank_id = request.json['bank_id']
+            bank_ref = request.json['bank_ref']
+            giro_num = request.json['giro_num']
+            giro_date = request.json['giro_date']
+            acq = request.json['acq']
+            exp = request.json['exp']
+
+            exps = ExpHdb(exp_code, exp_date, exp_type, exp_acc, exp_prj, acq_sup, acq_pay, kas_acc, bank_id, bank_ref, giro_num, giro_date)
+
+            db.session.add(exps)
+            db.session.commit()
+
+            new_exp = []
+            for x in exp:
+                if x['acc_code'] and x['value']:
+                    new_exp.append(ExpDdb(exps.id, x['acc_code'], x['value'], x['desc']))
+
+            new_acq = []
+            for x in acq:
+                if x['fk_id'] and x['value'] and x['payment'] and int(x['payment']) > 0:
+                    new_acq.append(AcqDdb(exps.id, x['fk_id'], x['value'], x['payment']))
+
+            if len(new_exp) > 0:
+                db.session.add_all(new_exp)
+
+            if len(new_acq) > 0:
+                db.session.add_all(new_acq)
+
+            db.session.commit()
+
+            result = response(200, "Berhasil", True, exp_schema.dump(exps))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    else:
+        exps = (
+            db.session.query(ExpHdb, BankMdb, SupplierMdb)
+            .outerjoin(BankMdb, BankMdb.id == ExpHdb.bank_id)
+            .outerjoin(SupplierMdb, SupplierMdb.id == ExpHdb.acq_sup)
+            .all()
+        )
+
+        acc = AccouMdb.query.all()
+
+        exp = (
+            db.session.query(ExpDdb, AccouMdb)
+            .outerjoin(AccouMdb, AccouMdb.id == ExpDdb.acc_code)
+            .all()
+        )
+
+        acq = (
+            db.session.query(AcqDdb, FkpbHdb)
+            .outerjoin(FkpbHdb, FkpbHdb.id == AcqDdb.fk_id)
+            .all()
+        )
+
+        final = []
+        for x in exps:
+            all_exp = []
+            for y in exp:
+                if y[0].exp_id == x[0].id:
+                    y[0].acc_code = accou_schema.dump(y[1])
+                    all_exp.append(dexp_schema.dump(y[0]))
+
+            all_acq = []
+            for z in acq:
+                if z[0].exp_id == x[0].id:
+                    z[0].fk_id = fkpb_schema.dump(z[1])
+                    all_acq.append(dacq_schema.dump(z[0]))
+
+            if x[0].exp_acc:
+                for a in acc:
+                    if a.id == x[0].exp_acc:
+                        x[0].exp_acc = accou_schema.dump(a)
+
+            if x[0].kas_acc:
+                for b in acc:
+                    if a.id == x[0].kas_acc:
+                        x[0].kas_acc = accou_schema.dump(b)
+
+            final.append({
+                "id": x[0].id,
+                "exp_code": x[0].exp_code,
+                "exp_date": ExpSchema(only=['exp_date']).dump(x[0])['exp_date'],
+                "exp_type": x[0].exp_type,
+                "exp_acc": x[0].exp_acc,
+                "exp_prj": x[0].exp_prj,
+                "acq_sup": supplier_schema.dump(x[2]) if x[2] else None,
+                "acq_pay": x[0].acq_pay,
+                "kas_acc": x[0].kas_acc,
+                "bank_id": bank_schema.dump(x[1]) if x[1] else None,
+                "bank_ref": x[0].bank_ref,
+                "giro_num": x[0].giro_num,
+                "giro_date": ExpSchema(only=['giro_date']).dump(x[0])['giro_date'],
+                "exp": exp,
+                "acq": acq,
+            })
+
+        return response(200, "Berhasil", True, final)
+
+
