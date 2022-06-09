@@ -3613,19 +3613,21 @@ def faktur(self):
         for x in fk:
             product = []
             for y in dprod:
-                if y[0].ord_id == x[1].id:
-                    y[0].prod_id = prod_schema.dump(y[1])
-                    y[0].unit_id = unit_schema.dump(y[2])
-                    y[0].location = loct_schema.dump(
-                        y[3]) if y[0].location else None
-                    product.append(dprod_schema.dump(y[0]))
+                if x[1]:
+                    if y[0].ord_id == x[1].id:
+                        y[0].prod_id = prod_schema.dump(y[1])
+                        y[0].unit_id = unit_schema.dump(y[2])
+                        y[0].location = loct_schema.dump(
+                            y[3]) if y[0].location else None
+                        product.append(dprod_schema.dump(y[0]))
 
             jasa = []
             for z in djasa:
-                if z[0].ord_id == x[1].id:
-                    z[0].jasa_id = jasa_schema.dump(z[1])
-                    z[0].unit_id = unit_schema.dump(z[2])
-                    jasa.append(djasa_schema.dump(z[0]))
+                if x[1]:
+                    if z[0].ord_id == x[1].id:
+                        z[0].jasa_id = jasa_schema.dump(z[1])
+                        z[0].unit_id = unit_schema.dump(z[2])
+                        jasa.append(djasa_schema.dump(z[0]))
 
             final.append({
                 "id": x[0].id,
@@ -4232,8 +4234,149 @@ def expense(self):
                 "bank_ref": x[0].bank_ref,
                 "giro_num": x[0].giro_num,
                 "giro_date": ExpSchema(only=['giro_date']).dump(x[0])['giro_date'],
-                "exp": exp,
-                "acq": acq,
+                "exp": all_exp,
+                "acq": all_acq,
+            })
+
+        return response(200, "Berhasil", True, final)
+
+@app.route("/v1/api/expense/<int:id>", methods=["PUT", "GET", "DELETE"])
+@token_required
+def expense_id(self, id):
+    exps = ExpHdb.query.filter(ExpHdb.id == id).first()
+    if request.method == "PUT":
+        try:
+            exp_code = request.json['exp_code']
+            exp_date = request.json['exp_date']
+            exp_type = request.json['exp_type']
+            exp_acc = request.json['exp_acc']
+            exp_prj = request.json['exp_prj']
+            acq_sup = request.json['acq_sup']
+            acq_pay = request.json['acq_pay']
+            kas_acc = request.json['kas_acc']
+            bank_id = request.json['bank_id']
+            bank_ref = request.json['bank_ref']
+            giro_num = request.json['giro_num']
+            giro_date = request.json['giro_date']
+            acq = request.json['acq']
+            exp = request.json['exp']
+
+            exps.exp_code = exp_code
+            exps.exp_date = exp_date
+            exps.exp_type = exp_type
+            exps.exp_acc = exp_acc
+            exps.exp_prj = exp_prj
+            exps.acq_sup = acq_sup
+            exps.acq_pay = acq_pay
+            exps.kas_acc = kas_acc
+            exps.bank_id = bank_id
+            exps.bank_ref = bank_ref
+            exps.giro_num = giro_num
+            exps.giro_date = giro_date
+
+            all_exp = ExpHdb.query.filter(ExpDdb.exp_id == exps.id)
+            all_acq = AcqDdb.query.filter(AcqDdb.exp_id == exps.id)
+
+            for x in acq:
+                for y in all_acq:
+                    if x['id'] == y.id:
+                        y.value = x['value']
+                       
+            for x in exp:
+                for y in all_exp:
+                    if x['id'] == y.id:
+                        y.acc_code = x['acc_code']
+                        y.value = x['value']
+                        y.desc = x['desc']
+           
+
+            db.session.commit()
+
+            result = response(200, "Berhasil", True, exp_schema.dump(exps))
+
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+
+    elif request.method == "DELETE":
+        exp = ExpDdb.query.filter(ExpDdb.exp_id == exps.id)
+        acq = AcqDdb.query.filter(AcqDdb.exp_id == exps.id)
+
+        for x in exp:
+            db.session.delete(x)
+
+        for x in acq:
+            db.session.delete(x)
+
+        db.session.delete(exps)
+        db.session.commit()
+
+        return response(200, "Berhasil", True, None)
+    else:
+        exps = (
+            db.session.query(ExpHdb, BankMdb, SupplierMdb)
+            .outerjoin(BankMdb, BankMdb.id == ExpHdb.bank_id)
+            .outerjoin(SupplierMdb, SupplierMdb.id == ExpHdb.acq_sup)
+            .filter(ExpHdb.id == id)
+            .all()
+        )
+
+        acc = AccouMdb.query.all()
+
+        exp = (
+            db.session.query(ExpDdb, AccouMdb)
+            .outerjoin(AccouMdb, AccouMdb.id == ExpDdb.acc_code)
+            .all()
+        )
+
+        acq = (
+            db.session.query(AcqDdb, FkpbHdb)
+            .outerjoin(FkpbHdb, FkpbHdb.id == AcqDdb.fk_id)
+            .all()
+        )
+
+        final = []
+        for x in exps:
+            all_exp = []
+            for y in exp:
+                if y[0].exp_id == x[0].id:
+                    y[0].acc_code = accou_schema.dump(y[1])
+                    all_exp.append(dexp_schema.dump(y[0]))
+
+            all_acq = []
+            for z in acq:
+                if z[0].exp_id == x[0].id:
+                    z[0].fk_id = fkpb_schema.dump(z[1])
+                    all_acq.append(dacq_schema.dump(z[0]))
+
+            if x[0].exp_acc:
+                for a in acc:
+                    if a.id == x[0].exp_acc:
+                        x[0].exp_acc = accou_schema.dump(a)
+
+            if x[0].kas_acc:
+                for b in acc:
+                    if a.id == x[0].kas_acc:
+                        x[0].kas_acc = accou_schema.dump(b)
+
+            final.append({
+                "id": x[0].id,
+                "exp_code": x[0].exp_code,
+                "exp_date": ExpSchema(only=['exp_date']).dump(x[0])['exp_date'],
+                "exp_type": x[0].exp_type,
+                "exp_acc": x[0].exp_acc,
+                "exp_prj": x[0].exp_prj,
+                "acq_sup": supplier_schema.dump(x[2]) if x[2] else None,
+                "acq_pay": x[0].acq_pay,
+                "kas_acc": x[0].kas_acc,
+                "bank_id": bank_schema.dump(x[1]) if x[1] else None,
+                "bank_ref": x[0].bank_ref,
+                "giro_num": x[0].giro_num,
+                "giro_date": ExpSchema(only=['giro_date']).dump(x[0])['giro_date'],
+                "exp": all_exp,
+                "acq": all_acq,
             })
 
         return response(200, "Berhasil", True, final)
