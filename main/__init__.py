@@ -21,6 +21,7 @@ from main.model.djasa_ddb import DjasaDdb
 from main.model.exp_ddb import ExpDdb
 from main.model.exp_hdb import ExpHdb
 from main.model.fkpb_hdb import FkpbHdb
+from main.model.giro_hdb import GiroHdb
 from main.model.jjasa_ddb import JjasaDdb
 from main.model.jprod_ddb import JprodDdb
 from main.model.ordpb_hdb import OrdpbHdb
@@ -4157,8 +4158,10 @@ def expense(self):
                     new_exp.append(ExpDdb(exps.id, x['acc_code'], x['value'], x['desc']))
 
             new_acq = []
+            value = 0
             for x in acq:
                 if x['fk_id'] and x['value'] and x['payment'] and int(x['payment']) > 0:
+                    value += int(x['payment'])
                     new_acq.append(AcqDdb(exps.id, x['fk_id'], x['value'], x['payment']))
 
             if len(new_exp) > 0:
@@ -4166,6 +4169,10 @@ def expense(self):
 
             if len(new_acq) > 0:
                 db.session.add_all(new_acq)
+
+            if acq_pay and acq_pay == 3:
+                giro = GiroHdb(giro_date, giro_num, bank_id, exps.id, exp_date, acq_sup, value, 0)
+                db.session.add(giro)
 
             db.session.commit()
 
