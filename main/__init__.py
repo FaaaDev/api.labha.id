@@ -4001,7 +4001,6 @@ def sls_id(self, id):
                         y.disc = x['disc']
                         y.nett_price = x['nett_price']
                         y.total = x['total']
-                        y.location = x['location']
                 if x['id'] == 0 and x['prod_id'] and x['unit_id'] and x['order']:
                     new_prod.append(JprodDdb(
                         sls.id, x['prod_id'], x['unit_id'], x['location'], x['order'], x['price'], x['disc'], x['nett_price'], x['total']))
@@ -4133,6 +4132,7 @@ def expense(self):
             exp_code = request.json['exp_code']
             exp_date = request.json['exp_date']
             exp_type = request.json['exp_type']
+            exp_dep = request.json['exp_dep']
             exp_acc = request.json['exp_acc']
             exp_prj = request.json['exp_prj']
             acq_sup = request.json['acq_sup']
@@ -4145,7 +4145,7 @@ def expense(self):
             acq = request.json['acq']
             exp = request.json['exp']
 
-            exps = ExpHdb(exp_code, exp_date, exp_type, exp_acc, exp_prj, acq_sup, acq_pay, kas_acc, bank_id, bank_ref, giro_num, giro_date)
+            exps = ExpHdb(exp_code, exp_date, exp_type, exp_acc, exp_dep, exp_prj, acq_sup, acq_pay, kas_acc, bank_id, bank_ref, giro_num, giro_date)
 
             db.session.add(exps)
             db.session.commit()
@@ -4226,6 +4226,7 @@ def expense(self):
                 "exp_date": ExpSchema(only=['exp_date']).dump(x[0])['exp_date'],
                 "exp_type": x[0].exp_type,
                 "exp_acc": x[0].exp_acc,
+                "exp_dep": x[0].exp_dep,
                 "exp_prj": x[0].exp_prj,
                 "acq_sup": supplier_schema.dump(x[2]) if x[2] else None,
                 "acq_pay": x[0].acq_pay,
@@ -4250,6 +4251,7 @@ def expense_id(self, id):
             exp_date = request.json['exp_date']
             exp_type = request.json['exp_type']
             exp_acc = request.json['exp_acc']
+            exp_dep = request.json['exp_dep']
             exp_prj = request.json['exp_prj']
             acq_sup = request.json['acq_sup']
             acq_pay = request.json['acq_pay']
@@ -4265,6 +4267,7 @@ def expense_id(self, id):
             exps.exp_date = exp_date
             exps.exp_type = exp_type
             exps.exp_acc = exp_acc
+            exps.exp_dep = exp_dep
             exps.exp_prj = exp_prj
             exps.acq_sup = acq_sup
             exps.acq_pay = acq_pay
@@ -4367,6 +4370,7 @@ def expense_id(self, id):
                 "exp_date": ExpSchema(only=['exp_date']).dump(x[0])['exp_date'],
                 "exp_type": x[0].exp_type,
                 "exp_acc": x[0].exp_acc,
+                "exp_dep": x[0].exp_dep,
                 "exp_prj": x[0].exp_prj,
                 "acq_sup": supplier_schema.dump(x[2]) if x[2] else None,
                 "acq_pay": x[0].acq_pay,
