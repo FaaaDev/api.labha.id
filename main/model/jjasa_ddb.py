@@ -16,12 +16,12 @@ class JjasaDdb(db.Model):
     disc = db.Column(db.Integer)
     total = db.Column(db.Integer)
 
-    def __init__(self, pj_id, sup_id, jasa_id, unit_id, qty, price, disc, total):
+    def __init__(self, pj_id, sup_id, jasa_id, unit_id, order, price, disc, total):
         self.pj_id = pj_id
         self.sup_id = sup_id
         self.jasa_id = jasa_id
         self.unit_id = unit_id
-        self.qty = qty
+        self.order = order
         self.price = price
         self.disc = disc
         self.total = total

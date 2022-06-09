@@ -3854,6 +3854,7 @@ def sls(self):
             new_jasa = []
             for x in jjasa:
                 if x['jasa_id'] and x['sup_id'] and x['unit_id'] and x['order']:
+                    print(x['order'])
                     new_jasa.append(JjasaDdb(
                         sls.id, x['sup_id'], x['jasa_id'], x['unit_id'], x['order'], x['price'], x['disc'], x['total']))
 
