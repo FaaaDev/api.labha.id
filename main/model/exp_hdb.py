@@ -15,12 +15,13 @@ class ExpHdb(db.Model):
     acq_sup = db.Column(db.Integer)
     acq_pay = db.Column(db.Integer)
     kas_acc = db.Column(db.Integer)
+    bank_acc = db.Column(db.Integer)
     bank_id = db.Column(db.Integer)
     bank_ref = db.Column(db.String(255))
     giro_num = db.Column(db.String(255))
     giro_date = db.Column(db.TIMESTAMP)
 
-    def __init__(self, exp_code, exp_date, exp_type, exp_acc, exp_dep, exp_prj, acq_sup, acq_pay, kas_acc, bank_id, bank_ref, giro_num, giro_date):
+    def __init__(self, exp_code, exp_date, exp_type, exp_acc, exp_dep, exp_prj, acq_sup, acq_pay, kas_acc, bank_acc, bank_id, bank_ref, giro_num, giro_date):
         self.exp_code = exp_code
         self.exp_date = exp_date
         self.exp_type = exp_type
@@ -30,6 +31,7 @@ class ExpHdb(db.Model):
         self.acq_sup = acq_sup
         self.acq_pay = acq_pay
         self.kas_acc = kas_acc
+        self.bank_acc = bank_acc
         self.bank_id = bank_id
         self.bank_ref = bank_ref
         self.giro_num = giro_num

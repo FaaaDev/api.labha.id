@@ -3784,7 +3784,7 @@ def retur_order(self):
             result.append({
                 "id": x[0].id,
                 "ret_code": x[0].ret_code,
-                "ret_date": x[0].ret_date,
+                "ret_date": RetordSchema(only=['ret_date']).dump(x[0])['ret_date'] if x[0].ret_date else None,
                 "fk_id": fkpb_schema.dump(x[1]),
                 "product": prod
             })
@@ -4140,6 +4140,7 @@ def expense(self):
             acq_sup = request.json['acq_sup']
             acq_pay = request.json['acq_pay']
             kas_acc = request.json['kas_acc']
+            bank_acc = request.json['bank_acc']
             bank_id = request.json['bank_id']
             bank_ref = request.json['bank_ref']
             giro_num = request.json['giro_num']
@@ -4147,7 +4148,7 @@ def expense(self):
             acq = request.json['acq']
             exp = request.json['exp']
 
-            exps = ExpHdb(exp_code, exp_date, exp_type, exp_acc, exp_dep, exp_prj, acq_sup, acq_pay, kas_acc, bank_id, bank_ref, giro_num, giro_date)
+            exps = ExpHdb(exp_code, exp_date, exp_type, exp_acc, exp_dep, exp_prj, acq_sup, acq_pay, kas_acc, bank_acc, bank_id, bank_ref, giro_num, giro_date)
 
             db.session.add(exps)
             db.session.commit()
@@ -4239,6 +4240,7 @@ def expense(self):
                 "acq_sup": supplier_schema.dump(x[2]) if x[2] else None,
                 "acq_pay": x[0].acq_pay,
                 "kas_acc": x[0].kas_acc,
+                "bank_acc": x[0].bank_acc,
                 "bank_id": bank_schema.dump(x[1]) if x[1] else None,
                 "bank_ref": x[0].bank_ref,
                 "giro_num": x[0].giro_num,
@@ -4264,6 +4266,7 @@ def expense_id(self, id):
             acq_sup = request.json['acq_sup']
             acq_pay = request.json['acq_pay']
             kas_acc = request.json['kas_acc']
+            bank_acc = request.json['bank_acc']
             bank_id = request.json['bank_id']
             bank_ref = request.json['bank_ref']
             giro_num = request.json['giro_num']
@@ -4280,6 +4283,7 @@ def expense_id(self, id):
             exps.acq_sup = acq_sup
             exps.acq_pay = acq_pay
             exps.kas_acc = kas_acc
+            exps.bank_acc = bank_acc
             exps.bank_id = bank_id
             exps.bank_ref = bank_ref
             exps.giro_num = giro_num
@@ -4383,6 +4387,7 @@ def expense_id(self, id):
                 "acq_sup": supplier_schema.dump(x[2]) if x[2] else None,
                 "acq_pay": x[0].acq_pay,
                 "kas_acc": x[0].kas_acc,
+                "bank_acc": x[0].bank_acc,
                 "bank_id": bank_schema.dump(x[1]) if x[1] else None,
                 "bank_ref": x[0].bank_ref,
                 "giro_num": x[0].giro_num,
