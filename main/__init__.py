@@ -62,6 +62,9 @@ from main.model.unit_mdb import UnitMdb
 from main.model.divisi_mdb import DivisionMdb
 from main.model.group_prod_mdb import GroupProMdb
 from main.model.pajak_mdb import PajakMdb
+from main.model.retsale_hdb import RetSaleHdb
+from main.model.apcard_mdb import ApCard
+from main.schema.apcard_mdb import apcard_schema, apcards_schema, APCardSchema
 from main.schema.ccost_mdb import ccost_schema, ccosts_schema, CcostSchema
 from main.schema.proj_mdb import proj_schema, projs_schema, ProjSchema
 from main.shared.shared import db, ma
@@ -110,6 +113,10 @@ from main.schema.jjasa_ddb import jjasa_schema, jjasas_schema, JjasaSchema
 from main.schema.exp_hdb import exp_schema, exps_schema, ExpSchema
 from main.schema.dexp_ddb import dexp_schema, dexps_schema, DexpSchema
 from main.schema.dacq_ddb import dacq_schema, dacqs_schema, DacqSchema
+from main.schema.acq_ddb import acq_schema, acqs_schema, AcqSchema
+from main.schema.giro_hdb import giro_schema, giros_schema, GiroSchema
+from main.schema.apcard_mdb import apcard_schema, apcards_schema, APCardSchema
+from main.schema.retsale_hdb import retsale_schema, retsales_schema, RetSaleSchema
 from main.schema.setup_mdb import *
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import and_, or_
@@ -3809,6 +3816,73 @@ def retur_order(self):
 
         return response(200, 'success', True, result)
 
+
+@app.route("/v1/api/retur-sales", methods=["POST", "GET"])
+@token_required
+def retur_sales(self):
+    if request.method == 'POST':
+        try:
+            ret_code = request.json['ret_code']
+            ret_date = request.json['ret_date']
+            sale_id = request.json['sale_id']
+            product = request.json['product']
+
+            retur = RetSaleHdb(ret_code, ret_date, sale_id)
+
+            db.session.add(retur)
+            db.session.commit()
+
+            new_prod = []
+            for x in product:
+                if x['prod_id'] and x['unit_id'] and x['retur'] and int(x['retur']) > 0:
+                    new_prod.append(ReprodDdb(
+                        retur.id, x['prod_id'], x['unit_id'], x['retur'], x['price'], x['disc'], x['nett_price'], x['total']))
+
+            db.session.add_all(new_prod)
+            db.session.commit()
+
+            result = response(200, "success", True, retsale_schema.dump(retur))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    else:
+        retur = (
+            db.session.query(RetSaleHdb, OrdpjHdb, SordHdb)
+            .outerjoin(OrdpjHdb, OrdpjHdb.id == RetSaleHdb.sale_id)
+            .outerjoin(SordHdb, SordHdb.id == RetSaleHdb.so_id)
+            .all()
+        )
+
+        product = (
+            db.session.query(ReprodDdb, ProdMdb, UnitMdb)
+            .outerjoin(ProdMdb, ProdMdb.id == ReprodDdb.prod_id)
+            .outerjoin(UnitMdb, UnitMdb.id == ReprodDdb.unit_id)
+            .all()
+        )
+
+        result = []
+        for x in retur:
+            prod = []
+            for y in product:
+                if x[0].id == y[0].ret_id:
+                    y[0].prod_id = prod_schema.dump(y[1])
+                    y[0].unit_id = unit_schema.dump(y[2])
+                    prod.append(reprod_schema.dump(y[0]))
+
+            if x[1]:
+                x[1].so_id = sord_schema.dump(x[2])
+            result.append({
+                "id": x[0].id,
+                "ret_code": x[0].ret_code,
+                "ret_date": RetSaleSchema(only=['ret_date']).dump(x[0])['ret_date'] if x[0].ret_date else None,
+                "sale_id": sales_schema.dump(x[1]),
+                "product": prod
+            })
+
+        return response(200, 'success', True, result)
+
 # @app.route("/v1/api/faktur/<int:id>", methods=["PUT", "GET", 'DELETE'])
 # @token_required
 # def faktur_id(self, id):
@@ -4243,7 +4317,7 @@ def expense(self):
 
             if x[0].kas_acc:
                 for b in acc:
-                    if a.id == x[0].kas_acc:
+                    if b.id == x[0].kas_acc:
                         x[0].kas_acc = accou_schema.dump(b)
 
             final.append({
@@ -4411,6 +4485,45 @@ def expense_id(self, id):
                 "giro_date": ExpSchema(only=['giro_date']).dump(x[0])['giro_date'],
                 "exp": all_exp,
                 "acq": all_acq,
+            })
+
+        return response(200, "Berhasil", True, final)
+
+
+@app.route("/v1/api/apcard", methods=["GET"])
+@token_required
+def apcard(self):
+        ap = (
+            db.session.query(ApCard, AcqDdb, PoMdb, SupplierMdb, FkpbHdb, GiroHdb)
+            .outerjoin(AcqDdb, AcqDdb.id == ApCard.acq_id)
+            .outerjoin(PoMdb, PoMdb.id == ApCard.po_id)
+            .outerjoin(SupplierMdb, SupplierMdb.id == ApCard.sup_id)
+            .outerjoin(FkpbHdb, FkpbHdb.ord_id == ApCard.ord_id)
+            .outerjoin(GiroHdb, GiroHdb.id == ApCard.giro_id)
+            .all()
+        )
+
+        final = []
+        for x in ap:
+            final.append({
+                "id": x[0].id,
+                "sup_id": supplier_schema.dump(x[3]) if x[3] else None,
+                "ord_id": fkpb_schema.dump(x[4]) if x[4] else None,
+                "ord_date": APCardSchema(only=['ord_date']).dump(x[0])['ord_date'] if x[0] else None,
+                "ord_due": APCardSchema(only=['ord_due']).dump(x[0])['ord_due'] if x[0] else None,
+                "po_id": po_schema.dump(x[2]) if x[2] else None,
+                "acq_id": acq_schema.dump(x[1]) if x[1] else None,
+                "acq_date": AcqSchema(only=['acq_date']).dump(x[1])['acq_date'] if x[1] else None,
+                "cur_conv": x[0].cur_conv,
+                "trx_dbcr": x[0].trx_dbcr,
+                "trx_type": x[0].trx_type,
+                "pay_type": x[0].pay_type,
+                "trx_amnh": x[0].trx_amnh,
+                "trx_amnv": x[0].trx_amnv,
+                "acq_amnh": x[0].acq_amnh,
+                "acq_amnv": x[0].acq_amnv,
+                "giro_id": giro_schema.dump(x[5]) if x[5] else None,
+                "giro_date": APCardSchema(only=['giro_date']).dump(x[0])['giro_date'] if x[0] else None
             })
 
         return response(200, "Berhasil", True, final)
