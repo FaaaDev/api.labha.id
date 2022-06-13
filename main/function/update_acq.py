@@ -10,7 +10,7 @@ from main.model.unit_mdb import UnitMdb
 from main.shared.shared import db
 
 
-class UpdateStock():
+class UpdateAcq():
     def __init__(self, order_id):
         order = OrdpbHdb.query.filter(OrdpbHdb.id == order_id).first()
         print(order)
