@@ -10,9 +10,12 @@ from unicodedata import name
 from datetime import datetime
 from flask import Flask, redirect, request, url_for, jsonify, make_response
 import requests
+from main.function.update_pembelian import UpdatePembelian
+from main.function.update_stock import UpdateStock
 from main.model.accou_mdb import AccouMdb
 from main.model.adm_menu import AdmMenu
 from main.model.adm_user_menu import AdmUserMenu
+from main.model.apcard_mdb import ApCard
 from main.model.bank_mdb import BankMdb
 from main.model.ccost_mdb import CcostMdb
 from main.model.comp_mdb import CompMdb
@@ -3318,6 +3321,17 @@ def order(self):
 
             db.session.commit()
 
+            if faktur:
+                faktur = FkpbHdb(ord_code, ord_date, do.id, None, None)
+
+                db.session.add(faktur)
+
+                db.session.commit()
+
+                UpdatePembelian(faktur.id, self.id)
+
+            UpdateStock(do.id)
+
             result = response(200, "Berhasil", True, dord_schema.dump(do))
         except IntegrityError:
             db.session.rollback()
@@ -3574,6 +3588,8 @@ def faktur(self):
 
         db.session.commit()
 
+        UpdatePembelian(faktur.id, self.id)
+
         return response(200, "success", True, fkpb_schema.dump(faktur))
     else:
         fk = (
@@ -3599,20 +3615,22 @@ def faktur(self):
         final = []
         for x in fk:
             product = []
-            for y in dprod:
-                if y[0].ord_id == x[1].id:
-                    y[0].prod_id = prod_schema.dump(y[1])
-                    y[0].unit_id = unit_schema.dump(y[2])
-                    y[0].location = loct_schema.dump(
-                        y[3]) if y[0].location else None
-                    product.append(dprod_schema.dump(y[0]))
+            if x[1]:
+                for y in dprod:
+                    if y[0].ord_id == x[1].id:
+                        y[0].prod_id = prod_schema.dump(y[1])
+                        y[0].unit_id = unit_schema.dump(y[2])
+                        y[0].location = loct_schema.dump(
+                            y[3]) if y[0].location else None
+                        product.append(dprod_schema.dump(y[0]))
 
             jasa = []
-            for z in djasa:
-                if z[0].ord_id == x[1].id:
-                    z[0].jasa_id = jasa_schema.dump(z[1])
-                    z[0].unit_id = unit_schema.dump(z[2])
-                    jasa.append(djasa_schema.dump(z[0]))
+            if x[1]:
+                for z in djasa:
+                    if z[0].ord_id == x[1].id:
+                        z[0].jasa_id = jasa_schema.dump(z[1])
+                        z[0].unit_id = unit_schema.dump(z[2])
+                        jasa.append(djasa_schema.dump(z[0]))
 
             final.append({
                 "id": x[0].id,
@@ -4064,3 +4082,8 @@ def sls_id(self, id):
 
         return response(200, "Berhasil", True, final)
 
+
+@app.route("/v1/api/tes", methods=["GET"])
+def tes():
+    UpdatePembelian("TESSSSS")
+    return response(200, "success", True, None)
