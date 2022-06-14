@@ -3851,7 +3851,7 @@ def retur_sales(self):
         retur = (
             db.session.query(RetSaleHdb, OrdpjHdb, SordHdb)
             .outerjoin(OrdpjHdb, OrdpjHdb.id == RetSaleHdb.sale_id)
-            .outerjoin(SordHdb, SordHdb.id == RetSaleHdb.so_id)
+            .outerjoin(SordHdb, SordHdb.id == OrdpjHdb.so_id)
             .all()
         )
 
@@ -3877,7 +3877,7 @@ def retur_sales(self):
                 "id": x[0].id,
                 "ret_code": x[0].ret_code,
                 "ret_date": RetSaleSchema(only=['ret_date']).dump(x[0])['ret_date'] if x[0].ret_date else None,
-                "sale_id": sales_schema.dump(x[1]),
+                "sale_id": ordpj_schema.dump(x[1]),
                 "product": prod
             })
 
