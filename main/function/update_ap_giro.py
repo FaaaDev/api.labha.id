@@ -41,7 +41,17 @@ class UpdateApGiro():
                 db.session.commit()
 
             ap_card = ApCard(pembelian.sup_id, pembelian.ord_id, pembelian.ord_date, pembelian.due_date, pembelian.po_id,
-                             x.id, datetime.now(), None, "k", pembelian.trx_type, "H4", pembelian.trx_amnh, None, x.payment, None, exp.giro_num, exp.giro_date)
+                             x.id, datetime.now(), None, "k", pembelian.trx_type, "H4", pembelian.trx_amnh, None, x.payment, None, giro.giro_num, giro.giro_date)
 
             db.session.add(ap_card)
             db.session.commit()
+
+        trans_giro = TransDdb(giro.giro_num, datetime.now(), exp.bank_acc, None, None,
+                            None, None, None, None, giro.value, "D", "JURNAL PENCAIRAN GIRO %s"%(giro.giro_num), None, None)
+
+        trans_ap = TransDdb(giro.giro_num, datetime.now(), exp.bank_acc, None, None,
+                            None, None, None, None, giro.value, "K", "JURNAL PENCAIRAN GIRO %s"%(giro.giro_num), None, None)
+
+        db.session.add(trans_ap)
+        db.session.add(trans_giro)
+        db.session.commit()
