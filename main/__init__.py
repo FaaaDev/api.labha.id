@@ -10,6 +10,7 @@ from unicodedata import name
 from datetime import datetime
 from flask import Flask, redirect, request, url_for, jsonify, make_response
 import requests
+from main.function.update_ap_payment import UpdateApPayment
 from main.function.update_pembelian import UpdatePembelian
 from main.function.update_stock import UpdateStock
 from main.model.accou_mdb import AccouMdb
@@ -4268,6 +4269,9 @@ def expense(self):
 
             db.session.commit()
 
+            if acq_pay and acq_pay != 3:
+                UpdateApPayment(exps.id)
+
             result = response(200, "Berhasil", True, exp_schema.dump(exps))
         except IntegrityError:
             db.session.rollback()
@@ -4513,7 +4517,7 @@ def apcard(self):
                 "ord_due": APCardSchema(only=['ord_due']).dump(x[0])['ord_due'] if x[0] else None,
                 "po_id": po_schema.dump(x[2]) if x[2] else None,
                 "acq_id": acq_schema.dump(x[1]) if x[1] else None,
-                "acq_date": AcqSchema(only=['acq_date']).dump(x[1])['acq_date'] if x[1] else None,
+                "acq_date": APCardSchema(only=['acq_date']).dump(x[0])['acq_date'] if x[0] else None,
                 "cur_conv": x[0].cur_conv,
                 "trx_dbcr": x[0].trx_dbcr,
                 "trx_type": x[0].trx_type,

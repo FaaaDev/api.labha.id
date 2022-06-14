@@ -33,8 +33,9 @@ class UpdateStock():
 
 
             old_krtst = StCard.query.filter(and_(StCard.trx_code == order.ord_code, StCard.prod_id == x[0].prod_id, StCard.loc_id == x[0].location)).first()
-            db.session.delete(old_krtst)
-            db.session.commit()
+            if old_krtst:
+                db.session.delete(old_krtst)
+                db.session.commit()
 
             qty = 0
             if x[0].unit_id != x[1].unit:
@@ -48,4 +49,5 @@ class UpdateStock():
                          x[0].nett_price if x[0].nett_price > 0 else x[0].total, None, None, x[0].prod_id, x[0].location, None, 0, None))
 
         db.session.add_all(trans)
+        db.session.add_all(krtst)
         db.session.commit()

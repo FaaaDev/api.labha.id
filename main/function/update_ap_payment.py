@@ -41,7 +41,7 @@ class UpdateApPayment():
                 db.session.delete(old_ap)
                 db.session.commit()
 
-            ap_card = ApCard(pembelian.sup_id, pembelian.ord_id, pembelian.ord_date, pembelian.due_date, pembelian.po_id,
+            ap_card = ApCard(pembelian.sup_id, pembelian.ord_id, pembelian.ord_date, pembelian.ord_due, pembelian.po_id,
                              x.id, exp.exp_date, None, "k", pembelian.trx_type, "H4", pembelian.trx_amnh, None, x.payment, None, exp.giro_num, exp.giro_date)
 
             db.session.add(ap_card)
@@ -50,15 +50,15 @@ class UpdateApPayment():
         sup = (
                 db.session.query(SupplierMdb, PajakMdb)
                 .outerjoin(PajakMdb, PajakMdb.id == SupplierMdb.sup_ppn)
-                .filter(SupplierMdb.id == exp[1].sup_id)
+                .filter(SupplierMdb.id == exp.acq_sup)
                 .first()
             )
         # insert jurnal ap
-        trans_sup = TransDdb(exp[0].exp_code, exp[0].exp_date, sup[0].sup_hutang, None, None,
-                            None, None, None, None, total, "D", "JURNAL PELUNASAN %s"%(exp[0].exp_code), None, None)
+        trans_sup = TransDdb(exp.exp_code, exp.exp_date, sup[0].sup_hutang, None, None,
+                            None, None, None, None, total, "D", "JURNAL PELUNASAN %s"%(exp.exp_code), None, None)
 
-        trans_exp = TransDdb(exp[0].exp_code, exp[0].exp_date, exp[0].kas_acc if exp[0].acq_pay else exp[0].bank_acc, None, None,
-                            None, None, None, None, total, "K", "JURNAL PELUNASAN %s"%(exp[0].exp_code), None, None)
+        trans_exp = TransDdb(exp.exp_code, exp.exp_date, exp.kas_acc if exp.acq_pay else exp.bank_acc, None, None,
+                            None, None, None, None, total, "K", "JURNAL PELUNASAN %s"%(exp.exp_code), None, None)
 
         db.session.add(trans_sup)
         db.session.add(trans_exp)
