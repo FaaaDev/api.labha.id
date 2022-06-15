@@ -3566,6 +3566,7 @@ def order(self):
             if po_id:
                 po = PoMdb.query.filter(PoMdb.id == po_id)
                 po.status = 1
+                db.session.commit()
 
             if faktur:
                 faktur = FkpbHdb(ord_code, ord_date, do.id, None, None)
@@ -3834,6 +3835,79 @@ def ord_id(self, id):
         }
 
         return response(200, "Berhasil", True, final)
+
+
+@app.route("/v1/api/order/date", methods=["POST"])
+@token_required
+def order_date(self):
+    start_date = request.json['start_date']
+    end_date = request.json['end_date']
+
+    do = (
+        db.session.query(OrdpbHdb, CcostMdb, SupplierMdb, RulesPayMdb, PoMdb)
+        .outerjoin(CcostMdb, CcostMdb.id == OrdpbHdb.dep_id)
+        .outerjoin(SupplierMdb, SupplierMdb.id == OrdpbHdb.sup_id)
+        .outerjoin(RulesPayMdb, RulesPayMdb.id == OrdpbHdb.top)
+        .outerjoin(PoMdb, PoMdb.id == OrdpbHdb.po_id)
+        .filter(OrdpbHdb.ord_date >= start_date, OrdpbHdb.ord_date <= end_date)
+        .all()
+    )
+
+    dprod = (
+        db.session.query(DprodDdb, ProdMdb, UnitMdb, LocationMdb)
+        .outerjoin(ProdMdb, ProdMdb.id == DprodDdb.prod_id)
+        .outerjoin(UnitMdb, UnitMdb.id == DprodDdb.unit_id)
+        .outerjoin(LocationMdb, LocationMdb.id == DprodDdb.location)
+        .all()
+    )
+
+    djasa = (
+        db.session.query(DjasaDdb, JasaMdb, UnitMdb)
+        .outerjoin(JasaMdb, JasaMdb.id == DjasaDdb.jasa_id)
+        .outerjoin(UnitMdb, UnitMdb.id == DjasaDdb.unit_id)
+        .all()
+    )
+
+    final = []
+    for x in do:
+        product = []
+        for y in dprod:
+            if y[0].ord_id == x[0].id:
+                y[0].prod_id = prod_schema.dump(y[1])
+                y[0].unit_id = unit_schema.dump(y[2])
+                y[0].location = loct_schema.dump(y[3]) if y[0].location else None
+                product.append(dprod_schema.dump(y[0]))
+
+        jasa = []
+        for z in djasa:
+            if z[0].ord_id == x[0].id:
+                z[0].jasa_id = jasa_schema.dump(z[1])
+                z[0].unit_id = unit_schema.dump(z[2])
+                jasa.append(djasa_schema.dump(z[0]))
+
+        final.append(
+            {
+                "id": x[0].id,
+                "ord_code": x[0].ord_code,
+                "ord_date": DordSchema(only=["ord_date"]).dump(x[0])["ord_date"],
+                "faktur": x[0].faktur,
+                "po_id": po_schema.dump(x[4]),
+                "dep_id": ccost_schema.dump(x[1]),
+                "sup_id": supplier_schema.dump(x[2]),
+                "top": rpay_schema.dump(x[3]),
+                "due_date": DordSchema(only=["due_date"]).dump(x[0])["due_date"],
+                "split_inv": x[0].split_inv,
+                "prod_disc": x[0].prod_disc,
+                "jasa_disc": x[0].jasa_disc,
+                "total_disc": x[0].total_disc,
+                "status": x[0].status,
+                "print": x[0].print,
+                "dprod": product,
+                "djasa": jasa,
+            }
+        )
+
+    return response(200, "Berhasil", True, final)
 
 
 @app.route("/v1/api/faktur/code", methods=["POST", "GET"])
@@ -4913,17 +4987,17 @@ def dashboard_info(self):
 
     ap_card = ApCard.query.all()
     ap = (
-        db.session.query(extract('month', ApCard.ord_date), func.sum(ApCard.trx_amnh))
+        db.session.query(extract("month", ApCard.ord_date), func.sum(ApCard.trx_amnh))
         .filter(and_(ApCard.trx_type == "LP", ApCard.pay_type == "P1"))
-        .group_by(extract('month', ApCard.ord_date))
+        .group_by(extract("month", ApCard.ord_date))
         .all()
     )
 
-    ap_list = [0,0,0,0,0,0,0,0,0,0,0,0]
-    ar_list = [0,0,0,0,0,0,0,0,0,0,0,0]
+    ap_list = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    ar_list = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
     for x in ap:
-        ap_list[int(x[0])-1] = x[1]
+        ap_list[int(x[0]) - 1] = x[1]
 
     total_ap = 0
     total_lns = 0
