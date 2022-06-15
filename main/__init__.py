@@ -74,7 +74,11 @@ from main.schema.user import user_schema, users_schema
 from main.schema.bank_mdb import banks_schema, bank_schema
 from main.schema.unit_mdb import unit_schema, units_schema, UnitSchema
 from main.schema.prod_mdb import prod_schema, prods_schema, ProdSchema
-from main.schema.adm_user_menu import adm_user_menu_schema, adm_user_menus_schema, AdmUserMenuSchema
+from main.schema.adm_user_menu import (
+    adm_user_menu_schema,
+    adm_user_menus_schema,
+    AdmUserMenuSchema,
+)
 from main.schema.klasi_mdb import klasi_schema, klasies_schema, KlasiMdb as KlasiSchema
 from main.schema.kateg_mdb import kateg_schema, kategs_schema, KategMdb as KategSchema
 from main.schema.accou_mdb import accou_schema, accous_schema, AccouSchema
@@ -120,7 +124,7 @@ from main.schema.apcard_mdb import apcard_schema, apcards_schema, APCardSchema
 from main.schema.retsale_hdb import retsale_schema, retsales_schema, RetSaleSchema
 from main.schema.setup_mdb import *
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy import and_, or_
+from sqlalchemy import and_, extract, func, or_
 from flask_cors import CORS
 import jwt
 from datetime import datetime, timedelta
@@ -148,8 +152,7 @@ app.config["SQLALCHEMY_DATABASE_URI"] = (
 )
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["JSON_SORT_KEYS"] = False
-app.config["UPLOAD_FOLDER"] = join(
-    dirname(realpath(__file__)), "static/upload")
+app.config["UPLOAD_FOLDER"] = join(dirname(realpath(__file__)), "static/upload")
 app.config[
     "SECRET_KEY"
 ] = "IKIKUNCIrahasiasu,rasahkeposia.pokonaulahHayangNYAhosiah.pateniraimu"
@@ -177,8 +180,7 @@ def cityUrl():
 
 def response(code, message, status, data):
     return (
-        jsonify({"code": code, "status": status,
-                "message": message, "data": data}),
+        jsonify({"code": code, "status": status, "message": message, "data": data}),
         code,
     )
 
@@ -237,8 +239,7 @@ def login():
                     {"id": user.id, "exp": datetime.utcnow() + timedelta(hours=5)},
                     app.config["SECRET_KEY"],
                 )
-            data = {"user": user_schema.dump(
-                user), "token": token.decode("utf-8")}
+            data = {"user": user_schema.dump(user), "token": token.decode("utf-8")}
             return response(200, "Berhasil", True, data)
         else:
             return response(403, "Password yang anda masukkan salah", False, None)
@@ -256,8 +257,7 @@ def user(self):
 
             hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
 
-            user = User(username, name, email,
-                        hashed.decode(), None, None, None)
+            user = User(username, name, email, hashed.decode(), None, None, None)
             db.session.add(user)
             db.session.commit()
             result = response(
@@ -337,8 +337,7 @@ def bank(self):
             ACC_ID = request.json["ACC_ID"]
             BANK_NAME = request.json["BANK_NAME"]
             BANK_DESC = request.json["BANK_DESC"]
-            bank = BankMdb(BANK_CODE, BANK_NAME, BANK_DESC,
-                           ACC_ID, self.id, None)
+            bank = BankMdb(BANK_CODE, BANK_NAME, BANK_DESC, ACC_ID, self.id, None)
             db.session.add(bank)
             db.session.commit()
 
@@ -358,8 +357,7 @@ def bank(self):
         )
         print(result)
         data = [
-            {"bank": bank_schema.dump(
-                x[0]), "account": accou_schema.dump(x[1])}
+            {"bank": bank_schema.dump(x[0]), "account": accou_schema.dump(x[1])}
             for x in result
         ]
 
@@ -503,8 +501,7 @@ def account_umum(self, kat_id):
     key = str(kategory[1].id) + "." + str(kat_id)
     last_acc = (
         AccouMdb.query.filter(
-            and_(AccouMdb.acc_code.like("%{}%".format(key)),
-                 AccouMdb.dou_type == "U")
+            and_(AccouMdb.acc_code.like("%{}%".format(key)), AccouMdb.dou_type == "U")
         )
         .order_by(AccouMdb.acc_code.desc())
         .first()
@@ -534,8 +531,7 @@ def account_detail(self, umm_code):
 
     if last_acc != None:
         next_code = (
-            umm_code + "." +
-            str(int(last_acc.acc_code.replace(umm_code + ".", "")) + 1)
+            umm_code + "." + str(int(last_acc.acc_code.replace(umm_code + ".", "")) + 1)
         )
     else:
         next_code = umm_code + "." + "1"
@@ -567,8 +563,7 @@ def account(self):
             )
             db.session.add(account)
             db.session.commit()
-            result = response(200, "Berhasil", True,
-                              accou_schema.dump(account))
+            result = response(200, "Berhasil", True, accou_schema.dump(account))
         except IntegrityError:
             db.session.rollback()
             result = response(
@@ -775,8 +770,7 @@ def jpel(self):
             db.session.add(jenis_pel)
             db.session.commit()
 
-            result = response(200, "Berhasil", True,
-                              jpel_schema.dump(jenis_pel))
+            result = response(200, "Berhasil", True, jpel_schema.dump(jenis_pel))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
@@ -798,8 +792,7 @@ def jpel_id(self, id):
             jenis_pel.jpel_name = request.json["jpel_name"]
             jenis_pel.jpel_ket = request.json["jpel_ket"]
             db.session.commit()
-            result = response(200, "Berhasil", True,
-                              jpel_schema.dump(jenis_pel))
+            result = response(200, "Berhasil", True, jpel_schema.dump(jenis_pel))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
@@ -827,8 +820,7 @@ def jpem(self):
             db.session.add(jenisPem)
             db.session.commit()
 
-            result = response(200, "Berhasil", True,
-                              jpem_schema.dump(jenisPem))
+            result = response(200, "Berhasil", True, jpem_schema.dump(jenisPem))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
@@ -850,8 +842,7 @@ def jpem_id(self, id):
             jenis_pem.jpem_name = request.json["jpem_name"]
             jenis_pem.jpem_ket = request.json["jpem_ket"]
             db.session.commit()
-            result = response(200, "Berhasil", True,
-                              jpem_schema.dump(jenis_pem))
+            result = response(200, "Berhasil", True, jpem_schema.dump(jenis_pem))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
@@ -879,8 +870,7 @@ def sales(self):
             db.session.add(salesman)
             db.session.commit()
 
-            result = response(200, "Berhasil", True,
-                              sales_schema.dump(salesman))
+            result = response(200, "Berhasil", True, sales_schema.dump(salesman))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
@@ -902,8 +892,7 @@ def sales_id(self, id):
             salesman.sales_name = request.json["sales_name"]
             salesman.sales_ket = request.json["sales_ket"]
             db.session.commit()
-            result = response(200, "Berhasil", True,
-                              sales_schema.dump(salesman))
+            result = response(200, "Berhasil", True, sales_schema.dump(salesman))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
@@ -927,8 +916,7 @@ def area_pen(self):
             area_pen_code = request.json["area_pen_code"]
             area_pen_name = request.json["area_pen_name"]
             area_pen_ket = request.json["area_pen_ket"]
-            area_pen = AreaPenjualanMdb(
-                area_pen_code, area_pen_name, area_pen_ket)
+            area_pen = AreaPenjualanMdb(area_pen_code, area_pen_name, area_pen_ket)
             db.session.add(area_pen)
             db.session.commit()
 
@@ -1057,8 +1045,7 @@ def currency(self):
             db.session.add(curren)
             db.session.commit()
 
-            result = response(200, "Berhasil", True,
-                              currency_schema.dump(curren))
+            result = response(200, "Berhasil", True, currency_schema.dump(curren))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
@@ -1081,8 +1068,7 @@ def currency_id(self, id):
             curren.date = request.json["date"]
             curren.rate = request.json["rate"]
             db.session.commit()
-            result = response(200, "Berhasil", True,
-                              currency_schema.dump(curren))
+            result = response(200, "Berhasil", True, currency_schema.dump(curren))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
@@ -1110,8 +1096,7 @@ def rules_pay(self):
             db.session.add(rules_pay)
             db.session.commit()
 
-            result = response(200, "Berhasil", True,
-                              rpay_schema.dump(rules_pay))
+            result = response(200, "Berhasil", True, rpay_schema.dump(rules_pay))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
@@ -1133,8 +1118,7 @@ def rules_pay_id(self, id):
             rules_pay.day = request.json["day"]
             rules_pay.ket = request.json["ket"]
             db.session.commit()
-            result = response(200, "Berhasil", True,
-                              rpay_schema.dump(rules_pay))
+            result = response(200, "Berhasil", True, rpay_schema.dump(rules_pay))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
@@ -1309,12 +1293,10 @@ def company_id(self, id):
             if company.cp_logo != cp_logo:
                 if company.cp_logo != "" and company.cp_logo is not None:
                     if os.path.exists(
-                        os.path.join(
-                            app.config["UPLOAD_FOLDER"], company.cp_logo)
+                        os.path.join(app.config["UPLOAD_FOLDER"], company.cp_logo)
                     ):
                         os.remove(
-                            os.path.join(
-                                app.config["UPLOAD_FOLDER"], company.cp_logo)
+                            os.path.join(app.config["UPLOAD_FOLDER"], company.cp_logo)
                         )
 
             company.cp_logo = cp_logo
@@ -1391,12 +1373,11 @@ def customer(self):
                 cus_uang_muka,
                 cus_limit,
                 sub_cus,
-                cus_id
+                cus_id,
             )
             db.session.add(customer)
             db.session.commit()
-            result = response(200, "Berhasil", True,
-                              customer_schema.dump(customer))
+            result = response(200, "Berhasil", True, customer_schema.dump(customer))
         except IntegrityError:
             db.session.rollback()
             result = response(
@@ -1406,8 +1387,7 @@ def customer(self):
             return result
     else:
         result = (
-            db.session.query(CustomerMdb, JpelMdb, SubAreaMdb,
-                             CurrencyMdb, PajakMdb)
+            db.session.query(CustomerMdb, JpelMdb, SubAreaMdb, CurrencyMdb, PajakMdb)
             .outerjoin(JpelMdb, JpelMdb.id == CustomerMdb.cus_jpel)
             .outerjoin(SubAreaMdb, SubAreaMdb.id == CustomerMdb.cus_sub_area)
             .outerjoin(CurrencyMdb, CurrencyMdb.id == CustomerMdb.cus_curren)
@@ -1476,8 +1456,7 @@ def customer_id(self, id):
         cus = CustomerMdb.query.all()
 
         result = (
-            db.session.query(CustomerMdb, JpelMdb, SubAreaMdb,
-                             CurrencyMdb, PajakMdb)
+            db.session.query(CustomerMdb, JpelMdb, SubAreaMdb, CurrencyMdb, PajakMdb)
             .outerjoin(JpelMdb, JpelMdb.id == CustomerMdb.cus_jpel)
             .outerjoin(SubAreaMdb, SubAreaMdb.id == CustomerMdb.cus_sub_area)
             .outerjoin(CurrencyMdb, CurrencyMdb.id == CustomerMdb.cus_curren)
@@ -1546,8 +1525,7 @@ def supplier(self):
             )
             db.session.add(supplier)
             db.session.commit()
-            result = response(200, "Berhasil", True,
-                              supplier_schema.dump(supplier))
+            result = response(200, "Berhasil", True, supplier_schema.dump(supplier))
         except IntegrityError:
             db.session.rollback()
             result = response(
@@ -1812,24 +1790,31 @@ def unit(self):
 
         try:
             if "konversi" in request.json:
-                konversi = request.json['konversi']
+                konversi = request.json["konversi"]
                 u = []
                 for x in konversi:
-                    if x['u_from'] and x['u_to']:
-                        u.append(UnitMdb(code, name, type, desc,
-                                         active, x['qty'], x['u_from'], x['u_to']))
+                    if x["u_from"] and x["u_to"]:
+                        u.append(
+                            UnitMdb(
+                                code,
+                                name,
+                                type,
+                                desc,
+                                active,
+                                x["qty"],
+                                x["u_from"],
+                                x["u_to"],
+                            )
+                        )
                 if len(u) > 0:
                     db.session.add_all(u)
                     db.session.commit()
-                    result = response(200, "Berhasil", True,
-                                      units_schema.dump(u))
+                    result = response(200, "Berhasil", True, units_schema.dump(u))
                 else:
-                    u = UnitMdb(code, name, type, desc,
-                                active, qty, u_from, u_to)
+                    u = UnitMdb(code, name, type, desc, active, qty, u_from, u_to)
                     db.session.add(u)
                     db.session.commit()
-                    result = response(200, "Berhasil", True,
-                                      unit_schema.dump(u))
+                    result = response(200, "Berhasil", True, unit_schema.dump(u))
         except IntegrityError:
             db.session.rollback()
             result = response(
@@ -1842,13 +1827,11 @@ def unit(self):
             if x.type == "k" and x.u_from:
                 for y in units:
                     if x.u_from == y.id:
-                        x.u_from = UnitSchema(
-                            only=["id", "code", "name"]).dump(y)
+                        x.u_from = UnitSchema(only=["id", "code", "name"]).dump(y)
             if x.type == "k" and x.u_to:
                 for y in units:
                     if x.u_to == y.id:
-                        x.u_to = UnitSchema(
-                            only=["id", "code", "name"]).dump(y)
+                        x.u_to = UnitSchema(only=["id", "code", "name"]).dump(y)
 
         return response(200, "Berhasil", True, units_schema.dump(units))
 
@@ -1856,12 +1839,22 @@ def unit(self):
 @app.route("/v1/api/unit-konversi", methods=["POST"])
 @token_required
 def unit_convert(self):
-    konversi = request.json['konversi']
+    konversi = request.json["konversi"]
     u = []
     for x in konversi:
-        if x['code'] and x['qty'] and x['u_from'] and x['u_to']:
-            u.append(UnitMdb(x['code'], x['code'], "k", None,
-                     True, x['qty'], x['u_from'], x['u_to']))
+        if x["code"] and x["qty"] and x["u_from"] and x["u_to"]:
+            u.append(
+                UnitMdb(
+                    x["code"],
+                    x["code"],
+                    "k",
+                    None,
+                    True,
+                    x["qty"],
+                    x["u_from"],
+                    x["u_to"],
+                )
+            )
 
     db.session.add_all(u)
     db.session.commit()
@@ -1883,19 +1876,29 @@ def satuan_id(self, id):
 
         old_ids = []
         new_unit = []
-        if 'konversi' in request.json:
-            konversi = request.json['konversi']
+        if "konversi" in request.json:
+            konversi = request.json["konversi"]
             for x in konversi:
-                if x['u_from'] and x['u_to']:
-                    if x['id'] != 0:
-                        old_ids.append(x['id'])
+                if x["u_from"] and x["u_to"]:
+                    if x["id"] != 0:
+                        old_ids.append(x["id"])
                     else:
                         new_unit.append(
-                            UnitMdb(code, name, type, desc, active, x['qty'], x['u_from'], x['u_to']))
+                            UnitMdb(
+                                code,
+                                name,
+                                type,
+                                desc,
+                                active,
+                                x["qty"],
+                                x["u_from"],
+                                x["u_to"],
+                            )
+                        )
             if len(old_ids) > 0:
-                old_units = (db.session.query(UnitMdb)
-                             .filter(UnitMdb.id.in_(old_ids))
-                             .all())
+                old_units = (
+                    db.session.query(UnitMdb).filter(UnitMdb.id.in_(old_ids)).all()
+                )
                 for x in old_units:
                     x.code = code
                     x.name = name
@@ -1903,10 +1906,10 @@ def satuan_id(self, id):
                     x.desc = desc
                     x.active = active
                     for y in konversi:
-                        if y['id'] == x.id:
-                            x.qty = y['qty']
-                            x.u_from = y['u_from']
-                            x.u_to = y['u_to']
+                        if y["id"] == x.id:
+                            x.qty = y["qty"]
+                            x.u_from = y["u_from"]
+                            x.u_to = y["u_to"]
 
             if len(new_unit) > 0:
                 db.session.add_all(new_unit)
@@ -1934,13 +1937,11 @@ def satuan_id(self, id):
         if x.type == "k" and x.u_from:
             for y in result:
                 if x.u_from == y.id:
-                    x.u_from = UnitSchema(
-                        only=["id", "code", "name"]).dump(y)
+                    x.u_from = UnitSchema(only=["id", "code", "name"]).dump(y)
         if x.type == "k" and x.u_to:
             for y in result:
                 if x.u_to == y.id:
-                    x.u_to = UnitSchema(
-                        only=["id", "code", "name"]).dump(y)
+                    x.u_to = UnitSchema(only=["id", "code", "name"]).dump(y)
 
         return response(200, "Berhasil", True, unit_schema.dump(units))
 
@@ -2056,13 +2057,9 @@ def product_id(self, id):
             if prod.image != image:
                 if prod.image != "" and prod.image is not None:
                     if os.path.exists(
-                        os.path.join(
-                            app.config["UPLOAD_FOLDER"], prod.image)
+                        os.path.join(app.config["UPLOAD_FOLDER"], prod.image)
                     ):
-                        os.remove(
-                            os.path.join(
-                                app.config["UPLOAD_FOLDER"], prod.image)
-                        )
+                        os.remove(os.path.join(app.config["UPLOAD_FOLDER"], prod.image))
 
             prod.image = image
 
@@ -2101,8 +2098,7 @@ def divisi(self):
             db.session.add(divisi)
             db.session.commit()
 
-            result = response(200, "Berhasil", True,
-                              division_schema.dump(divisi))
+            result = response(200, "Berhasil", True, division_schema.dump(divisi))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
@@ -2124,8 +2120,7 @@ def divisi_id(self, id):
             divisi.name = request.json["name"]
             divisi.desc = request.json["desc"]
             db.session.commit()
-            result = response(200, "Berhasil", True,
-                              division_schema.dump(divisi))
+            result = response(200, "Berhasil", True, division_schema.dump(divisi))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
@@ -2171,8 +2166,7 @@ def groupPro(self):
             )
             db.session.add(groupPro)
             db.session.commit()
-            result = response(200, "Berhasil", True,
-                              groupPro_schema.dump(groupPro))
+            result = response(200, "Berhasil", True, groupPro_schema.dump(groupPro))
         except IntegrityError:
             db.session.rollback()
             result = response(
@@ -2254,13 +2248,13 @@ def pajak(self):
             acc_sls_fax = request.json["acc_sls_fax"]
             acc_pur_fax = request.json["acc_pur_fax"]
             combined = request.json["combined"]
-            pajak = PajakMdb(type, name, nilai, cutting,
-                             acc_sls_fax, acc_pur_fax, combined)
+            pajak = PajakMdb(
+                type, name, nilai, cutting, acc_sls_fax, acc_pur_fax, combined
+            )
             db.session.add(pajak)
             db.session.commit()
 
-            result = response(200, "Berhasil", True,
-                              pajk_schema.dump(pajak))
+            result = response(200, "Berhasil", True, pajk_schema.dump(pajak))
         finally:
             return result
     else:
@@ -2283,8 +2277,7 @@ def pajak_id(self, id):
             pajak.acc_pur_fax = request.json["acc_pur_fax"]
             pajak.combined = request.json["combined"]
             db.session.commit()
-            result = response(200, "Berhasil", True,
-                              pajk_schema.dump(pajak))
+            result = response(200, "Berhasil", True, pajk_schema.dump(pajak))
         finally:
             return result
     elif request.method == "DELETE":
@@ -2310,8 +2303,7 @@ def jasa(self):
             db.session.add(jasa)
             db.session.commit()
 
-            result = response(200, "Berhasil", True,
-                              jasa_schema.dump(jasa))
+            result = response(200, "Berhasil", True, jasa_schema.dump(jasa))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
@@ -2347,8 +2339,7 @@ def jasa_id(self, id):
             jasa.desc = request.json["desc"]
             jasa.acc_id = request.json["acc_id"]
             db.session.commit()
-            result = response(200, "Berhasil", True,
-                              jasa_schema.dump(jasa))
+            result = response(200, "Berhasil", True, jasa_schema.dump(jasa))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
@@ -2389,27 +2380,42 @@ def rp(self):
             ref_sup = request.json["ref_sup"]
             ref_ket = request.json["ref_ket"]
 
-            rp = PreqMdb(req_code, req_date, req_dep,
-                         req_ket, refrence, ref_sup, ref_ket, 0)
+            rp = PreqMdb(
+                req_code, req_date, req_dep, req_ket, refrence, ref_sup, ref_ket, 0
+            )
             db.session.add(rp)
             db.session.commit()
 
-            rprod = request.json['rprod']
+            rprod = request.json["rprod"]
             all_prod = []
             for x in rprod:
-                if x['prod_id'] and x['unit_id'] and x['request']:
+                if x["prod_id"] and x["unit_id"] and x["request"]:
                     all_prod.append(
-                        RprodMdb(rp.id, x['prod_id'], x['unit_id'], x['request'], x['request']))
+                        RprodMdb(
+                            rp.id,
+                            x["prod_id"],
+                            x["unit_id"],
+                            x["request"],
+                            x["request"],
+                        )
+                    )
 
             if len(all_prod) > 0:
                 db.session.add_all(all_prod)
 
-            rjasa = request.json['rjasa']
+            rjasa = request.json["rjasa"]
             all_jasa = []
             for x in rjasa:
-                if x['jasa_id'] and x['request'] and x['unit_id']:
-                    all_jasa.append(RjasaMdb(
-                        rp.id, x['jasa_id'], x['unit_id'], x['request'], x['request']))
+                if x["jasa_id"] and x["request"] and x["unit_id"]:
+                    all_jasa.append(
+                        RjasaMdb(
+                            rp.id,
+                            x["jasa_id"],
+                            x["unit_id"],
+                            x["request"],
+                            x["request"],
+                        )
+                    )
 
             if len(all_jasa) > 0:
                 db.session.add_all(all_jasa)
@@ -2464,7 +2470,7 @@ def rp(self):
                 {
                     "id": x[0].id,
                     "req_code": x[0].req_code,
-                    "req_date": PreqSchema(only=['req_date']).dump(x[0])['req_date'],
+                    "req_date": PreqSchema(only=["req_date"]).dump(x[0])["req_date"],
                     "req_dep": ccost_schema.dump(x[1]) if x[1] else None,
                     "req_ket": x[0].req_ket,
                     "refrence": x[0].refrence,
@@ -2472,7 +2478,7 @@ def rp(self):
                     "ref_ket": x[0].ref_ket,
                     "status": x[0].status,
                     "rprod": product,
-                    "rjasa": jasa
+                    "rjasa": jasa,
                 }
             )
 
@@ -2494,8 +2500,8 @@ def rp_id(self, id):
             refrence = request.json["refrence"]
             ref_sup = request.json["ref_sup"]
             ref_ket = request.json["ref_ket"]
-            rprod = request.json['rprod']
-            rjasa = request.json['rjasa']
+            rprod = request.json["rprod"]
+            rjasa = request.json["rjasa"]
 
             preq.req_code = req_code
             preq.req_date = req_date
@@ -2509,12 +2515,19 @@ def rp_id(self, id):
             new_prod = []
 
             for x in rprod:
-                if x['prod_id'] and x['unit_id'] and x['request']:
-                    if x['id'] != 0:
-                        old_prod.append(x['id'])
+                if x["prod_id"] and x["unit_id"] and x["request"]:
+                    if x["id"] != 0:
+                        old_prod.append(x["id"])
                     else:
-                        new_prod.append(RprodMdb(
-                            preq.id, x['prod_id'], x['unit_id'], x['request'], x['request']))
+                        new_prod.append(
+                            RprodMdb(
+                                preq.id,
+                                x["prod_id"],
+                                x["unit_id"],
+                                x["request"],
+                                x["request"],
+                            )
+                        )
 
             if len(old_prod) > 0:
                 for x in old_prod:
@@ -2524,10 +2537,10 @@ def rp_id(self, id):
                         else:
                             if y.id == x:
                                 for z in rprod:
-                                    if z['id'] == x:
-                                        y.prod_id = z['prod_id']
-                                        y.unit_id = z['unit_id']
-                                        y.request = z['request']
+                                    if z["id"] == x:
+                                        y.prod_id = z["prod_id"]
+                                        y.unit_id = z["unit_id"]
+                                        y.request = z["request"]
 
             if len(new_prod) > 0:
                 db.session.add_all(new_prod)
@@ -2536,12 +2549,22 @@ def rp_id(self, id):
             new_jasa = []
 
             for x in rjasa:
-                if x['jasa_id'] and x['qty'] and x['unit_id']:
-                    if x['id'] != 0:
-                        old_jasa.append(x['id'])
+                if x["jasa_id"] and x["qty"] and x["unit_id"]:
+                    if x["id"] != 0:
+                        old_jasa.append(x["id"])
                     else:
-                        new_jasa.append(RjasaMdb(
-                            preq.id, None, x['jasa_id'], x['unit_id'], x['qty'], None, None, None))
+                        new_jasa.append(
+                            RjasaMdb(
+                                preq.id,
+                                None,
+                                x["jasa_id"],
+                                x["unit_id"],
+                                x["qty"],
+                                None,
+                                None,
+                                None,
+                            )
+                        )
 
             if len(old_jasa) > 0:
                 for x in old_jasa:
@@ -2551,10 +2574,10 @@ def rp_id(self, id):
                         else:
                             if y.id == x:
                                 for z in rjasa:
-                                    if z['id'] == x:
-                                        y.jasa_id = z['jasa_id']
-                                        y.unit_id = z['unit_id']
-                                        y.qty = z['qty']
+                                    if z["id"] == x:
+                                        y.jasa_id = z["jasa_id"]
+                                        y.unit_id = z["unit_id"]
+                                        y.qty = z["qty"]
 
             if len(new_jasa) > 0:
                 db.session.add_all(new_jasa)
@@ -2575,7 +2598,7 @@ def rp_id(self, id):
                 "ref_ket": preq.ref_ket,
                 "status": preq.status,
                 "rprod": rprods_schema.dump(product),
-                "rjasa": rjasas_schema.dump(jasa)
+                "rjasa": rjasas_schema.dump(jasa),
             }
 
             return response(200, "Berhasil", True, final)
@@ -2592,7 +2615,9 @@ def rp_id(self, id):
                 db.session.commit()
                 return response(200, "Berhasil", True, None)
 
-        return response(400, "Tidak dapat mengedit karena status tidak open", False, None)
+        return response(
+            400, "Tidak dapat mengedit karena status tidak open", False, None
+        )
     else:
         preq = (
             db.session.query(PreqMdb, CcostMdb, SupplierMdb)
@@ -2641,7 +2666,7 @@ def rp_id(self, id):
             "ref_ket": preq[0].ref_ket,
             "status": preq[0].status,
             "rprod": prods,
-            "rjasa": jasas
+            "rjasa": jasas,
         }
 
         return response(200, "Berhasil", True, final)
@@ -2652,22 +2677,35 @@ def rp_id(self, id):
 def po(self):
     if request.method == "POST":
         try:
-            po_code = request.json['po_code']
-            po_date = request.json['po_date']
-            preq_id = request.json['preq_id']
-            sup_id = request.json['sup_id']
-            ppn_type = request.json['ppn_type']
-            top = request.json['top']
-            due_date = request.json['due_date']
-            split_inv = request.json['split_inv']
-            prod_disc = request.json['prod_disc']
-            jasa_disc = request.json['jasa_disc']
-            total_disc = request.json['total_disc']
-            pprod = request.json['pprod']
-            pjasa = request.json['pjasa']
+            po_code = request.json["po_code"]
+            po_date = request.json["po_date"]
+            preq_id = request.json["preq_id"]
+            sup_id = request.json["sup_id"]
+            ppn_type = request.json["ppn_type"]
+            top = request.json["top"]
+            due_date = request.json["due_date"]
+            split_inv = request.json["split_inv"]
+            prod_disc = request.json["prod_disc"]
+            jasa_disc = request.json["jasa_disc"]
+            total_disc = request.json["total_disc"]
+            pprod = request.json["pprod"]
+            pjasa = request.json["pjasa"]
 
-            po = PoMdb(po_code, po_date, preq_id, sup_id, ppn_type, top,
-                       due_date, split_inv, prod_disc, jasa_disc, total_disc, 0, 0)
+            po = PoMdb(
+                po_code,
+                po_date,
+                preq_id,
+                sup_id,
+                ppn_type,
+                top,
+                due_date,
+                split_inv,
+                prod_disc,
+                jasa_disc,
+                total_disc,
+                0,
+                0,
+            )
 
             db.session.add(po)
             db.session.commit()
@@ -2680,20 +2718,59 @@ def po(self):
             new_prod = []
             for x in pprod:
                 for y in product:
-                    if x['id'] == y.id:
-                        y.remain = y.remain-int(x['order'])
-                if x['prod_id'] and x['unit_id'] and x['order'] and int(x['order']) > 0 and x['price'] and int(x['price']) > 0:
-                    new_prod.append(PprodDdb(po.id, preq_id, x['id'] if x['id'] != 0 else None, x['prod_id'], x['unit_id'],
-                                             x['order'], x['price'], x['disc'], x['nett_price'], x['total']))
+                    if x["id"] == y.id:
+                        y.remain = y.remain - int(x["order"])
+                if (
+                    x["prod_id"]
+                    and x["unit_id"]
+                    and x["order"]
+                    and int(x["order"]) > 0
+                    and x["price"]
+                    and int(x["price"]) > 0
+                ):
+                    new_prod.append(
+                        PprodDdb(
+                            po.id,
+                            preq_id,
+                            x["id"] if x["id"] != 0 else None,
+                            x["prod_id"],
+                            x["unit_id"],
+                            x["order"],
+                            x["price"],
+                            x["disc"],
+                            x["nett_price"],
+                            x["total"],
+                        )
+                    )
 
             new_jasa = []
             for x in pjasa:
                 for y in jasa:
-                    if x['id'] == y.id:
-                        y.remain = y.remain-int(x['order'])
-                if x['sup_id'] and x['jasa_id'] and x['unit_id'] and x['order'] and int(x['order']) > 0 and x['price'] and int(x['price']) > 0:
-                    new_jasa.append(PjasaDdb(po.id,
-                                             preq_id, x['id'] if x['id'] != 0 else None, x['sup_id'], x['jasa_id'], x['unit_id'], x['order'], x['price'], x['disc'], x['total']))
+                    if x["id"] == y.id:
+                        y.remain = y.remain - int(x["order"])
+                if (
+                    x["sup_id"]
+                    and x["jasa_id"]
+                    and x["unit_id"]
+                    and x["order"]
+                    and int(x["order"]) > 0
+                    and x["price"]
+                    and int(x["price"]) > 0
+                ):
+                    new_jasa.append(
+                        PjasaDdb(
+                            po.id,
+                            preq_id,
+                            x["id"] if x["id"] != 0 else None,
+                            x["sup_id"],
+                            x["jasa_id"],
+                            x["unit_id"],
+                            x["order"],
+                            x["price"],
+                            x["disc"],
+                            x["total"],
+                        )
+                    )
 
             if len(new_prod) > 0:
                 db.session.add_all(new_prod)
@@ -2727,8 +2804,7 @@ def po(self):
             return result
     else:
         po = (
-            db.session.query(PoMdb, PreqMdb, CcostMdb,
-                             SupplierMdb, RulesPayMdb)
+            db.session.query(PoMdb, PreqMdb, CcostMdb, SupplierMdb, RulesPayMdb)
             .outerjoin(PreqMdb, PreqMdb.id == PoMdb.preq_id)
             .outerjoin(CcostMdb, CcostMdb.id == PreqMdb.req_dep)
             .outerjoin(SupplierMdb, SupplierMdb.id == PoMdb.sup_id)
@@ -2767,31 +2843,39 @@ def po(self):
                     z[0].unit_id = unit_schema.dump(z[2])
                     jasa.append(pjasa_schema.dump(z[0]))
 
-            final.append({
-                "id": x[0].id,
-                "po_code": x[0].po_code,
-                "po_date": PoSchema(only=['po_date']).dump(x[0])['po_date'],
-                "preq_id": {
-                    "id": x[1].id,
-                    "req_code": x[1].req_code,
-                    "req_date": PreqSchema(only=['req_date']).dump(x[1])['req_date'],
-                    "req_dep": ccost_schema.dump(x[2]) if x[2] else None,
-                    "req_ket": x[1].req_ket,
-                    "status": x[1].status,
-                } if x[1] else None,
-                "ppn_type": x[0].ppn_type,
-                "sup_id": supplier_schema.dump(x[3]) if x[3] else None,
-                "top": rpay_schema.dump(x[4]) if x[4] else None,
-                "due_date": PoSchema(only=['due_date']).dump(x[0])['due_date'] if x[0].due_date else None,
-                "split_inv": x[0].split_inv,
-                "prod_disc": x[0].prod_disc,
-                "jasa_disc": x[0].jasa_disc,
-                "total_disc": x[0].total_disc,
-                "status": x[0].status,
-                "print": x[0].print,
-                "pprod": product,
-                "pjasa": jasa,
-            })
+            final.append(
+                {
+                    "id": x[0].id,
+                    "po_code": x[0].po_code,
+                    "po_date": PoSchema(only=["po_date"]).dump(x[0])["po_date"],
+                    "preq_id": {
+                        "id": x[1].id,
+                        "req_code": x[1].req_code,
+                        "req_date": PreqSchema(only=["req_date"]).dump(x[1])[
+                            "req_date"
+                        ],
+                        "req_dep": ccost_schema.dump(x[2]) if x[2] else None,
+                        "req_ket": x[1].req_ket,
+                        "status": x[1].status,
+                    }
+                    if x[1]
+                    else None,
+                    "ppn_type": x[0].ppn_type,
+                    "sup_id": supplier_schema.dump(x[3]) if x[3] else None,
+                    "top": rpay_schema.dump(x[4]) if x[4] else None,
+                    "due_date": PoSchema(only=["due_date"]).dump(x[0])["due_date"]
+                    if x[0].due_date
+                    else None,
+                    "split_inv": x[0].split_inv,
+                    "prod_disc": x[0].prod_disc,
+                    "jasa_disc": x[0].jasa_disc,
+                    "total_disc": x[0].total_disc,
+                    "status": x[0].status,
+                    "print": x[0].print,
+                    "pprod": product,
+                    "pjasa": jasa,
+                }
+            )
 
         return response(200, "Berhasil", True, final)
 
@@ -2803,19 +2887,19 @@ def po_id(self, id):
     if request.method == "PUT":
         if po.print == 0 and po.status == 0:
             try:
-                po_code = request.json['po_code']
-                po_date = request.json['po_date']
-                preq_id = request.json['preq_id']
-                sup_id = request.json['sup_id']
-                ppn_type = request.json['ppn_type']
-                top = request.json['top']
-                due_date = request.json['due_date']
-                split_inv = request.json['split_inv']
-                prod_disc = request.json['prod_disc']
-                jasa_disc = request.json['jasa_disc']
-                total_disc = request.json['total_disc']
-                pprod = request.json['pprod']
-                pjasa = request.json['pjasa']
+                po_code = request.json["po_code"]
+                po_date = request.json["po_date"]
+                preq_id = request.json["preq_id"]
+                sup_id = request.json["sup_id"]
+                ppn_type = request.json["ppn_type"]
+                top = request.json["top"]
+                due_date = request.json["due_date"]
+                split_inv = request.json["split_inv"]
+                prod_disc = request.json["prod_disc"]
+                jasa_disc = request.json["jasa_disc"]
+                total_disc = request.json["total_disc"]
+                pprod = request.json["pprod"]
+                pjasa = request.json["pjasa"]
 
                 po.po_code = po_code
                 po.po_date = po_date
@@ -2831,50 +2915,87 @@ def po_id(self, id):
 
                 preq = PreqMdb.query.filter(PreqMdb.id == preq_id).first()
 
-                product = RprodMdb.query.filter(
-                    RprodMdb.preq_id == po.preq_id).all()
-                jasa = RjasaMdb.query.filter(
-                    RjasaMdb.preq_id == po.preq_id).all()
-                old_prod = PprodDdb.query.filter(
-                    PprodDdb.preq_id == po.preq_id).all()
-                old_jasa = PjasaDdb.query.filter(
-                    PjasaDdb.preq_id == po.preq_id).all()
+                product = RprodMdb.query.filter(RprodMdb.preq_id == po.preq_id).all()
+                jasa = RjasaMdb.query.filter(RjasaMdb.preq_id == po.preq_id).all()
+                old_prod = PprodDdb.query.filter(PprodDdb.preq_id == po.preq_id).all()
+                old_jasa = PjasaDdb.query.filter(PjasaDdb.preq_id == po.preq_id).all()
 
                 new_prod = []
                 for x in pprod:
                     for y in product:
-                        if x['rprod_id'] == y.id:
+                        if x["rprod_id"] == y.id:
                             for z in old_prod:
-                                if x['id'] == z.id:
-                                    y.remain = z.order-int(x['order'])+y.remain
-                                    z.prod_id = x['prod_id']
-                                    z.unit_id = x['unit_id']
-                                    z.order = x['order']
-                                    z.price = x['price']
-                                    z.nett_price = x['nett_price']
-                                    z.disc = x['disc']
-                                    z.total = x['total']
-                    if x['id'] == 0 and x['prod_id'] and x['unit_id'] and x['order'] and int(x['order']) > 0 and x['price'] and int(x['price']) > 0:
-                        new_prod.append(PprodDdb(po.id, preq_id, None if x['id'] != 0 else None, x['prod_id'], x['unit_id'],
-                                                 x['order'], x['price'], x['disc'], x['nett_price'], x['total']))
+                                if x["id"] == z.id:
+                                    y.remain = z.order - int(x["order"]) + y.remain
+                                    z.prod_id = x["prod_id"]
+                                    z.unit_id = x["unit_id"]
+                                    z.order = x["order"]
+                                    z.price = x["price"]
+                                    z.nett_price = x["nett_price"]
+                                    z.disc = x["disc"]
+                                    z.total = x["total"]
+                    if (
+                        x["id"] == 0
+                        and x["prod_id"]
+                        and x["unit_id"]
+                        and x["order"]
+                        and int(x["order"]) > 0
+                        and x["price"]
+                        and int(x["price"]) > 0
+                    ):
+                        new_prod.append(
+                            PprodDdb(
+                                po.id,
+                                preq_id,
+                                None if x["id"] != 0 else None,
+                                x["prod_id"],
+                                x["unit_id"],
+                                x["order"],
+                                x["price"],
+                                x["disc"],
+                                x["nett_price"],
+                                x["total"],
+                            )
+                        )
 
                 new_jasa = []
                 for x in pjasa:
                     for y in jasa:
-                        if x['rjasa_id'] == y.id:
+                        if x["rjasa_id"] == y.id:
                             for z in old_jasa:
-                                if x['id'] == z.id:
-                                    y.remain = z.order-int(x['order'])+y.remain
-                                    z.sup_id = x['sup_id']
-                                    z.jasa_id = x['prod_id']
-                                    z.unit_id = x['unit_id']
-                                    z.order = x['order']
-                                    z.price = x['price']
-                                    z.disc = x['disc']
-                                    z.total = x['total']
-                    if x['id'] == 0 and x['sup_id'] and x['jasa_id'] and x['unit_id'] and x['order'] and int(x['order']) > 0 and x['price'] and int(x['price']) > 0:
-                        new_jasa.append(PjasaDdb(
-                            po.id, preq_id, None if x['id'] != 0 else None, x['sup_id'], x['jasa_id'], x['unit_id'], x['order'], x['price'], x['disc'], x['total']))
+                                if x["id"] == z.id:
+                                    y.remain = z.order - int(x["order"]) + y.remain
+                                    z.sup_id = x["sup_id"]
+                                    z.jasa_id = x["prod_id"]
+                                    z.unit_id = x["unit_id"]
+                                    z.order = x["order"]
+                                    z.price = x["price"]
+                                    z.disc = x["disc"]
+                                    z.total = x["total"]
+                    if (
+                        x["id"] == 0
+                        and x["sup_id"]
+                        and x["jasa_id"]
+                        and x["unit_id"]
+                        and x["order"]
+                        and int(x["order"]) > 0
+                        and x["price"]
+                        and int(x["price"]) > 0
+                    ):
+                        new_jasa.append(
+                            PjasaDdb(
+                                po.id,
+                                preq_id,
+                                None if x["id"] != 0 else None,
+                                x["sup_id"],
+                                x["jasa_id"],
+                                x["unit_id"],
+                                x["order"],
+                                x["price"],
+                                x["disc"],
+                                x["total"],
+                            )
+                        )
 
                 if len(new_prod) > 0:
                     db.session.add_all(new_prod)
@@ -2905,14 +3026,10 @@ def po_id(self, id):
 
     elif request.method == "DELETE":
         if po.status == 0:
-            product = RprodMdb.query.filter(
-                RprodMdb.preq_id == po.preq_id).all()
-            jasa = RjasaMdb.query.filter(
-                RjasaMdb.preq_id == po.preq_id).all()
-            pprod = PprodDdb.query.filter(
-                PprodDdb.po_id == po.id).all()
-            pjasa = PjasaDdb.query.filter(
-                PjasaDdb.po_id == po.id).all()
+            product = RprodMdb.query.filter(RprodMdb.preq_id == po.preq_id).all()
+            jasa = RjasaMdb.query.filter(RjasaMdb.preq_id == po.preq_id).all()
+            pprod = PprodDdb.query.filter(PprodDdb.po_id == po.id).all()
+            pjasa = PjasaDdb.query.filter(PjasaDdb.po_id == po.id).all()
 
             for y in product:
                 for z in pprod:
@@ -2931,8 +3048,7 @@ def po_id(self, id):
             return response(200, "Berhasil", True, None)
     else:
         x = (
-            db.session.query(PoMdb, PreqMdb, CcostMdb,
-                             SupplierMdb, RulesPayMdb)
+            db.session.query(PoMdb, PreqMdb, CcostMdb, SupplierMdb, RulesPayMdb)
             .outerjoin(PreqMdb, PreqMdb.id == PoMdb.preq_id)
             .outerjoin(CcostMdb, CcostMdb.id == PreqMdb.req_dep)
             .outerjoin(SupplierMdb, SupplierMdb.id == PoMdb.sup_id)
@@ -2972,11 +3088,11 @@ def po_id(self, id):
         final = {
             "id": x[0].id,
             "po_code": x[0].po_code,
-            "po_date": PoSchema(only=['po_date']).dump(x[0])['po_date'],
+            "po_date": PoSchema(only=["po_date"]).dump(x[0])["po_date"],
             "preq_id": {
                 "id": x[1].id,
                 "req_code": x[1].req_code,
-                "req_date": PreqSchema(only=['req_date']).dump(x[1])['req_date'],
+                "req_date": PreqSchema(only=["req_date"]).dump(x[1])["req_date"],
                 "req_dep": ccost_schema.dump(x[2]),
                 "req_ket": x[1].req_ket,
                 "status": x[1].status,
@@ -2984,7 +3100,7 @@ def po_id(self, id):
             "ppn_type": x[0].ppn_type,
             "sup_id": supplier_schema.dump(x[3]),
             "top": rpay_schema.dump(x[4]),
-            "due_date": PoSchema(only=['due_date']).dump(x[0])['due_date'],
+            "due_date": PoSchema(only=["due_date"]).dump(x[0])["due_date"],
             "split_inv": x[0].split_inv,
             "prod_disc": x[0].prod_disc,
             "jasa_disc": x[0].jasa_disc,
@@ -3003,24 +3119,39 @@ def po_id(self, id):
 def so(self):
     if request.method == "POST":
         try:
-            so_code = request.json['so_code']
-            so_date = request.json['so_date']
-            pel_id = request.json['pel_id']
-            ppn_type = request.json['ppn_type']
-            sub_addr = request.json['sub_addr']
-            sub_id = request.json['sub_id']
-            req_date = request.json['req_date']
-            top = request.json['top']
-            due_date = request.json['due_date']
-            split_inv = request.json['split_inv']
-            prod_disc = request.json['prod_disc']
-            jasa_disc = request.json['jasa_disc']
-            total_disc = request.json['total_disc']
-            sprod = request.json['sprod']
-            sjasa = request.json['sjasa']
+            so_code = request.json["so_code"]
+            so_date = request.json["so_date"]
+            pel_id = request.json["pel_id"]
+            ppn_type = request.json["ppn_type"]
+            sub_addr = request.json["sub_addr"]
+            sub_id = request.json["sub_id"]
+            req_date = request.json["req_date"]
+            top = request.json["top"]
+            due_date = request.json["due_date"]
+            split_inv = request.json["split_inv"]
+            prod_disc = request.json["prod_disc"]
+            jasa_disc = request.json["jasa_disc"]
+            total_disc = request.json["total_disc"]
+            sprod = request.json["sprod"]
+            sjasa = request.json["sjasa"]
 
-            so = SordHdb(so_code, so_date, pel_id, ppn_type, sub_addr, sub_id, req_date,
-                         top, due_date, split_inv, prod_disc, jasa_disc, total_disc, 0, 0)
+            so = SordHdb(
+                so_code,
+                so_date,
+                pel_id,
+                ppn_type,
+                sub_addr,
+                sub_id,
+                req_date,
+                top,
+                due_date,
+                split_inv,
+                prod_disc,
+                jasa_disc,
+                total_disc,
+                0,
+                0,
+            )
 
             db.session.add(so)
             db.session.commit()
@@ -3028,15 +3159,38 @@ def so(self):
             new_prod = []
             remain = 0
             for x in sprod:
-                if x['prod_id'] and x['unit_id'] and x['order']:
-                    new_prod.append(SprodDdb(so.id, x['prod_id'], x['unit_id'], x['location'], x['request'],
-                                    x['order'], None, x['price'], x['disc'], x['nett_price'], x['total']))
+                if x["prod_id"] and x["unit_id"] and x["order"]:
+                    new_prod.append(
+                        SprodDdb(
+                            so.id,
+                            x["prod_id"],
+                            x["unit_id"],
+                            x["location"],
+                            x["request"],
+                            x["order"],
+                            None,
+                            x["price"],
+                            x["disc"],
+                            x["nett_price"],
+                            x["total"],
+                        )
+                    )
 
             new_jasa = []
             for x in sjasa:
-                if x['sup_id'] and x['jasa_id'] and x['unit_id'] and x['qty']:
-                    new_jasa.append(SjasaDdb(
-                        so.id, x['sup_id'], x['jasa_id'], x['unit_id'], x['qty'], x['price'], x['disc'], x['total']))
+                if x["sup_id"] and x["jasa_id"] and x["unit_id"] and x["qty"]:
+                    new_jasa.append(
+                        SjasaDdb(
+                            so.id,
+                            x["sup_id"],
+                            x["jasa_id"],
+                            x["unit_id"],
+                            x["qty"],
+                            x["price"],
+                            x["disc"],
+                            x["total"],
+                        )
+                    )
 
             if len(new_prod) > 0:
                 db.session.add_all(new_prod)
@@ -3101,26 +3255,28 @@ def so(self):
                     if b.id == x[0].sub_id:
                         x[0].sub_id = customer_schema.dump(b)
 
-            final.append({
-                "id": x[0].id,
-                "so_code": x[0].so_code,
-                "so_date": SordSchema(only=['so_date']).dump(x[0])['so_date'],
-                "pel_id": x[0].pel_id,
-                "ppn_type": x[0].ppn_type,
-                "sub_addr": x[0].sub_addr,
-                "sub_id": x[0].sub_id,
-                "req_date": SordSchema(only=['req_date']).dump(x[0])['req_date'],
-                "top": rpay_schema.dump(x[1]),
-                "due_date": SordSchema(only=['due_date']).dump(x[0])['due_date'],
-                "split_inv": x[0].split_inv,
-                "prod_disc": x[0].prod_disc,
-                "jasa_disc": x[0].jasa_disc,
-                "total_disc": x[0].total_disc,
-                "status": x[0].status,
-                "print": x[0].print,
-                "sprod": product,
-                "sjasa": jasa,
-            })
+            final.append(
+                {
+                    "id": x[0].id,
+                    "so_code": x[0].so_code,
+                    "so_date": SordSchema(only=["so_date"]).dump(x[0])["so_date"],
+                    "pel_id": x[0].pel_id,
+                    "ppn_type": x[0].ppn_type,
+                    "sub_addr": x[0].sub_addr,
+                    "sub_id": x[0].sub_id,
+                    "req_date": SordSchema(only=["req_date"]).dump(x[0])["req_date"],
+                    "top": rpay_schema.dump(x[1]),
+                    "due_date": SordSchema(only=["due_date"]).dump(x[0])["due_date"],
+                    "split_inv": x[0].split_inv,
+                    "prod_disc": x[0].prod_disc,
+                    "jasa_disc": x[0].jasa_disc,
+                    "total_disc": x[0].total_disc,
+                    "status": x[0].status,
+                    "print": x[0].print,
+                    "sprod": product,
+                    "sjasa": jasa,
+                }
+            )
 
         return response(200, "Berhasil", True, final)
 
@@ -3131,21 +3287,21 @@ def so_id(self, id):
     so = SordHdb.query.filter(SordHdb.id == id).first()
     if request.method == "PUT":
         try:
-            so_code = request.json['so_code']
-            so_date = request.json['so_date']
-            pel_id = request.json['pel_id']
-            ppn_type = request.json['ppn_type']
-            sub_addr = request.json['sub_addr']
-            sub_id = request.json['sub_id']
-            req_date = request.json['req_date']
-            top = request.json['top']
-            due_date = request.json['due_date']
-            split_inv = request.json['split_inv']
-            prod_disc = request.json['prod_disc']
-            jasa_disc = request.json['jasa_disc']
-            total_disc = request.json['total_disc']
-            sprod = request.json['sprod']
-            sjasa = request.json['sjasa']
+            so_code = request.json["so_code"]
+            so_date = request.json["so_date"]
+            pel_id = request.json["pel_id"]
+            ppn_type = request.json["ppn_type"]
+            sub_addr = request.json["sub_addr"]
+            sub_id = request.json["sub_id"]
+            req_date = request.json["req_date"]
+            top = request.json["top"]
+            due_date = request.json["due_date"]
+            split_inv = request.json["split_inv"]
+            prod_disc = request.json["prod_disc"]
+            jasa_disc = request.json["jasa_disc"]
+            total_disc = request.json["total_disc"]
+            sprod = request.json["sprod"]
+            sjasa = request.json["sjasa"]
 
             so.so_code = so_code
             so.so_date = so_date
@@ -3167,34 +3323,63 @@ def so_id(self, id):
             new_prod = []
             for x in sprod:
                 for y in product:
-                    if x['id'] == y.id:
-                        y.prod_id = x['prod_id']
-                        y.unit_id = x['unit_id']
-                        y.location = x['location']
-                        y.request = x['request']
-                        y.order = x['order']
-                        y.price = x['price']
-                        y.disc = x['disc']
-                        y.nett_price = x['nett_price']
-                        y.total = x['total']
-                if x['id'] == 0 and x['prod_id'] and x['unit_id'] and x['order']:
-                    new_prod.append(SprodDdb(so.id, x['prod_id'], x['unit_id'], x['location'], x['request'],
-                                    x['order'], None, x['price'], x['disc'], x['nett_price'], x['total']))
+                    if x["id"] == y.id:
+                        y.prod_id = x["prod_id"]
+                        y.unit_id = x["unit_id"]
+                        y.location = x["location"]
+                        y.request = x["request"]
+                        y.order = x["order"]
+                        y.price = x["price"]
+                        y.disc = x["disc"]
+                        y.nett_price = x["nett_price"]
+                        y.total = x["total"]
+                if x["id"] == 0 and x["prod_id"] and x["unit_id"] and x["order"]:
+                    new_prod.append(
+                        SprodDdb(
+                            so.id,
+                            x["prod_id"],
+                            x["unit_id"],
+                            x["location"],
+                            x["request"],
+                            x["order"],
+                            None,
+                            x["price"],
+                            x["disc"],
+                            x["nett_price"],
+                            x["total"],
+                        )
+                    )
 
             new_jasa = []
             for x in sjasa:
                 for y in jasa:
-                    if x['id'] == y.id:
-                        y.sup_id = x['sup_id']
-                        y.jasa_id = x['jasa_id']
-                        y.unit_id = x['unit_id']
-                        y.qty = x['qty']
-                        y.price = x['price']
-                        y.disc = x['disc']
-                        y.total = x['total']
-                if x['id'] == 0 and x['sup_id'] and x['jasa_id'] and x['unit_id'] and x['qty']:
-                    new_jasa.append(SjasaDdb(
-                        so.id, x['sup_id'], x['jasa_id'], x['unit_id'], x['qty'], x['price'], x['disc'], x['total']))
+                    if x["id"] == y.id:
+                        y.sup_id = x["sup_id"]
+                        y.jasa_id = x["jasa_id"]
+                        y.unit_id = x["unit_id"]
+                        y.qty = x["qty"]
+                        y.price = x["price"]
+                        y.disc = x["disc"]
+                        y.total = x["total"]
+                if (
+                    x["id"] == 0
+                    and x["sup_id"]
+                    and x["jasa_id"]
+                    and x["unit_id"]
+                    and x["qty"]
+                ):
+                    new_jasa.append(
+                        SjasaDdb(
+                            so.id,
+                            x["sup_id"],
+                            x["jasa_id"],
+                            x["unit_id"],
+                            x["qty"],
+                            x["price"],
+                            x["disc"],
+                            x["total"],
+                        )
+                    )
 
             if len(new_prod) > 0:
                 db.session.add_all(new_prod)
@@ -3276,14 +3461,14 @@ def so_id(self, id):
         final = {
             "id": x[0].id,
             "so_code": x[0].so_code,
-            "so_date": SordSchema(only=['so_date']).dump(x[0])['so_date'],
+            "so_date": SordSchema(only=["so_date"]).dump(x[0])["so_date"],
             "pel_id": x[0].pel_id,
             "ppn_type": x[0].ppn_type,
             "sub_addr": x[0].sub_addr,
             "sub_id": x[0].sub_id,
-            "req_date": SordSchema(only=['req_date']).dump(x[0])['req_date'],
+            "req_date": SordSchema(only=["req_date"]).dump(x[0])["req_date"],
             "top": rpay_schema.dump(x[1]),
-            "due_date": SordSchema(only=['due_date']).dump(x[0])['due_date'],
+            "due_date": SordSchema(only=["due_date"]).dump(x[0])["due_date"],
             "split_inv": x[0].split_inv,
             "prod_disc": x[0].prod_disc,
             "jasa_disc": x[0].jasa_disc,
@@ -3302,38 +3487,73 @@ def so_id(self, id):
 def order(self):
     if request.method == "POST":
         try:
-            ord_code = request.json['ord_code']
-            ord_date = request.json['ord_date']
-            faktur = request.json['faktur']
-            po_id = request.json['po_id']
-            dep_id = request.json['dep_id']
-            sup_id = request.json['sup_id']
-            top = request.json['top']
-            due_date = request.json['due_date']
-            split_inv = request.json['split_inv']
-            prod_disc = request.json['prod_disc']
-            jasa_disc = request.json['jasa_disc']
-            total_disc = request.json['total_disc']
-            dprod = request.json['dprod']
-            djasa = request.json['djasa']
+            ord_code = request.json["ord_code"]
+            ord_date = request.json["ord_date"]
+            faktur = request.json["faktur"]
+            po_id = request.json["po_id"]
+            dep_id = request.json["dep_id"]
+            sup_id = request.json["sup_id"]
+            top = request.json["top"]
+            due_date = request.json["due_date"]
+            split_inv = request.json["split_inv"]
+            prod_disc = request.json["prod_disc"]
+            jasa_disc = request.json["jasa_disc"]
+            total_disc = request.json["total_disc"]
+            dprod = request.json["dprod"]
+            djasa = request.json["djasa"]
 
-            do = OrdpbHdb(ord_code, ord_date, faktur, po_id, dep_id, sup_id, top, due_date,
-                          split_inv, prod_disc, jasa_disc, total_disc, 0, 0)
+            do = OrdpbHdb(
+                ord_code,
+                ord_date,
+                faktur,
+                po_id,
+                dep_id,
+                sup_id,
+                top,
+                due_date,
+                split_inv,
+                prod_disc,
+                jasa_disc,
+                total_disc,
+                0,
+                0,
+            )
 
             db.session.add(do)
             db.session.commit()
 
             new_product = []
             for x in dprod:
-                if x['prod_id'] and x['unit_id'] and x['order']:
-                    new_product.append(DprodDdb(
-                        do.id, x['prod_id'], x['unit_id'], x['order'], x['price'], x['disc'], x['location'], x['nett_price'], x['total']))
+                if x["prod_id"] and x["unit_id"] and x["order"]:
+                    new_product.append(
+                        DprodDdb(
+                            do.id,
+                            x["prod_id"],
+                            x["unit_id"],
+                            x["order"],
+                            x["price"],
+                            x["disc"],
+                            x["location"],
+                            x["nett_price"],
+                            x["total"],
+                        )
+                    )
 
             new_jasa = []
             for x in djasa:
-                if x['jasa_id'] and x['sup_id'] and x['unit_id'] and x['order']:
-                    new_jasa.append(DjasaDdb(
-                        do.id, x['sup_id'], x['jasa_id'], x['unit_id'], x['order'], x['price'], x['disc'], x['total']))
+                if x["jasa_id"] and x["sup_id"] and x["unit_id"] and x["order"]:
+                    new_jasa.append(
+                        DjasaDdb(
+                            do.id,
+                            x["sup_id"],
+                            x["jasa_id"],
+                            x["unit_id"],
+                            x["order"],
+                            x["price"],
+                            x["disc"],
+                            x["total"],
+                        )
+                    )
 
             if len(new_product) > 0:
                 db.session.add_all(new_product)
@@ -3342,6 +3562,10 @@ def order(self):
                 db.session.add_all(new_jasa)
 
             db.session.commit()
+
+            if po_id:
+                po = PoMdb.query.filter(PoMdb.id == po_id)
+                po.status = 1
 
             if faktur:
                 faktur = FkpbHdb(ord_code, ord_date, do.id, None, None)
@@ -3362,8 +3586,7 @@ def order(self):
             return result
     else:
         do = (
-            db.session.query(OrdpbHdb, CcostMdb,
-                             SupplierMdb, RulesPayMdb, PoMdb)
+            db.session.query(OrdpbHdb, CcostMdb, SupplierMdb, RulesPayMdb, PoMdb)
             .outerjoin(CcostMdb, CcostMdb.id == OrdpbHdb.dep_id)
             .outerjoin(SupplierMdb, SupplierMdb.id == OrdpbHdb.sup_id)
             .outerjoin(RulesPayMdb, RulesPayMdb.id == OrdpbHdb.top)
@@ -3393,8 +3616,7 @@ def order(self):
                 if y[0].ord_id == x[0].id:
                     y[0].prod_id = prod_schema.dump(y[1])
                     y[0].unit_id = unit_schema.dump(y[2])
-                    y[0].location = loct_schema.dump(
-                        y[3]) if y[0].location else None
+                    y[0].location = loct_schema.dump(y[3]) if y[0].location else None
                     product.append(dprod_schema.dump(y[0]))
 
             jasa = []
@@ -3404,25 +3626,27 @@ def order(self):
                     z[0].unit_id = unit_schema.dump(z[2])
                     jasa.append(djasa_schema.dump(z[0]))
 
-            final.append({
-                "id": x[0].id,
-                "ord_code": x[0].ord_code,
-                "ord_date": DordSchema(only=['ord_date']).dump(x[0])['ord_date'],
-                "faktur": x[0].faktur,
-                "po_id": po_schema.dump(x[4]),
-                "dep_id": ccost_schema.dump(x[1]),
-                "sup_id": supplier_schema.dump(x[2]),
-                "top": rpay_schema.dump(x[3]),
-                "due_date": DordSchema(only=['due_date']).dump(x[0])['due_date'],
-                "split_inv": x[0].split_inv,
-                "prod_disc": x[0].prod_disc,
-                "jasa_disc": x[0].jasa_disc,
-                "total_disc": x[0].total_disc,
-                "status": x[0].status,
-                "print": x[0].print,
-                "dprod": product,
-                "djasa": jasa,
-            })
+            final.append(
+                {
+                    "id": x[0].id,
+                    "ord_code": x[0].ord_code,
+                    "ord_date": DordSchema(only=["ord_date"]).dump(x[0])["ord_date"],
+                    "faktur": x[0].faktur,
+                    "po_id": po_schema.dump(x[4]),
+                    "dep_id": ccost_schema.dump(x[1]),
+                    "sup_id": supplier_schema.dump(x[2]),
+                    "top": rpay_schema.dump(x[3]),
+                    "due_date": DordSchema(only=["due_date"]).dump(x[0])["due_date"],
+                    "split_inv": x[0].split_inv,
+                    "prod_disc": x[0].prod_disc,
+                    "jasa_disc": x[0].jasa_disc,
+                    "total_disc": x[0].total_disc,
+                    "status": x[0].status,
+                    "print": x[0].print,
+                    "dprod": product,
+                    "djasa": jasa,
+                }
+            )
 
         return response(200, "Berhasil", True, final)
 
@@ -3433,18 +3657,18 @@ def ord_id(self, id):
     do = OrdpbHdb.query.filter(OrdpbHdb.id == id).first()
     if request.method == "PUT":
         try:
-            ord_code = request.json['ord_code']
-            ord_date = request.json['ord_date']
-            dep_id = request.json['dep_id']
-            sup_id = request.json['sup_id']
-            top = request.json['top']
-            due_date = request.json['due_date']
-            split_inv = request.json['split_inv']
-            prod_disc = request.json['prod_disc']
-            jasa_disc = request.json['jasa_disc']
-            total_disc = request.json['total_disc']
-            dprod = request.json['dprod']
-            djasa = request.json['djasa']
+            ord_code = request.json["ord_code"]
+            ord_date = request.json["ord_date"]
+            dep_id = request.json["dep_id"]
+            sup_id = request.json["sup_id"]
+            top = request.json["top"]
+            due_date = request.json["due_date"]
+            split_inv = request.json["split_inv"]
+            prod_disc = request.json["prod_disc"]
+            jasa_disc = request.json["jasa_disc"]
+            total_disc = request.json["total_disc"]
+            dprod = request.json["dprod"]
+            djasa = request.json["djasa"]
 
             do.ord_code = ord_code
             do.ord_date = ord_date
@@ -3463,33 +3687,60 @@ def ord_id(self, id):
             new_prod = []
             for x in dprod:
                 for y in product:
-                    if x['id'] == y.id:
-                        y.prod_id = x['prod_id']
-                        y.unit_id = x['unit_id']
-                        y.order = x['order']
-                        y.price = x['price']
-                        y.disc = x['disc']
-                        y.nett_price = x['nett_price']
-                        y.total = x['total']
-                        y.location = x['location']
-                if x['id'] == 0 and x['prod_id'] and x['unit_id'] and x['order']:
-                    new_prod.append(DprodDdb(
-                        do.id, x['prod_id'], x['unit_id'], x['order'], x['price'], x['disc'], x['location'], x['nett_price'], x['total']))
+                    if x["id"] == y.id:
+                        y.prod_id = x["prod_id"]
+                        y.unit_id = x["unit_id"]
+                        y.order = x["order"]
+                        y.price = x["price"]
+                        y.disc = x["disc"]
+                        y.nett_price = x["nett_price"]
+                        y.total = x["total"]
+                        y.location = x["location"]
+                if x["id"] == 0 and x["prod_id"] and x["unit_id"] and x["order"]:
+                    new_prod.append(
+                        DprodDdb(
+                            do.id,
+                            x["prod_id"],
+                            x["unit_id"],
+                            x["order"],
+                            x["price"],
+                            x["disc"],
+                            x["location"],
+                            x["nett_price"],
+                            x["total"],
+                        )
+                    )
 
             new_jasa = []
             for x in djasa:
                 for y in jasa:
-                    if x['id'] == y.id:
-                        y.sup_id = x['sup_id']
-                        y.jasa_id = x['jasa_id']
-                        y.unit_id = x['unit_id']
-                        y.order = x['order']
-                        y.price = x['price']
-                        y.disc = x['disc']
-                        y.total = x['total']
-                if x['id'] == 0 and x['sup_id'] and x['jasa_id'] and x['unit_id'] and x['order']:
-                    new_jasa.append(DjasaDdb(
-                        do.id, x['sup_id'], x['jasa_id'], x['unit_id'], x['order'], x['price'], x['disc'], x['total']))
+                    if x["id"] == y.id:
+                        y.sup_id = x["sup_id"]
+                        y.jasa_id = x["jasa_id"]
+                        y.unit_id = x["unit_id"]
+                        y.order = x["order"]
+                        y.price = x["price"]
+                        y.disc = x["disc"]
+                        y.total = x["total"]
+                if (
+                    x["id"] == 0
+                    and x["sup_id"]
+                    and x["jasa_id"]
+                    and x["unit_id"]
+                    and x["order"]
+                ):
+                    new_jasa.append(
+                        DjasaDdb(
+                            do.id,
+                            x["sup_id"],
+                            x["jasa_id"],
+                            x["unit_id"],
+                            x["order"],
+                            x["price"],
+                            x["disc"],
+                            x["total"],
+                        )
+                    )
 
             if len(new_prod) > 0:
                 db.session.add_all(new_prod)
@@ -3523,13 +3774,13 @@ def ord_id(self, id):
         return response(200, "Berhasil", True, None)
     else:
         x = (
-            db.session.query(OrdpbHdb, CcostMdb,
-                             SupplierMdb, RulesPayMdb, PoMdb)
+            db.session.query(OrdpbHdb, CcostMdb, SupplierMdb, RulesPayMdb, PoMdb)
             .outerjoin(CcostMdb, CcostMdb.id == OrdpbHdb.dep_id)
             .outerjoin(SupplierMdb, SupplierMdb.id == OrdpbHdb.sup_id)
             .outerjoin(RulesPayMdb, RulesPayMdb.id == OrdpbHdb.top)
             .outerjoin(PoMdb, PoMdb.id == OrdpbHdb.po_id)
-            .filter(OrdpbHdb.id == id).first()
+            .filter(OrdpbHdb.id == id)
+            .first()
         )
 
         dprod = (
@@ -3552,8 +3803,7 @@ def ord_id(self, id):
             if y[0].ord_id == x[0].id:
                 y[0].prod_id = prod_schema.dump(y[1])
                 y[0].unit_id = unit_schema.dump(y[2])
-                y[0].lcoation = unit_schema.dump(
-                    y[3]) if y[0].location else None
+                y[0].lcoation = unit_schema.dump(y[3]) if y[0].location else None
                 product.append(dprod_schema.dump(y[0]))
 
         jasa = []
@@ -3566,13 +3816,13 @@ def ord_id(self, id):
         final = {
             "id": x[0].id,
             "ord_code": x[0].ord_code,
-            "ord_date": DordSchema(only=['ord_date']).dump(x[0])['ord_date'],
+            "ord_date": DordSchema(only=["ord_date"]).dump(x[0])["ord_date"],
             "faktur": x[0].faktur,
             "po_id": po_schema.dump(x[4]),
             "dep_id": ccost_schema.dump(x[1]),
             "sup_id": supplier_schema.dump(x[2]),
             "top": rpay_schema.dump(x[3]),
-            "due_date": DordSchema(only=['due_date']).dump(x[0])['due_date'],
+            "due_date": DordSchema(only=["due_date"]).dump(x[0])["due_date"],
             "split_inv": x[0].split_inv,
             "prod_disc": x[0].prod_disc,
             "jasa_disc": x[0].jasa_disc,
@@ -3597,12 +3847,12 @@ def faktur_code(self):
 @app.route("/v1/api/faktur", methods=["POST", "GET"])
 @token_required
 def faktur(self):
-    if request.method == 'POST':
-        fk_code = request.json['fk_code']
-        fk_date = request.json['fk_date']
-        ord_id = request.json['ord_id']
-        fk_tax = request.json['fk_tax']
-        fk_ppn = request.json['fk_ppn']
+    if request.method == "POST":
+        fk_code = request.json["fk_code"]
+        fk_date = request.json["fk_date"]
+        ord_id = request.json["ord_id"]
+        fk_tax = request.json["fk_tax"]
+        fk_ppn = request.json["fk_ppn"]
 
         faktur = FkpbHdb(fk_code, fk_date, ord_id, fk_tax, fk_ppn)
 
@@ -3643,8 +3893,9 @@ def faktur(self):
                         if y[0].ord_id == x[1].id:
                             y[0].prod_id = prod_schema.dump(y[1])
                             y[0].unit_id = unit_schema.dump(y[2])
-                            y[0].location = loct_schema.dump(
-                                y[3]) if y[0].location else None
+                            y[0].location = (
+                                loct_schema.dump(y[3]) if y[0].location else None
+                            )
                             product.append(dprod_schema.dump(y[0]))
 
             jasa = []
@@ -3656,30 +3907,34 @@ def faktur(self):
                             z[0].unit_id = unit_schema.dump(z[2])
                             jasa.append(djasa_schema.dump(z[0]))
 
-            final.append({
-                "id": x[0].id,
-                "fk_code": x[0].fk_code,
-                "fk_date": FkpbSchema(only=['fk_date']).dump(x[0])['fk_date'] if x[0].fk_date else None,
-                "fk_tax": x[0].fk_tax,
-                "fk_ppn": x[0].fk_ppn,
-                "fk_lunas": x[0].fk_lunas,
-                "ord_id": dord_schema.dump(x[1]),
-                "product": product,
-                "jasa": jasa,
-            })
+            final.append(
+                {
+                    "id": x[0].id,
+                    "fk_code": x[0].fk_code,
+                    "fk_date": FkpbSchema(only=["fk_date"]).dump(x[0])["fk_date"]
+                    if x[0].fk_date
+                    else None,
+                    "fk_tax": x[0].fk_tax,
+                    "fk_ppn": x[0].fk_ppn,
+                    "fk_lunas": x[0].fk_lunas,
+                    "ord_id": dord_schema.dump(x[1]),
+                    "product": product,
+                    "jasa": jasa,
+                }
+            )
 
         return response(200, "success", True, final)
 
 
-@app.route("/v1/api/faktur/<int:id>", methods=["PUT", "GET", 'DELETE'])
+@app.route("/v1/api/faktur/<int:id>", methods=["PUT", "GET", "DELETE"])
 @token_required
 def faktur_id(self, id):
     fk = FkpbHdb.query.filter(FkpbHdb.id == id).first()
-    if request.method == 'PUT':
-        fk_date = request.json['fk_date']
-        ord_id = request.json['ord_id']
-        fk_tax = request.json['fk_tax']
-        fk_ppn = request.json['fk_ppn']
+    if request.method == "PUT":
+        fk_date = request.json["fk_date"]
+        ord_id = request.json["ord_id"]
+        fk_tax = request.json["fk_tax"]
+        fk_ppn = request.json["fk_ppn"]
 
         fk.fk_date = fk_date
         fk.ord_id = ord_id
@@ -3689,7 +3944,7 @@ def faktur_id(self, id):
         db.session.commit()
 
         return response(200, "success", True, fkpb_schema.dump(fk))
-    elif request.method == 'DELETE':
+    elif request.method == "DELETE":
         prod = DprodDdb.query.filter(DprodDdb.ord_id == fk.ord_id).all()
 
         for x in prod:
@@ -3726,8 +3981,7 @@ def faktur_id(self, id):
             if y[0].ord_id == x[1].id:
                 y[0].prod_id = prod_schema.dump(y[1])
                 y[0].unit_id = unit_schema.dump(y[2])
-                y[0].location = loct_schema.dump(
-                    y[3]) if y[0].location else None
+                y[0].location = loct_schema.dump(y[3]) if y[0].location else None
                 product.append(dprod_schema.dump(y[0]))
 
         jasa = []
@@ -3739,7 +3993,9 @@ def faktur_id(self, id):
 
         final = {
             "fk_code": x[0].fk_code,
-            "fk_date": FkpbSchema(only=['fk_date']).dump(x[0])['fk_date'] if x[0].fk_date else None,
+            "fk_date": FkpbSchema(only=["fk_date"]).dump(x[0])["fk_date"]
+            if x[0].fk_date
+            else None,
             "fk_tax": x[0].fk_tax,
             "fk_ppn": x[0].fk_ppn,
             "fk_lunas": x[0].fk_lunas,
@@ -3754,12 +4010,12 @@ def faktur_id(self, id):
 @app.route("/v1/api/retur-order", methods=["POST", "GET"])
 @token_required
 def retur_order(self):
-    if request.method == 'POST':
+    if request.method == "POST":
         try:
-            ret_code = request.json['ret_code']
-            ret_date = request.json['ret_date']
-            fk_id = request.json['fk_id']
-            product = request.json['product']
+            ret_code = request.json["ret_code"]
+            ret_date = request.json["ret_date"]
+            fk_id = request.json["fk_id"]
+            product = request.json["product"]
 
             retur = RetordHdb(ret_code, ret_date, fk_id)
 
@@ -3768,9 +4024,19 @@ def retur_order(self):
 
             new_prod = []
             for x in product:
-                if x['prod_id'] and x['unit_id'] and x['retur'] and int(x['retur']) > 0:
-                    new_prod.append(ReprodDdb(
-                        retur.id, x['prod_id'], x['unit_id'], x['retur'], x['price'], x['disc'], x['nett_price'], x['total']))
+                if x["prod_id"] and x["unit_id"] and x["retur"] and int(x["retur"]) > 0:
+                    new_prod.append(
+                        ReprodDdb(
+                            retur.id,
+                            x["prod_id"],
+                            x["unit_id"],
+                            x["retur"],
+                            x["price"],
+                            x["disc"],
+                            x["nett_price"],
+                            x["total"],
+                        )
+                    )
 
             db.session.add_all(new_prod)
             db.session.commit()
@@ -3807,26 +4073,30 @@ def retur_order(self):
 
             if x[1]:
                 x[1].ord_id = dord_schema.dump(x[2])
-            result.append({
-                "id": x[0].id,
-                "ret_code": x[0].ret_code,
-                "ret_date": RetordSchema(only=['ret_date']).dump(x[0])['ret_date'] if x[0].ret_date else None,
-                "fk_id": fkpb_schema.dump(x[1]),
-                "product": prod
-            })
+            result.append(
+                {
+                    "id": x[0].id,
+                    "ret_code": x[0].ret_code,
+                    "ret_date": RetordSchema(only=["ret_date"]).dump(x[0])["ret_date"]
+                    if x[0].ret_date
+                    else None,
+                    "fk_id": fkpb_schema.dump(x[1]),
+                    "product": prod,
+                }
+            )
 
-        return response(200, 'success', True, result)
+        return response(200, "success", True, result)
 
 
 @app.route("/v1/api/retur-sales", methods=["POST", "GET"])
 @token_required
 def retur_sales(self):
-    if request.method == 'POST':
+    if request.method == "POST":
         try:
-            ret_code = request.json['ret_code']
-            ret_date = request.json['ret_date']
-            sale_id = request.json['sale_id']
-            product = request.json['product']
+            ret_code = request.json["ret_code"]
+            ret_date = request.json["ret_date"]
+            sale_id = request.json["sale_id"]
+            product = request.json["product"]
 
             retur = RetSaleHdb(ret_code, ret_date, sale_id)
 
@@ -3835,9 +4105,19 @@ def retur_sales(self):
 
             new_prod = []
             for x in product:
-                if x['prod_id'] and x['unit_id'] and x['retur'] and int(x['retur']) > 0:
-                    new_prod.append(ReprodDdb(
-                        retur.id, x['prod_id'], x['unit_id'], x['retur'], x['price'], x['disc'], x['nett_price'], x['total']))
+                if x["prod_id"] and x["unit_id"] and x["retur"] and int(x["retur"]) > 0:
+                    new_prod.append(
+                        ReprodDdb(
+                            retur.id,
+                            x["prod_id"],
+                            x["unit_id"],
+                            x["retur"],
+                            x["price"],
+                            x["disc"],
+                            x["nett_price"],
+                            x["total"],
+                        )
+                    )
 
             db.session.add_all(new_prod)
             db.session.commit()
@@ -3874,15 +4154,20 @@ def retur_sales(self):
 
             if x[1]:
                 x[1].so_id = sord_schema.dump(x[2])
-            result.append({
-                "id": x[0].id,
-                "ret_code": x[0].ret_code,
-                "ret_date": RetSaleSchema(only=['ret_date']).dump(x[0])['ret_date'] if x[0].ret_date else None,
-                "sale_id": ordpj_schema.dump(x[1]),
-                "product": prod
-            })
+            result.append(
+                {
+                    "id": x[0].id,
+                    "ret_code": x[0].ret_code,
+                    "ret_date": RetSaleSchema(only=["ret_date"]).dump(x[0])["ret_date"]
+                    if x[0].ret_date
+                    else None,
+                    "sale_id": ordpj_schema.dump(x[1]),
+                    "product": prod,
+                }
+            )
 
-        return response(200, 'success', True, result)
+        return response(200, "success", True, result)
+
 
 # @app.route("/v1/api/faktur/<int:id>", methods=["PUT", "GET", 'DELETE'])
 # @token_required
@@ -3900,57 +4185,80 @@ def retur_sales(self):
 def sls(self):
     if request.method == "POST":
         try:
-            ord_code = request.json['ord_code']
-            ord_date = request.json['ord_date']
-            so_id = request.json['so_id']
-            invoice = request.json['invoice']
-            pel_id = request.json['pel_id']
-            ppn_type = request.json['ppn_type']
-            sub_addr = request.json['sub_addr']
-            sub_id = request.json['sub_id']
-            req_date = request.json['req_date']
-            top = request.json['top']
-            due_date = request.json['due_date']
-            split_inv = request.json['split_inv']
-            prod_disc = request.json['prod_disc']
-            jasa_disc = request.json['jasa_disc']
-            total_disc = request.json['total_disc']
-            jprod = request.json['jprod']
-            jjasa = request.json['jjasa']
+            ord_code = request.json["ord_code"]
+            ord_date = request.json["ord_date"]
+            so_id = request.json["so_id"]
+            invoice = request.json["invoice"]
+            pel_id = request.json["pel_id"]
+            ppn_type = request.json["ppn_type"]
+            sub_addr = request.json["sub_addr"]
+            sub_id = request.json["sub_id"]
+            req_date = request.json["req_date"]
+            top = request.json["top"]
+            due_date = request.json["due_date"]
+            split_inv = request.json["split_inv"]
+            prod_disc = request.json["prod_disc"]
+            jasa_disc = request.json["jasa_disc"]
+            total_disc = request.json["total_disc"]
+            jprod = request.json["jprod"]
+            jjasa = request.json["jjasa"]
 
-            sls = OrdpjHdb(ord_code,
-                           ord_date,
-                           so_id,
-                           invoice,
-                           pel_id,
-                           ppn_type,
-                           sub_addr,
-                           sub_id,
-                           req_date,
-                           top,
-                           due_date,
-                           split_inv,
-                           prod_disc,
-                           jasa_disc,
-                           total_disc,
-                           0,
-                           0)
+            sls = OrdpjHdb(
+                ord_code,
+                ord_date,
+                so_id,
+                invoice,
+                pel_id,
+                ppn_type,
+                sub_addr,
+                sub_id,
+                req_date,
+                top,
+                due_date,
+                split_inv,
+                prod_disc,
+                jasa_disc,
+                total_disc,
+                0,
+                0,
+            )
 
             db.session.add(sls)
             db.session.commit()
 
             new_product = []
             for x in jprod:
-                if x['prod_id'] and x['unit_id'] and x['order']:
-                    new_product.append(JprodDdb(
-                        sls.id, x['prod_id'], x['unit_id'], x['location'], x['order'], x['price'], x['disc'], x['nett_price'], x['total']))
+                if x["prod_id"] and x["unit_id"] and x["order"]:
+                    new_product.append(
+                        JprodDdb(
+                            sls.id,
+                            x["prod_id"],
+                            x["unit_id"],
+                            x["location"],
+                            x["order"],
+                            x["price"],
+                            x["disc"],
+                            x["nett_price"],
+                            x["total"],
+                        )
+                    )
 
             new_jasa = []
             for x in jjasa:
-                if x['jasa_id'] and x['sup_id'] and x['unit_id'] and x['order']:
-                    print(x['order'])
-                    new_jasa.append(JjasaDdb(
-                        sls.id, x['sup_id'], x['jasa_id'], x['unit_id'], x['order'], x['price'], x['disc'], x['total']))
+                if x["jasa_id"] and x["sup_id"] and x["unit_id"] and x["order"]:
+                    print(x["order"])
+                    new_jasa.append(
+                        JjasaDdb(
+                            sls.id,
+                            x["sup_id"],
+                            x["jasa_id"],
+                            x["unit_id"],
+                            x["order"],
+                            x["price"],
+                            x["disc"],
+                            x["total"],
+                        )
+                    )
 
             if len(new_product) > 0:
                 db.session.add_all(new_product)
@@ -4015,28 +4323,30 @@ def sls(self):
                     if b.id == x[0].sub_id:
                         x[0].sub_id = customer_schema.dump(b)
 
-            final.append({
-                "id": x[0].id,
-                "ord_code": x[0].ord_code,
-                "ord_date": OrdpjSchema(only=['ord_date']).dump(x[0])['ord_date'],
-                "so_id": sord_schema.dump(x[2]) if x[2] else None,
-                "invoice": x[0].invoice,
-                "pel_id": x[0].pel_id,
-                "ppn_type": x[0].ppn_type,
-                "sub_addr": x[0].sub_addr,
-                "sub_id": x[0].sub_id,
-                "req_date": OrdpjSchema(only=['req_date']).dump(x[0])['req_date'],
-                "top": rpay_schema.dump(x[1]) if x[1] else None,
-                "due_date": OrdpjSchema(only=['due_date']).dump(x[0])['due_date'],
-                "split_inv": x[0].split_inv,
-                "prod_disc": x[0].prod_disc,
-                "jasa_disc": x[0].jasa_disc,
-                "total_disc": x[0].total_disc,
-                "status": x[0].status,
-                "print": x[0].print,
-                "jprod": product,
-                "jjasa": jasa,
-            })
+            final.append(
+                {
+                    "id": x[0].id,
+                    "ord_code": x[0].ord_code,
+                    "ord_date": OrdpjSchema(only=["ord_date"]).dump(x[0])["ord_date"],
+                    "so_id": sord_schema.dump(x[2]) if x[2] else None,
+                    "invoice": x[0].invoice,
+                    "pel_id": x[0].pel_id,
+                    "ppn_type": x[0].ppn_type,
+                    "sub_addr": x[0].sub_addr,
+                    "sub_id": x[0].sub_id,
+                    "req_date": OrdpjSchema(only=["req_date"]).dump(x[0])["req_date"],
+                    "top": rpay_schema.dump(x[1]) if x[1] else None,
+                    "due_date": OrdpjSchema(only=["due_date"]).dump(x[0])["due_date"],
+                    "split_inv": x[0].split_inv,
+                    "prod_disc": x[0].prod_disc,
+                    "jasa_disc": x[0].jasa_disc,
+                    "total_disc": x[0].total_disc,
+                    "status": x[0].status,
+                    "print": x[0].print,
+                    "jprod": product,
+                    "jjasa": jasa,
+                }
+            )
 
         return response(200, "Berhasil", True, final)
 
@@ -4047,23 +4357,23 @@ def sls_id(self, id):
     sls = OrdpjHdb.query.filter(OrdpjHdb.id == id).first()
     if request.method == "PUT":
         try:
-            ord_code = request.json['ord_code']
-            ord_date = request.json['ord_date']
-            so_id = request.json['so_id']
-            invoice = request.json['invoice']
-            pel_id = request.json['pel_id']
-            ppn_type = request.json['ppn_type']
-            sub_addr = request.json['sub_addr']
-            sub_id = request.json['sub_id']
-            req_date = request.json['req_date']
-            top = request.json['top']
-            due_date = request.json['due_date']
-            split_inv = request.json['split_inv']
-            prod_disc = request.json['prod_disc']
-            jasa_disc = request.json['jasa_disc']
-            total_disc = request.json['total_disc']
-            jprod = request.json['jprod']
-            jjasa = request.json['jjasa']
+            ord_code = request.json["ord_code"]
+            ord_date = request.json["ord_date"]
+            so_id = request.json["so_id"]
+            invoice = request.json["invoice"]
+            pel_id = request.json["pel_id"]
+            ppn_type = request.json["ppn_type"]
+            sub_addr = request.json["sub_addr"]
+            sub_id = request.json["sub_id"]
+            req_date = request.json["req_date"]
+            top = request.json["top"]
+            due_date = request.json["due_date"]
+            split_inv = request.json["split_inv"]
+            prod_disc = request.json["prod_disc"]
+            jasa_disc = request.json["jasa_disc"]
+            total_disc = request.json["total_disc"]
+            jprod = request.json["jprod"]
+            jjasa = request.json["jjasa"]
 
             sls.ord_code = ord_code
             sls.ord_date = ord_date
@@ -4087,33 +4397,60 @@ def sls_id(self, id):
             new_prod = []
             for x in jprod:
                 for y in product:
-                    if x['id'] == y.id:
-                        y.prod_id = x['prod_id']
-                        y.unit_id = x['unit_id']
-                        y.order = x['order']
-                        y.location = x['location']
-                        y.price = x['price']
-                        y.disc = x['disc']
-                        y.nett_price = x['nett_price']
-                        y.total = x['total']
-                if x['id'] == 0 and x['prod_id'] and x['unit_id'] and x['order']:
-                    new_prod.append(JprodDdb(
-                        sls.id, x['prod_id'], x['unit_id'], x['location'], x['order'], x['price'], x['disc'], x['nett_price'], x['total']))
+                    if x["id"] == y.id:
+                        y.prod_id = x["prod_id"]
+                        y.unit_id = x["unit_id"]
+                        y.order = x["order"]
+                        y.location = x["location"]
+                        y.price = x["price"]
+                        y.disc = x["disc"]
+                        y.nett_price = x["nett_price"]
+                        y.total = x["total"]
+                if x["id"] == 0 and x["prod_id"] and x["unit_id"] and x["order"]:
+                    new_prod.append(
+                        JprodDdb(
+                            sls.id,
+                            x["prod_id"],
+                            x["unit_id"],
+                            x["location"],
+                            x["order"],
+                            x["price"],
+                            x["disc"],
+                            x["nett_price"],
+                            x["total"],
+                        )
+                    )
 
             new_jasa = []
             for x in jjasa:
                 for y in jasa:
-                    if x['id'] == y.id:
-                        y.sup_id = x['sup_id']
-                        y.jasa_id = x['jasa_id']
-                        y.unit_id = x['unit_id']
-                        y.order = x['order']
-                        y.price = x['price']
-                        y.disc = x['disc']
-                        y.total = x['total']
-                if x['id'] == 0 and x['sup_id'] and x['jasa_id'] and x['unit_id'] and x['order']:
-                    new_jasa.append(JjasaDdb(
-                        sls.id, x['sup_id'], x['jasa_id'], x['unit_id'], x['order'], x['price'], x['disc'], x['total']))
+                    if x["id"] == y.id:
+                        y.sup_id = x["sup_id"]
+                        y.jasa_id = x["jasa_id"]
+                        y.unit_id = x["unit_id"]
+                        y.order = x["order"]
+                        y.price = x["price"]
+                        y.disc = x["disc"]
+                        y.total = x["total"]
+                if (
+                    x["id"] == 0
+                    and x["sup_id"]
+                    and x["jasa_id"]
+                    and x["unit_id"]
+                    and x["order"]
+                ):
+                    new_jasa.append(
+                        JjasaDdb(
+                            sls.id,
+                            x["sup_id"],
+                            x["jasa_id"],
+                            x["unit_id"],
+                            x["order"],
+                            x["price"],
+                            x["disc"],
+                            x["total"],
+                        )
+                    )
 
             if len(new_prod) > 0:
                 db.session.add_all(new_prod)
@@ -4196,16 +4533,16 @@ def sls_id(self, id):
         final = {
             "id": x[0].id,
             "ord_code": x[0].ord_code,
-            "ord_date": OrdpjSchema(only=['ord_date']).dump(x[0])['ord_date'],
+            "ord_date": OrdpjSchema(only=["ord_date"]).dump(x[0])["ord_date"],
             "so_id": sord_schema.dump(x[2]) if x[2] else None,
             "invoice": x[0].invoice,
             "pel_id": x[0].pel_id,
             "ppn_type": x[0].ppn_type,
             "sub_addr": x[0].sub_addr,
             "sub_id": x[0].sub_id,
-            "req_date": OrdpjSchema(only=['req_date']).dump(x[0])['req_date'],
+            "req_date": OrdpjSchema(only=["req_date"]).dump(x[0])["req_date"],
             "top": rpay_schema.dump(x[1]) if x[1] else None,
-            "due_date": OrdpjSchema(only=['due_date']).dump(x[0])['due_date'],
+            "due_date": OrdpjSchema(only=["due_date"]).dump(x[0])["due_date"],
             "split_inv": x[0].split_inv,
             "prod_disc": x[0].prod_disc,
             "jasa_disc": x[0].jasa_disc,
@@ -4218,44 +4555,64 @@ def sls_id(self, id):
 
         return response(200, "Berhasil", True, final)
 
+
 @app.route("/v1/api/expense", methods=["POST", "GET"])
 @token_required
 def expense(self):
     if request.method == "POST":
         try:
-            exp_code = request.json['exp_code']
-            exp_date = request.json['exp_date']
-            exp_type = request.json['exp_type']
-            exp_dep = request.json['exp_dep']
-            exp_acc = request.json['exp_acc']
-            exp_prj = request.json['exp_prj']
-            acq_sup = request.json['acq_sup']
-            acq_pay = request.json['acq_pay']
-            kas_acc = request.json['kas_acc']
-            bank_acc = request.json['bank_acc']
-            bank_id = request.json['bank_id']
-            bank_ref = request.json['bank_ref']
-            giro_num = request.json['giro_num']
-            giro_date = request.json['giro_date']
-            acq = request.json['acq']
-            exp = request.json['exp']
+            exp_code = request.json["exp_code"]
+            exp_date = request.json["exp_date"]
+            exp_type = request.json["exp_type"]
+            exp_dep = request.json["exp_dep"]
+            exp_acc = request.json["exp_acc"]
+            exp_prj = request.json["exp_prj"]
+            acq_sup = request.json["acq_sup"]
+            acq_pay = request.json["acq_pay"]
+            kas_acc = request.json["kas_acc"]
+            bank_acc = request.json["bank_acc"]
+            bank_id = request.json["bank_id"]
+            bank_ref = request.json["bank_ref"]
+            giro_num = request.json["giro_num"]
+            giro_date = request.json["giro_date"]
+            acq = request.json["acq"]
+            exp = request.json["exp"]
 
-            exps = ExpHdb(exp_code, exp_date, exp_type, exp_acc, exp_dep, exp_prj, acq_sup, acq_pay, kas_acc, bank_acc, bank_id, bank_ref, giro_num, giro_date)
+            exps = ExpHdb(
+                exp_code,
+                exp_date,
+                exp_type,
+                exp_acc,
+                exp_dep,
+                exp_prj,
+                acq_sup,
+                acq_pay,
+                kas_acc,
+                bank_acc,
+                bank_id,
+                bank_ref,
+                giro_num,
+                giro_date,
+            )
 
             db.session.add(exps)
             db.session.commit()
 
             new_exp = []
             for x in exp:
-                if x['acc_code'] and x['value']:
-                    new_exp.append(ExpDdb(exps.id, x['acc_code'], x['value'], x['desc']))
+                if x["acc_code"] and x["value"]:
+                    new_exp.append(
+                        ExpDdb(exps.id, x["acc_code"], x["value"], x["desc"])
+                    )
 
             new_acq = []
             value = 0
             for x in acq:
-                if x['fk_id'] and x['value'] and x['payment'] and int(x['payment']) > 0:
-                    value += int(x['payment'])
-                    new_acq.append(AcqDdb(exps.id, x['fk_id'], x['value'], x['payment']))
+                if x["fk_id"] and x["value"] and x["payment"] and int(x["payment"]) > 0:
+                    value += int(x["payment"])
+                    new_acq.append(
+                        AcqDdb(exps.id, x["fk_id"], x["value"], x["payment"])
+                    )
 
             if len(new_exp) > 0:
                 db.session.add_all(new_exp)
@@ -4264,7 +4621,9 @@ def expense(self):
                 db.session.add_all(new_acq)
 
             if acq_pay and acq_pay == 3:
-                giro = GiroHdb(giro_date, giro_num, bank_id, exps.id, exp_date, acq_sup, value, 0)
+                giro = GiroHdb(
+                    giro_date, giro_num, bank_id, exps.id, exp_date, acq_sup, value, 0
+                )
                 db.session.add(giro)
 
             db.session.commit()
@@ -4324,27 +4683,30 @@ def expense(self):
                     if b.id == x[0].kas_acc:
                         x[0].kas_acc = accou_schema.dump(b)
 
-            final.append({
-                "id": x[0].id,
-                "exp_code": x[0].exp_code,
-                "exp_date": ExpSchema(only=['exp_date']).dump(x[0])['exp_date'],
-                "exp_type": x[0].exp_type,
-                "exp_acc": x[0].exp_acc,
-                "exp_dep": x[0].exp_dep,
-                "exp_prj": x[0].exp_prj,
-                "acq_sup": supplier_schema.dump(x[2]) if x[2] else None,
-                "acq_pay": x[0].acq_pay,
-                "kas_acc": x[0].kas_acc,
-                "bank_acc": x[0].bank_acc,
-                "bank_id": bank_schema.dump(x[1]) if x[1] else None,
-                "bank_ref": x[0].bank_ref,
-                "giro_num": x[0].giro_num,
-                "giro_date": ExpSchema(only=['giro_date']).dump(x[0])['giro_date'],
-                "exp": all_exp,
-                "acq": all_acq,
-            })
+            final.append(
+                {
+                    "id": x[0].id,
+                    "exp_code": x[0].exp_code,
+                    "exp_date": ExpSchema(only=["exp_date"]).dump(x[0])["exp_date"],
+                    "exp_type": x[0].exp_type,
+                    "exp_acc": x[0].exp_acc,
+                    "exp_dep": x[0].exp_dep,
+                    "exp_prj": x[0].exp_prj,
+                    "acq_sup": supplier_schema.dump(x[2]) if x[2] else None,
+                    "acq_pay": x[0].acq_pay,
+                    "kas_acc": x[0].kas_acc,
+                    "bank_acc": x[0].bank_acc,
+                    "bank_id": bank_schema.dump(x[1]) if x[1] else None,
+                    "bank_ref": x[0].bank_ref,
+                    "giro_num": x[0].giro_num,
+                    "giro_date": ExpSchema(only=["giro_date"]).dump(x[0])["giro_date"],
+                    "exp": all_exp,
+                    "acq": all_acq,
+                }
+            )
 
         return response(200, "Berhasil", True, final)
+
 
 @app.route("/v1/api/expense/<int:id>", methods=["PUT", "GET", "DELETE"])
 @token_required
@@ -4352,22 +4714,22 @@ def expense_id(self, id):
     exps = ExpHdb.query.filter(ExpHdb.id == id).first()
     if request.method == "PUT":
         try:
-            exp_code = request.json['exp_code']
-            exp_date = request.json['exp_date']
-            exp_type = request.json['exp_type']
-            exp_acc = request.json['exp_acc']
-            exp_dep = request.json['exp_dep']
-            exp_prj = request.json['exp_prj']
-            acq_sup = request.json['acq_sup']
-            acq_pay = request.json['acq_pay']
-            kas_acc = request.json['kas_acc']
-            bank_acc = request.json['bank_acc']
-            bank_id = request.json['bank_id']
-            bank_ref = request.json['bank_ref']
-            giro_num = request.json['giro_num']
-            giro_date = request.json['giro_date']
-            acq = request.json['acq']
-            exp = request.json['exp']
+            exp_code = request.json["exp_code"]
+            exp_date = request.json["exp_date"]
+            exp_type = request.json["exp_type"]
+            exp_acc = request.json["exp_acc"]
+            exp_dep = request.json["exp_dep"]
+            exp_prj = request.json["exp_prj"]
+            acq_sup = request.json["acq_sup"]
+            acq_pay = request.json["acq_pay"]
+            kas_acc = request.json["kas_acc"]
+            bank_acc = request.json["bank_acc"]
+            bank_id = request.json["bank_id"]
+            bank_ref = request.json["bank_ref"]
+            giro_num = request.json["giro_num"]
+            giro_date = request.json["giro_date"]
+            acq = request.json["acq"]
+            exp = request.json["exp"]
 
             exps.exp_code = exp_code
             exps.exp_date = exp_date
@@ -4389,16 +4751,15 @@ def expense_id(self, id):
 
             for x in acq:
                 for y in all_acq:
-                    if x['id'] == y.id:
-                        y.value = x['value']
-                       
+                    if x["id"] == y.id:
+                        y.value = x["value"]
+
             for x in exp:
                 for y in all_exp:
-                    if x['id'] == y.id:
-                        y.acc_code = x['acc_code']
-                        y.value = x['value']
-                        y.desc = x['desc']
-           
+                    if x["id"] == y.id:
+                        y.acc_code = x["acc_code"]
+                        y.value = x["value"]
+                        y.desc = x["desc"]
 
             db.session.commit()
 
@@ -4471,25 +4832,27 @@ def expense_id(self, id):
                     if a.id == x[0].kas_acc:
                         x[0].kas_acc = accou_schema.dump(b)
 
-            final.append({
-                "id": x[0].id,
-                "exp_code": x[0].exp_code,
-                "exp_date": ExpSchema(only=['exp_date']).dump(x[0])['exp_date'],
-                "exp_type": x[0].exp_type,
-                "exp_acc": x[0].exp_acc,
-                "exp_dep": x[0].exp_dep,
-                "exp_prj": x[0].exp_prj,
-                "acq_sup": supplier_schema.dump(x[2]) if x[2] else None,
-                "acq_pay": x[0].acq_pay,
-                "kas_acc": x[0].kas_acc,
-                "bank_acc": x[0].bank_acc,
-                "bank_id": bank_schema.dump(x[1]) if x[1] else None,
-                "bank_ref": x[0].bank_ref,
-                "giro_num": x[0].giro_num,
-                "giro_date": ExpSchema(only=['giro_date']).dump(x[0])['giro_date'],
-                "exp": all_exp,
-                "acq": all_acq,
-            })
+            final.append(
+                {
+                    "id": x[0].id,
+                    "exp_code": x[0].exp_code,
+                    "exp_date": ExpSchema(only=["exp_date"]).dump(x[0])["exp_date"],
+                    "exp_type": x[0].exp_type,
+                    "exp_acc": x[0].exp_acc,
+                    "exp_dep": x[0].exp_dep,
+                    "exp_prj": x[0].exp_prj,
+                    "acq_sup": supplier_schema.dump(x[2]) if x[2] else None,
+                    "acq_pay": x[0].acq_pay,
+                    "kas_acc": x[0].kas_acc,
+                    "bank_acc": x[0].bank_acc,
+                    "bank_id": bank_schema.dump(x[1]) if x[1] else None,
+                    "bank_ref": x[0].bank_ref,
+                    "giro_num": x[0].giro_num,
+                    "giro_date": ExpSchema(only=["giro_date"]).dump(x[0])["giro_date"],
+                    "exp": all_exp,
+                    "acq": all_acq,
+                }
+            )
 
         return response(200, "Berhasil", True, final)
 
@@ -4497,27 +4860,34 @@ def expense_id(self, id):
 @app.route("/v1/api/apcard", methods=["GET"])
 @token_required
 def apcard(self):
-        ap = (
-            db.session.query(ApCard, AcqDdb, PoMdb, SupplierMdb, FkpbHdb, GiroHdb)
-            .outerjoin(AcqDdb, AcqDdb.id == ApCard.acq_id)
-            .outerjoin(PoMdb, PoMdb.id == ApCard.po_id)
-            .outerjoin(SupplierMdb, SupplierMdb.id == ApCard.sup_id)
-            .outerjoin(FkpbHdb, FkpbHdb.ord_id == ApCard.ord_id)
-            .outerjoin(GiroHdb, GiroHdb.id == ApCard.giro_id)
-            .all()
-        )
+    ap = (
+        db.session.query(ApCard, AcqDdb, PoMdb, SupplierMdb, FkpbHdb, GiroHdb)
+        .outerjoin(AcqDdb, AcqDdb.id == ApCard.acq_id)
+        .outerjoin(PoMdb, PoMdb.id == ApCard.po_id)
+        .outerjoin(SupplierMdb, SupplierMdb.id == ApCard.sup_id)
+        .outerjoin(FkpbHdb, FkpbHdb.ord_id == ApCard.ord_id)
+        .outerjoin(GiroHdb, GiroHdb.id == ApCard.giro_id)
+        .all()
+    )
 
-        final = []
-        for x in ap:
-            final.append({
+    final = []
+    for x in ap:
+        final.append(
+            {
                 "id": x[0].id,
                 "sup_id": supplier_schema.dump(x[3]) if x[3] else None,
                 "ord_id": fkpb_schema.dump(x[4]) if x[4] else None,
-                "ord_date": APCardSchema(only=['ord_date']).dump(x[0])['ord_date'] if x[0] else None,
-                "ord_due": APCardSchema(only=['ord_due']).dump(x[0])['ord_due'] if x[0] else None,
+                "ord_date": APCardSchema(only=["ord_date"]).dump(x[0])["ord_date"]
+                if x[0]
+                else None,
+                "ord_due": APCardSchema(only=["ord_due"]).dump(x[0])["ord_due"]
+                if x[0]
+                else None,
                 "po_id": po_schema.dump(x[2]) if x[2] else None,
                 "acq_id": acq_schema.dump(x[1]) if x[1] else None,
-                "acq_date": APCardSchema(only=['acq_date']).dump(x[0])['acq_date'] if x[0] else None,
+                "acq_date": APCardSchema(only=["acq_date"]).dump(x[0])["acq_date"]
+                if x[0]
+                else None,
                 "cur_conv": x[0].cur_conv,
                 "trx_dbcr": x[0].trx_dbcr,
                 "trx_type": x[0].trx_type,
@@ -4527,9 +4897,50 @@ def apcard(self):
                 "acq_amnh": x[0].acq_amnh,
                 "acq_amnv": x[0].acq_amnv,
                 "giro_id": giro_schema.dump(x[5]) if x[5] else None,
-                "giro_date": APCardSchema(only=['giro_date']).dump(x[0])['giro_date'] if x[0] else None
-            })
+                "giro_date": APCardSchema(only=["giro_date"]).dump(x[0])["giro_date"]
+                if x[0]
+                else None,
+            }
+        )
 
-        return response(200, "Berhasil", True, final)
+    return response(200, "Berhasil", True, final)
 
 
+@app.route("/v1/api/dashboard-info", methods=["GET"])
+@token_required
+def dashboard_info(self):
+    po = PoMdb.query.filter(PoMdb.status == 0).all()
+
+    ap_card = ApCard.query.all()
+    ap = (
+        db.session.query(extract('month', ApCard.ord_date), func.sum(ApCard.trx_amnh))
+        .filter(and_(ApCard.trx_type == "LP", ApCard.pay_type == "P1"))
+        .group_by(extract('month', ApCard.ord_date))
+        .all()
+    )
+
+    ap_list = [0,0,0,0,0,0,0,0,0,0,0,0]
+    ar_list = [0,0,0,0,0,0,0,0,0,0,0,0]
+
+    for x in ap:
+        ap_list[int(x[0])-1] = x[1]
+
+    total_ap = 0
+    total_lns = 0
+
+    for x in ap_card:
+        if x.trx_type == "LP" and x.pay_type == "P1":
+            total_ap += x.trx_amnh
+        elif x.trx_type == "LP" and x.pay_type == "H4":
+            total_lns += x.acq_amnh
+
+    result = {
+        "out_pur": len(po) if po else 0,
+        "ap": total_ap - total_lns,
+        "out_sls": 0,
+        "ar": 0,
+        "pur_list": ar_list,
+        "sls_list": ap_list,
+    }
+
+    return response(200, "Berhasil", True, result)
