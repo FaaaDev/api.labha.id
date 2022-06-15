@@ -65,6 +65,7 @@ from main.model.group_prod_mdb import GroupProMdb
 from main.model.pajak_mdb import PajakMdb
 from main.model.retsale_hdb import RetSaleHdb
 from main.model.apcard_mdb import ApCard
+from main.model.transddb import TransDdb
 from main.schema.apcard_mdb import apcard_schema, apcards_schema, APCardSchema
 from main.schema.ccost_mdb import ccost_schema, ccosts_schema, CcostSchema
 from main.schema.proj_mdb import proj_schema, projs_schema, ProjSchema
@@ -122,6 +123,7 @@ from main.schema.acq_ddb import acq_schema, acqs_schema, AcqSchema
 from main.schema.giro_hdb import giro_schema, giros_schema, GiroSchema
 from main.schema.apcard_mdb import apcard_schema, apcards_schema, APCardSchema
 from main.schema.retsale_hdb import retsale_schema, retsales_schema, RetSaleSchema
+from main.schema.transddb import trans_schema, transs_schema, TransDDB
 from main.schema.setup_mdb import *
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import and_, extract, func, or_
@@ -5018,3 +5020,44 @@ def dashboard_info(self):
     }
 
     return response(200, "Berhasil", True, result)
+
+
+
+@app.route("/v1/api/trans", methods=["GET"])
+@token_required
+def trans(self):
+    trn = (
+        db.session.query(TransDdb, AccouMdb, CcostMdb, ProjMdb, CurrencyMdb)
+        .outerjoin(AccouMdb, AccouMdb.id == TransDdb.acc_id)
+        .outerjoin(CcostMdb, CcostMdb.id == TransDdb.ccost_id)
+        .outerjoin(ProjMdb, ProjMdb.id == TransDdb.proj_id)
+        .outerjoin(CurrencyMdb, CurrencyMdb.id == TransDdb.cur_id)
+        .all()
+    )
+
+    final = []
+    for x in trn:
+        final.append(
+            {
+                "id": x[0].id,
+                "trx_code": x[0].trx_code,
+                "trx_date": TransDDB(only=["trx_date"]).dump(x[0])["trx_date"]
+                if x[0]
+                else None,
+                "acc_id": accou_schema.dump(x[1]) if x[1] else None,
+                "ccost_id": ccost_schema.dump(x[2]) if x[2] else None,
+                "proj_id": proj_schema.dump(x[3]) if x[3] else None,
+                "acq_date": TransDDB(only=["acq_date"]).dump(x[0])["acq_date"]
+                if x[0]
+                else None,
+                "cur_rate": currency_schema.dump(x[4]) if x[4] else None,
+                "trx_vala": x[0].trx_vala,
+                "trx_amnt": x[0].trx_amnt,
+                "trx_dbcr": x[0].trx_dbcr,
+                "trx_desc": x[0].trx_desc,
+                "gen_post": x[0].gen_post,
+                "post_date": TransDDB(only=["post_date"]).dump(x[0])["post_date"]
+            }
+        )
+
+    return response(200, "Berhasil", True, final)
