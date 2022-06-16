@@ -5061,3 +5061,96 @@ def trans(self):
         )
 
     return response(200, "Berhasil", True, final)
+
+
+@app.route("/v1/api/giro", methods=["GET"])
+@token_required
+def giro(self):
+    giro = (
+        db.session.query(GiroHdb, BankMdb, SupplierMdb, ExpHdb)
+        .outerjoin(BankMdb, BankMdb.id == GiroHdb.bank_id)
+        .outerjoin(SupplierMdb, SupplierMdb.id == GiroHdb.sup_id)
+        .outerjoin(ExpHdb, ExpHdb.id == GiroHdb.pay_code)
+        .all()
+    )
+
+    final = []
+    for x in giro:
+        final.append(
+            {
+                "id": x[0].id,
+                "giro_date": GiroSchema(only=["giro_date"]).dump(x[0])["giro_date"]
+                if x[0]
+                else None,
+                "giro_num": x[0].giro_num,
+                "bank_id": bank_schema.dump(x[1]) if x[1] else None,
+                "pay_code": exp_schema.dump(x[3]) if x[3] else None,
+                "pay_date": ExpSchema(only=["pay_date"]).dump(x[3])["pay_date"]
+                if x[0]
+                else None,
+                "sup_id": supplier_schema.dump(x[2]) if x[2] else None,
+                "value": x[0].value,
+                "status": x[0].status,
+            }
+        )
+
+    return response(200, "Berhasil", True, final)
+
+@app.route("/v1/api/giro/<int:id>", methods=["PUT", "GET", "DELETE"])
+@token_required
+def giro_id(self, id):
+    giro = GiroHdb.query.filter(GiroHdb.id == id).first()
+    if request.method == "PUT":
+        try:
+            giro_date = request.json["giro_date"]
+            giro_num = request.json["giro_num"]
+            bank_id = request.json["bank_id"]
+            pay_code = request.json["pay_code"]
+            pay_date = request.json["pay_date"]
+            sup_id = request.json["sup_id"]
+            value = request.json["value"]
+            status = request.json["status"]
+
+            giro.giro_date = giro_date
+            giro.giro_num = giro_num
+            giro.bank_id = bank_id
+            giro.pay_code = pay_code
+            giro.pay_date = pay_date
+            giro.sup_id = sup_id
+            giro.value = value
+            giro.status = status
+
+            db.session.commit()
+
+            result = response(200, "Berhasil", True, giro_schema.dump(giro))
+
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+
+    elif request.method == "DELETE":
+        db.session.delete(giro)
+        db.session.commit()
+
+        return response(200, "Berhasil", True, None)
+    else:
+        result = (
+            db.session.query(GiroHdb, BankMdb, SupplierMdb, ExpHdb)
+            .outerjoin(BankMdb, BankMdb.id == GiroHdb.bank_id)
+            .outerjoin(SupplierMdb, SupplierMdb.id == GiroHdb.sup_id)
+            .outerjoin(ExpHdb, ExpHdb.id == GiroHdb.pay_code)
+            .order_by(GiroHdb.id.asc())
+            .filter(GiroHdb.id == id)
+            .first()
+        )
+        print(result)
+        data = {
+            "giro": giro_schema.dump(result[0]),
+            "bank": bank_schema.dump(result[1]),
+            "supplier": supplier_schema.dump(result[2]),
+            "exps": exp_schema.dump(result[3]),
+        }
+
+        return response(200, "Berhasil", True, data)
