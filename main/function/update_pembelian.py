@@ -16,8 +16,8 @@ from main.model.user import User
 from main.shared.shared import db, ma
 
 
-class UpdatePembelian():
-    def __init__(self, fk_id, user_id):
+class UpdatePembelian:
+    def __init__(self, fk_id, user_id, delete):
 
         # update kartu ap
         x = (
@@ -27,69 +27,137 @@ class UpdatePembelian():
             .first()
         )
 
-        dprod = DprodDdb.query.filter(DprodDdb.ord_id == x[1].id).all()
+        if delete:
+            old_ap = ApCard.query.filter(
+                and_(
+                    ApCard.ord_id == x[1].id,
+                    ApCard.trx_type == "LP",
+                    ApCard.pay_type == "P1",
+                )
+            ).first()
+            if old_ap:
+                db.session.delete(old_ap)
+                db.session.commit()
 
-        djasa = DjasaDdb.query.filter(DjasaDdb.ord_id == x[1].id).all()
+            old_trans = TransDdb.query.filter(TransDdb.trx_code == x[0].fk_code).first()
 
-        total_product = 0
-        for y in dprod:
-            if (y.nett_price and y.nett_price > 0):
-                total_product += y.nett_price
-            else:
-                total_product += y.total
-
-        total_jasa = 0
-        for y in djasa:
-            total_jasa += y.total
-
-        sup = (
-            db.session.query(SupplierMdb, PajakMdb)
-            .outerjoin(PajakMdb, PajakMdb.id == SupplierMdb.sup_ppn)
-            .filter(SupplierMdb.id == x[1].sup_id)
-            .first()
-        )
-
-        trx_amnh = 0
-        if x[1].split_inv:
-            trx_amnh = (total_product*((100+11)/100)) + \
-                (total_jasa*((100+2)/100))
+            if old_trans:
+                db.session.delete(old_trans)
+                db.session.commit()
         else:
-            trx_amnh = (total_product+total_jasa)*((100+11)/100)
+            dprod = DprodDdb.query.filter(DprodDdb.ord_id == x[1].id).all()
 
-        old_ap = ApCard.query.filter(
-            and_(ApCard.ord_id == x[1].id, ApCard.trx_type == "LP", ApCard.pay_type == "P1")).first()
-        if old_ap:    
-            db.session.delete(old_ap)
+            djasa = DjasaDdb.query.filter(DjasaDdb.ord_id == x[1].id).all()
+
+            total_product = 0
+            for y in dprod:
+                if y.nett_price and y.nett_price > 0:
+                    total_product += y.nett_price
+                else:
+                    total_product += y.total
+
+            total_jasa = 0
+            for y in djasa:
+                total_jasa += y.total
+
+            sup = (
+                db.session.query(SupplierMdb, PajakMdb)
+                .outerjoin(PajakMdb, PajakMdb.id == SupplierMdb.sup_ppn)
+                .filter(SupplierMdb.id == x[1].sup_id)
+                .first()
+            )
+
+            trx_amnh = 0
+            if x[1].split_inv:
+                trx_amnh = (total_product * ((100 + 11) / 100)) + (
+                    total_jasa * ((100 + 2) / 100)
+                )
+            else:
+                trx_amnh = (total_product + total_jasa) * ((100 + 11) / 100)
+
+            old_ap = ApCard.query.filter(
+                and_(
+                    ApCard.ord_id == x[1].id,
+                    ApCard.trx_type == "LP",
+                    ApCard.pay_type == "P1",
+                )
+            ).first()
+            if old_ap:
+                db.session.delete(old_ap)
+                db.session.commit()
+
+            ap_card = ApCard(
+                x[1].sup_id,
+                x[1].id,
+                x[1].ord_date,
+                x[1].due_date,
+                x[1].po_id,
+                None,
+                None,
+                None,
+                "d",
+                "LP",
+                "P1",
+                trx_amnh,
+                None,
+                None,
+                None,
+                None,
+                None,
+            )
+
+            db.session.add(ap_card)
             db.session.commit()
 
-        ap_card = ApCard(x[1].sup_id, x[1].id, x[1].ord_date, x[1].due_date, x[1].po_id,
-                         None, None, None, "d", "LP", "P1", trx_amnh, None, None, None, None, None)
+            old_trans = TransDdb.query.filter(TransDdb.trx_code == x[0].fk_code).first()
 
-        db.session.add(ap_card)
-        db.session.commit()
+            if old_trans:
+                db.session.delete(old_trans)
+                db.session.commit()
+            # insert jurnal ap
+            trans_ap = TransDdb(
+                x[0].fk_code,
+                x[0].fk_date,
+                sup[0].sup_hutang,
+                x[1].dep_id,
+                None,
+                None,
+                None,
+                None,
+                None,
+                total_product + total_jasa,
+                "K",
+                "JURNAL HUTANG",
+                None,
+                None,
+            )
 
-        old_trans = TransDdb.query.filter(
-            TransDdb.trx_code == x[0].fk_code).first()
-
-        if old_trans:    
-            db.session.delete(old_trans)
+            db.session.add(trans_ap)
             db.session.commit()
-        # insert jurnal ap
-        trans_ap = TransDdb(x[0].fk_code, x[0].fk_date, sup[0].sup_hutang, x[1].dep_id, None,
-                            None, None, None, None, total_product+total_jasa, "K", "JURNAL HUTANG", None, None)
 
-        db.session.add(trans_ap)
-        db.session.commit()
+            # insert jurnal ppn
+            setup = (
+                db.session.query(User, SetupMdb)
+                .outerjoin(SetupMdb, SetupMdb.cp_id == User.company)
+                .filter(User.id == user_id)
+                .first()
+            )
+            trans_ppn = TransDdb(
+                x[0].fk_code,
+                x[0].fk_date,
+                setup[1].pur_tax,
+                x[1].dep_id,
+                None,
+                None,
+                None,
+                None,
+                None,
+                total_product * 11 / 100,
+                "K",
+                "JURNAL PPN KELUARAN %s" % (x[0].fk_code),
+                None,
+                None,
+            )
 
-        # insert jurnal ppn
-        setup = (
-            db.session.query(User, SetupMdb)
-            .outerjoin(SetupMdb, SetupMdb.cp_id == User.company)
-            .filter(User.id == user_id)
-            .first()
-        )
-        trans_ppn = TransDdb(x[0].fk_code, x[0].fk_date, setup[1].pur_tax, x[1].dep_id, None,
-                             None, None, None, None, total_product*11/100, "K", "JURNAL PPN KELUARAN %s"%(x[0].fk_code), None, None)
-
-        db.session.add(trans_ppn)
-        db.session.commit()
+            db.session.add(trans_ppn)
+            db.session.commit()
