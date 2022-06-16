@@ -10,6 +10,8 @@ from unicodedata import name
 from datetime import datetime
 from flask import Flask, redirect, request, url_for, jsonify, make_response
 import requests
+from main.function.delete_ap_payment import DeleteApPayment
+from main.function.update_ap_giro import UpdateApGiro
 from main.function.update_ap_payment import UpdateApPayment
 from main.function.update_pembelian import UpdatePembelian
 from main.function.update_stock import UpdateStock
@@ -3577,9 +3579,9 @@ def order(self):
 
                 db.session.commit()
 
-                UpdatePembelian(faktur.id, self.id)
+                UpdatePembelian(faktur.id, self.id, False)
 
-            UpdateStock(do.id)
+            UpdateStock(do.id, False)
 
             result = response(200, "Berhasil", True, dord_schema.dump(do))
         except IntegrityError:
@@ -3762,6 +3764,7 @@ def ord_id(self, id):
             return result
 
     elif request.method == "DELETE":
+        UpdateStock(do.id, True)
         product = DprodDdb.query.filter(DprodDdb.ord_id == do.id)
         jasa = DjasaDdb.query.filter(DjasaDdb.ord_id == do.id)
 
@@ -3936,7 +3939,7 @@ def faktur(self):
 
         db.session.commit()
 
-        UpdatePembelian(faktur.id, self.id)
+        UpdatePembelian(faktur.id, self.id, False)
 
         return response(200, "success", True, fkpb_schema.dump(faktur))
     else:
@@ -4021,6 +4024,7 @@ def faktur_id(self, id):
 
         return response(200, "success", True, fkpb_schema.dump(fk))
     elif request.method == "DELETE":
+        UpdatePembelian(fk.id, self.id, True)
         prod = DprodDdb.query.filter(DprodDdb.ord_id == fk.ord_id).all()
 
         for x in prod:
@@ -4701,11 +4705,13 @@ def expense(self):
                     giro_date, giro_num, bank_id, exps.id, exp_date, acq_sup, value, 0
                 )
                 db.session.add(giro)
+                db.session.commit()
+                UpdateApGiro(giro.id)
 
             db.session.commit()
 
             if acq_pay and acq_pay != 3:
-                UpdateApPayment(exps.id)
+                UpdateApPayment(exps.id, False)
 
             result = response(200, "Berhasil", True, exp_schema.dump(exps))
         except IntegrityError:
@@ -4848,14 +4854,16 @@ def expense_id(self, id):
             return result
 
     elif request.method == "DELETE":
+        UpdateApPayment(exps.id, True)
+        DeleteApPayment(exps.id)
         exp = ExpDdb.query.filter(ExpDdb.exp_id == exps.id)
-        acq = AcqDdb.query.filter(AcqDdb.exp_id == exps.id)
+        # acq = AcqDdb.query.filter(AcqDdb.exp_id == exps.id)
 
         for x in exp:
             db.session.delete(x)
 
-        for x in acq:
-            db.session.delete(x)
+        # for x in acq:
+        #     db.session.delete(x)
 
         db.session.delete(exps)
         db.session.commit()
