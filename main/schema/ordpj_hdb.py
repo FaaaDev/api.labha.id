@@ -13,6 +13,7 @@ class OrdpjSchema(ma.Schema):
                   'ppn_type',
                   'sub_addr',
                   'sub_id',
+                  'slsm_id',
                   'req_date',
                   'top',
                   'due_date',

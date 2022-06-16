@@ -16,6 +16,7 @@ class OrdpjHdb(db.Model):
     ppn_type = db.Column(db.Integer)
     sub_addr = db.Column(db.Boolean)
     sub_id = db.Column(db.Integer)
+    slsm_id = db.Column(db.Integer)
     req_date = db.Column(db.TIMESTAMP)
     top = db.Column(db.Integer)
     due_date = db.Column(db.TIMESTAMP)
@@ -35,6 +36,7 @@ class OrdpjHdb(db.Model):
                  ppn_type,
                  sub_addr,
                  sub_id,
+                 slsm_id,
                  req_date,
                  top,
                  due_date,
@@ -52,6 +54,7 @@ class OrdpjHdb(db.Model):
         self.ppn_type = ppn_type
         self.sub_addr = sub_addr
         self.sub_id = sub_id
+        self.slsm_id = slsm_id
         self.req_date = req_date
         self.top = top
         self.due_date = due_date

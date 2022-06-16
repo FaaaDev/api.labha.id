@@ -4273,6 +4273,7 @@ def sls(self):
             ppn_type = request.json["ppn_type"]
             sub_addr = request.json["sub_addr"]
             sub_id = request.json["sub_id"]
+            slsm_id = request.json["slsm_id"]
             req_date = request.json["req_date"]
             top = request.json["top"]
             due_date = request.json["due_date"]
@@ -4292,6 +4293,7 @@ def sls(self):
                 ppn_type,
                 sub_addr,
                 sub_id,
+                slsm_id,
                 req_date,
                 top,
                 due_date,
@@ -4356,9 +4358,10 @@ def sls(self):
             return result
     else:
         sls = (
-            db.session.query(OrdpjHdb, RulesPayMdb, SordHdb)
+            db.session.query(OrdpjHdb, RulesPayMdb, SordHdb, SalesMdb)
             .outerjoin(RulesPayMdb, RulesPayMdb.id == OrdpjHdb.top)
             .outerjoin(SordHdb, SordHdb.id == OrdpjHdb.so_id)
+            .outerjoin(SalesMdb, SalesMdb.id == OrdpjHdb.slsm_id)
             .all()
         )
 
@@ -4414,6 +4417,7 @@ def sls(self):
                     "ppn_type": x[0].ppn_type,
                     "sub_addr": x[0].sub_addr,
                     "sub_id": x[0].sub_id,
+                    "slsm_id": sales_schema.dump(x[3]) if x[3] else None,
                     "req_date": OrdpjSchema(only=["req_date"]).dump(x[0])["req_date"],
                     "top": rpay_schema.dump(x[1]) if x[1] else None,
                     "due_date": OrdpjSchema(only=["due_date"]).dump(x[0])["due_date"],
@@ -4445,6 +4449,7 @@ def sls_id(self, id):
             ppn_type = request.json["ppn_type"]
             sub_addr = request.json["sub_addr"]
             sub_id = request.json["sub_id"]
+            slsm_id = request.json["slsm_id"]
             req_date = request.json["req_date"]
             top = request.json["top"]
             due_date = request.json["due_date"]
@@ -4463,6 +4468,7 @@ def sls_id(self, id):
             sls.ppn_type = ppn_type
             sls.sub_addr = sub_addr
             sls.sub_id = sub_id
+            sls.slsm_id = slsm_id
             sls.req_date = req_date
             sls.top = top
             sls.due_date = due_date
@@ -4564,9 +4570,10 @@ def sls_id(self, id):
         return response(200, "Berhasil", True, None)
     else:
         x = (
-            db.session.query(OrdpjHdb, RulesPayMdb, SordHdb)
+            db.session.query(OrdpjHdb, RulesPayMdb, SordHdb, SalesMdb)
             .outerjoin(RulesPayMdb, RulesPayMdb.id == OrdpjHdb.top)
             .outerjoin(SordHdb, SordHdb.id == OrdpjHdb.so_id)
+            .outerjoin(SalesMdb, SalesMdb.id == OrdpjHdb.slsm_id)
             .filter(OrdpjHdb.id == id)
             .first()
         )
@@ -4620,6 +4627,7 @@ def sls_id(self, id):
             "ppn_type": x[0].ppn_type,
             "sub_addr": x[0].sub_addr,
             "sub_id": x[0].sub_id,
+            "slsm_id": sales_schema.dump(x[3]) if x[3] else None,
             "req_date": OrdpjSchema(only=["req_date"]).dump(x[0])["req_date"],
             "top": rpay_schema.dump(x[1]) if x[1] else None,
             "due_date": OrdpjSchema(only=["due_date"]).dump(x[0])["due_date"],
