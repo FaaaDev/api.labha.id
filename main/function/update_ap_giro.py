@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 from sqlalchemy import and_
 from main.model.acq_ddb import AcqDdb
 from main.model.apcard_mdb import ApCard
@@ -40,8 +40,8 @@ class UpdateApGiro():
                 db.session.delete(old_ap)
                 db.session.commit()
 
-            ap_card = ApCard(pembelian.sup_id, pembelian.ord_id, pembelian.ord_date, pembelian.due_date, pembelian.po_id,
-                             x.id, datetime.now(), None, "k", pembelian.trx_type, "H4", pembelian.trx_amnh, None, x.payment, None, giro.giro_num, giro.giro_date)
+            ap_card = ApCard(pembelian.sup_id, pembelian.ord_id, pembelian.ord_date, pembelian.ord_due, pembelian.po_id,
+                             x.id, datetime.now(), None, "k", pembelian.trx_type, "H4", pembelian.trx_amnh, None, x.payment, None, giro.id, giro.giro_date)
 
             db.session.add(ap_card)
             db.session.commit()
