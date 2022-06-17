@@ -7,7 +7,7 @@ class GiroHdb(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     giro_date = db.Column(db.TIMESTAMP)
-    giro_num = db.Column(db.Integer)
+    giro_num = db.Column(db.String(255))
     bank_id = db.Column(db.Integer)
     pay_code = db.Column(db.Integer)
     pay_date = db.Column(db.TIMESTAMP)
