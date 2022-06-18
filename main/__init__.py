@@ -13,6 +13,7 @@ import requests
 from main.function.delete_ap_payment import DeleteApPayment
 from main.function.update_ap_giro import UpdateApGiro
 from main.function.update_ap_payment import UpdateApPayment
+from main.function.update_ar import UpdateAr
 from main.function.update_pembelian import UpdatePembelian
 from main.function.update_stock import UpdateStock
 from main.model.accou_mdb import AccouMdb
@@ -20,6 +21,7 @@ from main.model.acq_ddb import AcqDdb
 from main.model.adm_menu import AdmMenu
 from main.model.adm_user_menu import AdmUserMenu
 from main.model.apcard_mdb import ApCard
+from main.model.arcard_mdb import ArCard
 from main.model.bank_mdb import BankMdb
 from main.model.ccost_mdb import CcostMdb
 from main.model.comp_mdb import CompMdb
@@ -4350,6 +4352,8 @@ def sls(self):
 
             db.session.commit()
 
+            UpdateAr(False, sls.id, self.id)
+
             result = response(200, "Berhasil", True, ordpj_schema.dump(sls))
         except IntegrityError:
             db.session.rollback()
@@ -4555,6 +4559,7 @@ def sls_id(self, id):
             return result
 
     elif request.method == "DELETE":
+        UpdateAr(True, sls.id, self.id)
         product = JprodDdb.query.filter(JprodDdb.pj_id == sls.id)
         jasa = JprodDdb.query.filter(JprodDdb.pj_id == sls.id)
 
@@ -5002,20 +5007,59 @@ def apcard(self):
 @token_required
 def dashboard_info(self):
     po = PoMdb.query.filter(PoMdb.status == 0).all()
+    so = SordHdb.query.filter(SordHdb.status == 0).all()
 
     ap_card = ApCard.query.all()
+    ar_card = ArCard.query.all()
     ap = (
         db.session.query(extract("month", ApCard.ord_date), func.sum(ApCard.trx_amnh))
         .filter(and_(ApCard.trx_type == "LP", ApCard.pay_type == "P1"))
         .group_by(extract("month", ApCard.ord_date))
         .all()
     )
+    ar = (
+        db.session.query(extract("month", ArCard.trx_date), func.sum(ArCard.trx_amnh))
+        .filter(and_(ArCard.trx_type == "JL", ArCard.pay_type == "P1"))
+        .group_by(extract("month", ArCard.trx_date))
+        .all()
+    )
+
+    lns_ap = (
+        db.session.query(extract("month", ApCard.ord_date), func.sum(ApCard.acq_amnh))
+        .filter(and_(ApCard.trx_type == "LP", ApCard.pay_type == "H4"))
+        .group_by(extract("month", ApCard.ord_date))
+        .all()
+    )
+    lns_ar = (
+        db.session.query(extract("month", ArCard.trx_date), func.sum(ArCard.acq_amnh))
+        .filter(and_(ArCard.trx_type == "JL", ArCard.pay_type == "H4"))
+        .group_by(extract("month", ArCard.trx_date))
+        .all()
+    )
+
+    pur_list = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    sls_list = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
     ap_list = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     ar_list = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
     for x in ap:
-        ap_list[int(x[0]) - 1] = x[1]
+        pur_list[int(x[0]) - 1] = x[1]
+        if lns_ap:
+            for y in lns_ap:
+                if x[0] == y[0]:
+                    ap_list[int(x[0]) - 1] = x[1]-y[1]
+        else:
+            ap_list[int(x[0]) - 1] = x[1]
+
+    for x in ar:
+        sls_list[int(x[0] -1)] = x[1]
+        if lns_ar:
+            for y in lns_ar:
+                if x[0] == y[0]:
+                    ar_list[int(x[0]) - 1] = x[1]-y[1]
+        else:
+            ar_list[int(x[0]) - 1] = x[1]
 
     total_ap = 0
     total_lns = 0
@@ -5026,13 +5070,23 @@ def dashboard_info(self):
         elif x.trx_type == "LP" and x.pay_type == "H4":
             total_lns += x.acq_amnh
 
+    total_ar = 0
+    ar_lns = 0
+    for x in ar_card:
+        if x.trx_type == "JL" and x.pay_type == "P1":
+            total_ar += x.trx_amnh
+        elif x.trx_type == "JL" and x.pay_type == "H4":
+            ar_lns += x.acq_amnh
+
     result = {
         "out_pur": len(po) if po else 0,
         "ap": total_ap - total_lns,
-        "out_sls": 0,
-        "ar": 0,
-        "pur_list": ar_list,
-        "sls_list": ap_list,
+        "out_sls": len(so) if so else 0,
+        "ar": total_ar - ar_lns,
+        "pur_list": pur_list,
+        "sls_list": sls_list,
+        "ap_list": ap_list,
+        "ar_list": ar_list
     }
 
     return response(200, "Berhasil", True, result)

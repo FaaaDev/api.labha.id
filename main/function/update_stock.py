@@ -1,6 +1,8 @@
 from sqlalchemy import and_
+from main.model.djasa_ddb import DjasaDdb
 from main.model.dprod_ddb import DprodDdb
 from main.model.group_prod_mdb import GroupProMdb
+from main.model.jasa_mdb import JasaMdb
 from main.model.lokasi_mdb import LocationMdb
 from main.model.ordpb_hdb import OrdpbHdb
 from main.model.prod_mdb import ProdMdb
@@ -13,7 +15,7 @@ from main.shared.shared import db
 class UpdateStock():
     def __init__(self, order_id, delete):
         order = OrdpbHdb.query.filter(OrdpbHdb.id == order_id).first()
-        print(order)
+        
         product = (
             db.session.query(DprodDdb, ProdMdb, GroupProMdb, LocationMdb)
             .outerjoin(ProdMdb, ProdMdb.id == DprodDdb.prod_id)
@@ -22,6 +24,24 @@ class UpdateStock():
             .filter(DprodDdb.ord_id == order_id)
             .all()
         )
+
+        djasa = (
+            db.session.query(DjasaDdb, JasaMdb)
+            .outerjoin(JasaMdb, JasaMdb.id == DjasaDdb.jasa_id)
+            .filter(DjasaDdb.ord_id == order_id)
+            .all()
+        )
+        
+        jasa_trans = []
+        for x in djasa:
+            old_trans = TransDdb.query.filter(and_(TransDdb.trx_code == order.ord_code, TransDdb.trx_dbcr == "D", TransDdb.trx_desc == "JURNAL BL JASA %s" % (x[1].name))).first()
+            if old_trans:
+                    db.session.delete(old_trans)
+                    db.session.commit()
+            jasa_trans.append(TransDdb(order.ord_code, order.ord_date, x[1].acc_id, order.dep_id, None,
+                                    None, None, None, None, x[0].total, "D", "JURNAL BL JASA %s" % (x[1].name), None, None))
+
+
 
         unit = UnitMdb.query.all()
 
@@ -33,13 +53,13 @@ class UpdateStock():
                 if old_krtst:
                     db.session.delete(old_krtst)
                     db.session.commit()
-                old_trans = TransDdb.query.filter(and_(TransDdb.trx_code == order.ord_code, TransDdb.trx_dbcr == "D", TransDdb.trx_desc == "JURNAL STOCK %s %s" % (x[1].name, x[3].name))).first()
+                old_trans = TransDdb.query.filter(and_(TransDdb.trx_code == order.ord_code, TransDdb.trx_dbcr == "D", TransDdb.trx_desc == "JURNAL STOCK PRODUCT %s %s" % (x[1].name, x[3].name))).first()
                 if old_trans:
                     db.session.delete(old_trans)
                     db.session.commit()
 
             else:
-                old_trans = TransDdb.query.filter(and_(TransDdb.trx_code == order.ord_code, TransDdb.trx_dbcr == "D", TransDdb.trx_desc == "JURNAL STOCK %s %s" % (x[1].name, x[3].name))).first()
+                old_trans = TransDdb.query.filter(and_(TransDdb.trx_code == order.ord_code, TransDdb.trx_dbcr == "D", TransDdb.trx_desc == "JURNAL STOCK PRODUCT %s %s" % (x[1].name, x[3].name))).first()
                 if old_trans:
                     db.session.delete(old_trans)
                     db.session.commit()
@@ -64,6 +84,10 @@ class UpdateStock():
                             x[0].nett_price if x[0].nett_price > 0 else x[0].total, None, None, x[0].prod_id, x[0].location, None, 0, None))
 
         if not delete:
-            db.session.add_all(trans)
-            db.session.add_all(krtst)
+            if len(trans) > 0:
+                db.session.add_all(trans)
+            if len(krtst) > 0:    
+                db.session.add_all(krtst)
+            if len(jasa_trans) > 0:
+                db.session.add_all(jasa_trans)
             db.session.commit()
