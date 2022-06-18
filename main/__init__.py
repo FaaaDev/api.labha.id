@@ -5155,7 +5155,7 @@ def giro(self):
                 "giro_num": x[0].giro_num,
                 "bank_id": bank_schema.dump(x[1]) if x[1] else None,
                 "pay_code": exp_schema.dump(x[3]) if x[3] else None,
-                "pay_date": ExpSchema(only=["pay_date"]).dump(x[3])["pay_date"]
+                "pay_date": GiroSchema(only=["pay_date"]).dump(x[0])["pay_date"]
                 if x[0]
                 else None,
                 "sup_id": supplier_schema.dump(x[2]) if x[2] else None,
