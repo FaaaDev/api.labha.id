@@ -5224,3 +5224,6 @@ def giro_id(self, id):
         }
 
         return response(200, "Berhasil", True, data)
+
+
+        # hehehe
