@@ -377,7 +377,7 @@ def bank_id(self, id):
     if request.method == "PUT":
         bank.BANK_CODE = request.json["BANK_CODE"]
         bank.acc_id = request.json["ACC_ID"]
-        bank.BANK_NAMA = request.json["BANK_NAME"]
+        bank.BANK_NAME = request.json["BANK_NAME"]
         bank.BANK_DESC = request.json["BANK_DESC"]
         db.session.commit()
 
