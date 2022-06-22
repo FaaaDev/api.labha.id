@@ -3571,7 +3571,7 @@ def order(self):
             db.session.commit()
 
             if po_id:
-                po = PoMdb.query.filter(PoMdb.id == po_id)
+                po = PoMdb.query.filter(PoMdb.id == po_id).first()
                 po.status = 1
                 db.session.commit()
 
