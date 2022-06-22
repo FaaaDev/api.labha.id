@@ -39,11 +39,12 @@ class UpdatePembelian:
                 db.session.delete(old_ap)
                 db.session.commit()
 
-            old_trans = TransDdb.query.filter(TransDdb.trx_code == x[0].fk_code).first()
+            old_trans = TransDdb.query.filter(TransDdb.trx_code == x[0].fk_code).all()
 
             if old_trans:
-                db.session.delete(old_trans)
-                db.session.commit()
+                for x in old_trans:
+                    db.session.delete(x)
+                    db.session.commit()
         else:
             dprod = DprodDdb.query.filter(DprodDdb.ord_id == x[1].id).all()
 
@@ -109,11 +110,12 @@ class UpdatePembelian:
             db.session.add(ap_card)
             db.session.commit()
 
-            old_trans = TransDdb.query.filter(TransDdb.trx_code == x[0].fk_code).first()
+            old_trans = TransDdb.query.filter(TransDdb.trx_code == x[0].fk_code).all()
 
             if old_trans:
-                db.session.delete(old_trans)
-                db.session.commit()
+                for x in old_trans:
+                    db.session.delete(x)
+                    db.session.commit()
             # insert jurnal ap
             trans_ap = TransDdb(
                 x[0].fk_code,
@@ -125,7 +127,7 @@ class UpdatePembelian:
                 None,
                 None,
                 None,
-                total_product + total_jasa,
+                trx_amnh,
                 "K",
                 "JURNAL HUTANG",
                 None,
@@ -153,7 +155,7 @@ class UpdatePembelian:
                 None,
                 None,
                 total_product * 11 / 100,
-                "K",
+                "D",
                 "JURNAL PPN KELUARAN %s" % (x[0].fk_code),
                 None,
                 None,
