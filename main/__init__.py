@@ -3767,6 +3767,10 @@ def ord_id(self, id):
             return result
 
     elif request.method == "DELETE":
+        po = PoMdb.query.filter(PoMdb.id == do.po_id).first()
+        if po:
+            po.status = 0
+            db.session.commit()
         UpdateStock(do.id, True)
         product = DprodDdb.query.filter(DprodDdb.ord_id == do.id)
         jasa = DjasaDdb.query.filter(DjasaDdb.ord_id == do.id)
