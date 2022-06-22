@@ -5012,9 +5012,9 @@ def apcard(self):
 @token_required
 def arcard(self):
     ar = (
-        db.session.query(ArCard, AcqDdb, OrdpbHdb, CustomerMdb, LocationMdb, GiroHdb)
+        db.session.query(ArCard, AcqDdb, OrdpjHdb, CustomerMdb, LocationMdb, GiroHdb)
         .outerjoin(AcqDdb, AcqDdb.id == ArCard.acq_id)
-        .outerjoin(OrdpbHdb, OrdpbHdb.id == ArCard.bkt_id)
+        .outerjoin(OrdpjHdb, OrdpjHdb.id == ArCard.trx_code)
         .outerjoin(CustomerMdb, CustomerMdb.id == ArCard.cus_id)
         .outerjoin(LocationMdb, LocationMdb.id == ArCard.loc_id)
         .outerjoin(GiroHdb, GiroHdb.id == ArCard.giro_id)
@@ -5027,19 +5027,19 @@ def arcard(self):
             {
                 "id": x[0].id,
                 "cus_id": customer_schema.dump(x[3]) if x[3] else None,
-                "trx_code": acq_schema.dump(x[1]) if x[1] else None,
+                "trx_code": x[0].trx_code,
                 "trx_date": ARCardSchema(only=["trx_date"]).dump(x[0])["trx_date"]
                 if x[0]
                 else None,
-                "trx_due": ARCardSchema(only=["trx_due"]).dump(x[0])["trx_due"]
+                "trx_due": ARCardSchema(only=["trx_date"]).dump(x[0])["trx_date"]
                 if x[0]
                 else None,
                 "acq_id": acq_schema.dump(x[1]) if x[1] else None,
                 "acq_date": AcqSchema(only=["acq_date"]).dump(x[1])["acq_date"]
                 if x[0]
                 else None,
-                "bkt_id": fkpb_schema.dump(x[2]) if x[2] else None,
-                "bkt_date": APCardSchema(only=["bkt_date"]).dump(x[2])["bkt_date"]
+                "bkt_id": ordpj_schema.dump(x[2]) if x[2] else None,
+                "bkt_date": OrdpjSchema(only=["trx_date"]).dump(x[2])["trx_date"]
                 if x[2]
                 else None,
                 "cur_conv": x[0].cur_conv,
@@ -5050,8 +5050,8 @@ def arcard(self):
                 "trx_amnv": x[0].trx_amnv,
                 "acq_amnh": acq_schema.dump(x[1]) if x[1] else None,
                 "acq_amnv": acq_schema.dump(x[1]) if x[1] else None,
-                "bkt_amnv": x[0].acq_amnv,
-                "bkt_amnh": x[0].acq_amnv,
+                "bkt_amnv": ordpj_schema.dump(x[2]) if x[2] else None,
+                "bkt_amnh": ordpj_schema.dump(x[2]) if x[2] else None,
                 "trx_desc": x[0].trx_desc,
                 "pos_flag": x[0].pos_flag,
                 "loc_id": loct_schema.dump(x[4]) if x[4] else None,
