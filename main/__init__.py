@@ -5014,7 +5014,7 @@ def arcard(self):
     ar = (
         db.session.query(ArCard, AcqDdb, OrdpjHdb, CustomerMdb, LocationMdb, GiroHdb)
         .outerjoin(AcqDdb, AcqDdb.id == ArCard.acq_id)
-        .outerjoin(OrdpjHdb, OrdpjHdb.id == ArCard.trx_code)
+        .outerjoin(OrdpjHdb, OrdpjHdb.id == ArCard.bkt_id)
         .outerjoin(CustomerMdb, CustomerMdb.id == ArCard.cus_id)
         .outerjoin(LocationMdb, LocationMdb.id == ArCard.loc_id)
         .outerjoin(GiroHdb, GiroHdb.id == ArCard.giro_id)
@@ -5036,7 +5036,7 @@ def arcard(self):
                 else None,
                 "acq_id": acq_schema.dump(x[1]) if x[1] else None,
                 "acq_date": AcqSchema(only=["acq_date"]).dump(x[1])["acq_date"]
-                if x[0]
+                if x[1]
                 else None,
                 "bkt_id": ordpj_schema.dump(x[2]) if x[2] else None,
                 "bkt_date": OrdpjSchema(only=["trx_date"]).dump(x[2])["trx_date"]
@@ -5058,7 +5058,7 @@ def arcard(self):
                 "trx_pymnt": x[0].trx_pymnt,
                 "giro_id": giro_schema.dump(x[5]) if x[5] else None,
                 "giro_date": GiroSchema(only=["giro_date"]).dump(x[5])["giro_date"]
-                if x[0]
+                if x[5]
                 else None,
             }
         )
