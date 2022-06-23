@@ -53,13 +53,14 @@ class UpdateStock():
                 if old_krtst:
                     db.session.delete(old_krtst)
                     db.session.commit()
-                old_trans = TransDdb.query.filter(and_(TransDdb.trx_code == order.ord_code, TransDdb.trx_desc == "JURNAL STOCK PRODUCT %s %s" % (x[1].name, x[3].name))).first()
+                old_trans = TransDdb.query.filter(and_(TransDdb.trx_code == order.ord_code, TransDdb.trx_desc.like("%JURNAL STOCK PRODUCT%"))).first()
+                print(old_trans)
                 if old_trans:
                     db.session.delete(old_trans)
                     db.session.commit()
 
             else:
-                old_trans = TransDdb.query.filter(and_(TransDdb.trx_code == order.ord_code, TransDdb.trx_desc == "JURNAL STOCK PRODUCT %s %s" % (x[1].name, x[3].name))).first()
+                old_trans = TransDdb.query.filter(and_(TransDdb.trx_code == order.ord_code,TransDdb.trx_desc.like("%JURNAL STOCK PRODUCT%"))).first()
                 if old_trans:
                     db.session.delete(old_trans)
                     db.session.commit()

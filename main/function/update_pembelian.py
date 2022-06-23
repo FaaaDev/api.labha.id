@@ -28,16 +28,17 @@ class UpdatePembelian:
         )
 
         if delete:
-            old_ap = ApCard.query.filter(
-                and_(
-                    ApCard.ord_id == x[1].id,
-                    ApCard.trx_type == "LP",
-                    ApCard.pay_type == "P1",
-                )
-            ).first()
-            if old_ap:
-                db.session.delete(old_ap)
-                db.session.commit()
+            if x[1]:
+                old_ap = ApCard.query.filter(
+                    and_(
+                        ApCard.ord_id == x[1].id,
+                        ApCard.trx_type == "LP",
+                        ApCard.pay_type == "P1",
+                    )
+                ).first()
+                if old_ap:
+                    db.session.delete(old_ap)
+                    db.session.commit()
 
             old_trans = TransDdb.query.filter(TransDdb.trx_code == x[0].fk_code).all()
 
