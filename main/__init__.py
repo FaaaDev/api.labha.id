@@ -5102,6 +5102,18 @@ def dashboard_info(self):
         .all()
     )
 
+    trans = (
+        db.session.query(TransDdb, AccouMdb)
+        .outerjoin(AccouMdb, AccouMdb.id == TransDdb.acc_id)
+        .filter(AccouMdb.kat_code.in_((14, 15, 16, 17, 18, 19)))
+        .all()
+    )
+
+    kewajiban = 0
+
+    for x in trans:
+        kewajiban += x[0].trx_amnt
+
     pur_list = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     sls_list = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
@@ -5151,7 +5163,10 @@ def dashboard_info(self):
         "pur_list": pur_list,
         "sls_list": sls_list,
         "ap_list": ap_list,
-        "ar_list": ar_list
+        "ar_list": ar_list,
+        "assets": 0,
+        "kewajiban" : kewajiban,
+        "modal": 3713300,
     }
 
     return response(200, "Berhasil", True, result)
@@ -5290,5 +5305,3 @@ def giro_id(self, id):
 
         return response(200, "Berhasil", True, data)
 
-
-        # hehehe
