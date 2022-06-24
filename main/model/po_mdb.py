@@ -20,9 +20,10 @@ class PoMdb(db.Model):
     jasa_disc = db.Column(db.Float)
     total_disc = db.Column(db.Float)
     status = db.Column(db.Integer, default=0)
+    apprv = db.Column(db.Boolean)
     print = db.Column(db.Integer, default=0)
 
-    def __init__(self, po_code, po_date, preq_id, sup_id, ppn_type, top, due_date, split_inv, prod_disc, jasa_disc, total_disc, status, print):
+    def __init__(self, po_code, po_date, preq_id, sup_id, ppn_type, top, due_date, split_inv, prod_disc, jasa_disc, total_disc, status, apprv, print):
         self.po_code = po_code
         self.po_date = po_date
         self.preq_id = preq_id
@@ -35,4 +36,5 @@ class PoMdb(db.Model):
         self.jasa_disc = jasa_disc
         self.total_disc = total_disc
         self.status = status
+        self.apprv = apprv
         self.print = print
