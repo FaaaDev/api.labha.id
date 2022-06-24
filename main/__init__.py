@@ -3854,8 +3854,8 @@ def ord_id(self, id):
 @app.route("/v1/api/order/date", methods=["POST"])
 @token_required
 def order_date(self):
-    start_date = request.json['start_date']
-    end_date = request.json['end_date']
+    start_date = request.json["start_date"]
+    end_date = request.json["end_date"]
 
     do = (
         db.session.query(OrdpbHdb, CcostMdb, SupplierMdb, RulesPayMdb, PoMdb)
@@ -5125,16 +5125,16 @@ def dashboard_info(self):
         if lns_ap:
             for y in lns_ap:
                 if x[0] == y[0]:
-                    ap_list[int(x[0]) - 1] = x[1]-y[1]
+                    ap_list[int(x[0]) - 1] = x[1] - y[1]
         else:
             ap_list[int(x[0]) - 1] = x[1]
 
     for x in ar:
-        sls_list[int(x[0] -1)] = x[1]
+        sls_list[int(x[0] - 1)] = x[1]
         if lns_ar:
             for y in lns_ar:
                 if x[0] == y[0]:
-                    ar_list[int(x[0]) - 1] = x[1]-y[1]
+                    ar_list[int(x[0]) - 1] = x[1] - y[1]
         else:
             ar_list[int(x[0]) - 1] = x[1]
 
@@ -5165,12 +5165,11 @@ def dashboard_info(self):
         "ap_list": ap_list,
         "ar_list": ar_list,
         "assets": 0,
-        "kewajiban" : kewajiban,
+        "kewajiban": kewajiban,
         "modal": 3713300,
     }
 
     return response(200, "Berhasil", True, result)
-
 
 
 @app.route("/v1/api/trans", methods=["GET"])
@@ -5206,7 +5205,7 @@ def trans(self):
                 "trx_dbcr": x[0].trx_dbcr,
                 "trx_desc": x[0].trx_desc,
                 "gen_post": x[0].gen_post,
-                "post_date": TransDDB(only=["post_date"]).dump(x[0])["post_date"]
+                "post_date": TransDDB(only=["post_date"]).dump(x[0])["post_date"],
             }
         )
 
@@ -5245,6 +5244,7 @@ def giro(self):
         )
 
     return response(200, "Berhasil", True, final)
+
 
 @app.route("/v1/api/giro/<int:id>", methods=["PUT", "GET", "DELETE"])
 @token_required
@@ -5304,4 +5304,96 @@ def giro_id(self, id):
         }
 
         return response(200, "Berhasil", True, data)
+
+
+@app.route("/v1/api/approval", methods=["GET"])
+@token_required
+def approval(self):
+    po = (
+        db.session.query(PoMdb, PreqMdb, CcostMdb, SupplierMdb, RulesPayMdb)
+        .outerjoin(PreqMdb, PreqMdb.id == PoMdb.preq_id)
+        .outerjoin(CcostMdb, CcostMdb.id == PreqMdb.req_dep)
+        .outerjoin(SupplierMdb, SupplierMdb.id == PoMdb.sup_id)
+        .outerjoin(RulesPayMdb, RulesPayMdb.id == PoMdb.top)
+        .filter(PoMdb.apprv == False)
+        .order_by(PoMdb.id.asc())
+        .all()
+    )
+
+    pprod = (
+        db.session.query(PprodDdb, ProdMdb, UnitMdb)
+        .outerjoin(ProdMdb, ProdMdb.id == PprodDdb.prod_id)
+        .outerjoin(UnitMdb, UnitMdb.id == PprodDdb.unit_id)
+        .all()
+    )
+
+    pjasa = (
+        db.session.query(PjasaDdb, JasaMdb, UnitMdb)
+        .outerjoin(JasaMdb, JasaMdb.id == PjasaDdb.jasa_id)
+        .outerjoin(UnitMdb, UnitMdb.id == PjasaDdb.unit_id)
+        .all()
+    )
+
+    final = []
+    for x in po:
+        product = []
+        for y in pprod:
+            if y[0].po_id == x[0].id:
+                y[0].prod_id = prod_schema.dump(y[1])
+                y[0].unit_id = unit_schema.dump(y[2])
+                product.append(pprod_schema.dump(y[0]))
+
+        jasa = []
+        for z in pjasa:
+            if z[0].po_id == x[0].id:
+                z[0].jasa_id = jasa_schema.dump(z[1])
+                z[0].unit_id = unit_schema.dump(z[2])
+                jasa.append(pjasa_schema.dump(z[0]))
+
+        final.append(
+            {
+                "id": x[0].id,
+                "po_code": x[0].po_code,
+                "po_date": PoSchema(only=["po_date"]).dump(x[0])["po_date"],
+                "preq_id": {
+                    "id": x[1].id,
+                    "req_code": x[1].req_code,
+                    "req_date": PreqSchema(only=["req_date"]).dump(x[1])["req_date"],
+                    "req_dep": ccost_schema.dump(x[2]) if x[2] else None,
+                    "req_ket": x[1].req_ket,
+                    "status": x[1].status,
+                }
+                if x[1]
+                else None,
+                "ppn_type": x[0].ppn_type,
+                "sup_id": supplier_schema.dump(x[3]) if x[3] else None,
+                "top": rpay_schema.dump(x[4]) if x[4] else None,
+                "due_date": PoSchema(only=["due_date"]).dump(x[0])["due_date"]
+                if x[0].due_date
+                else None,
+                "split_inv": x[0].split_inv,
+                "prod_disc": x[0].prod_disc,
+                "jasa_disc": x[0].jasa_disc,
+                "total_disc": x[0].total_disc,
+                "status": x[0].status,
+                "apprv": x[0].apprv,
+                "print": x[0].print,
+                "pprod": product,
+                "pjasa": jasa,
+            }
+        )
+
+    return response(200, "Berhasil", True, final)
+
+
+@app.route("/v1/api/approval/<int:id>", methods=["PUT"])
+@token_required
+def update_approval(self, id):
+    po = PoMdb.query.filter(PoMdb.id == id).first()
+
+    po.apprv = True
+
+    db.session.commit()
+
+    return response(200, "Berhasil", True, None)
 
