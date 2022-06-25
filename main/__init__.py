@@ -5386,7 +5386,7 @@ def approval(self):
     return response(200, "Berhasil", True, final)
 
 
-@app.route("/v1/api/approval/<int:id>", methods=["PUT"])
+@app.route("/v1/api/approval/<int:id>", methods=["GET"])
 @token_required
 def update_approval(self, id):
     po = PoMdb.query.filter(PoMdb.id == id).first()
