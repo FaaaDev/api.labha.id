@@ -5397,3 +5397,15 @@ def update_approval(self, id):
 
     return response(200, "Berhasil", True, None)
 
+
+@app.route("/v1/api/balance", methods=["GET"])
+@token_required
+def update_approval(self):
+    cash = AccouMdb.query.filter(AccouMdb.kat_code == 1).all()
+
+    saldo_cash = 0
+    for x in cash:
+        saldo_cash += x.sld_awal
+
+    return response(200, "Berhasil", True, {"cash": saldo_cash})
+
