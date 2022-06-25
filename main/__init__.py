@@ -5400,7 +5400,7 @@ def update_approval(self, id):
 
 @app.route("/v1/api/balance", methods=["GET"])
 @token_required
-def update_approval(self):
+def balance(self):
     cash = AccouMdb.query.filter(AccouMdb.kat_code == 1).all()
 
     saldo_cash = 0
