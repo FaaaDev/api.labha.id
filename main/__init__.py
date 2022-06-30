@@ -229,7 +229,6 @@ def login():
     else:
         remember = False
 
-    print(remember)
     user = User.query.filter(User.username == username).first()
 
     if user is None:
@@ -353,7 +352,6 @@ def bank(self):
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
         finally:
-            print(result)
             return result
     else:
         result = (
@@ -362,7 +360,6 @@ def bank(self):
             .order_by(BankMdb.id.asc())
             .all()
         )
-        print(result)
         data = [
             {"bank": bank_schema.dump(x[0]), "account": accou_schema.dump(x[1])}
             for x in result
@@ -396,7 +393,6 @@ def bank_id(self, id):
             .filter(BankMdb.id == id)
             .first()
         )
-        print(result)
         data = {
             "bank": bank_schema.dump(result[0]),
             "account": accou_schema.dump(result[1]),
@@ -448,7 +444,6 @@ def kategory(self):
             .order_by(KategMdb.id.asc())
             .all()
         )
-        print(result)
         data = [
             {
                 "kategory": kateg_schema.dump(x[0]),
@@ -484,7 +479,6 @@ def kategory_id(self, id):
             .filter(KategMdb.id == id)
             .first()
         )
-        print(result)
         data = {
             "kategory": kateg_schema.dump(result[0]),
             "klasifikasi": klasi_schema.dump(result[1]),
@@ -549,35 +543,40 @@ def account_detail(self, umm_code):
 @token_required
 def account(self):
     if request.method == "POST":
-        acc_code = request.json["kode_acc"]
-        acc_name = request.json["acc_name"]
-        umm_code = request.json["kode_umum"]
-        kat_code = request.json["kode_kategori"]
-        dou_type = request.json["du"]
-        sld_type = request.json["kode_saldo"]
-        connect = request.json["terhubung"]
-        sld_awal = request.json["saldo_awal"]
-        try:
-            account = AccouMdb(
-                acc_code,
-                acc_name,
-                umm_code,
-                kat_code,
-                dou_type,
-                sld_type,
-                connect,
-                sld_awal,
+        if "acc_code" in request.json:
+            acc_code = request.json["kode_acc"]
+            acc_name = request.json["acc_name"]
+            umm_code = request.json["kode_umum"]
+            kat_code = request.json["kode_kategori"]
+            dou_type = request.json["du"]
+            sld_type = request.json["kode_saldo"]
+            connect = request.json["terhubung"]
+            sld_awal = request.json["saldo_awal"]
+            try:
+                account = AccouMdb(
+                    acc_code,
+                    acc_name,
+                    umm_code,
+                    kat_code,
+                    dou_type,
+                    sld_type,
+                    connect,
+                    sld_awal,
+                )
+                db.session.add(account)
+                db.session.commit()
+                result = response(200, "Berhasil", True, accou_schema.dump(account))
+            except IntegrityError:
+                db.session.rollback()
+                result = response(
+                    400, "Kode akun " + acc_code + " sudah digunakan", False, None
+                )
+            finally:
+                return result
+        else:
+            return response(
+                406, "Data isian belum lengkap", False, None
             )
-            db.session.add(account)
-            db.session.commit()
-            result = response(200, "Berhasil", True, accou_schema.dump(account))
-        except IntegrityError:
-            db.session.rollback()
-            result = response(
-                400, "Kode akun " + acc_code + " sudah digunakan", False, None
-            )
-        finally:
-            return result
     else:
         result = (
             db.session.query(AccouMdb, KategMdb, KlasiMdb)
@@ -588,7 +587,6 @@ def account(self):
             .order_by(AccouMdb.acc_code.asc())
             .all()
         )
-        print(result)
         data = [
             {
                 "account": accou_schema.dump(x[0]),
@@ -612,7 +610,6 @@ def acc_umum(self):
         .filter(AccouMdb.dou_type == "U")
         .all()
     )
-    print(result)
     data = [
         {
             "account": accou_schema.dump(x[0]),
@@ -656,7 +653,6 @@ def account_id(self, id):
             .first()
         )
 
-        print(result)
         data = {
             "account": accou_schema.dump(result[0]),
             "kategory": kateg_schema.dump(result[1]),
@@ -991,7 +987,6 @@ def subArea(self):
             .order_by(SubAreaMdb.id.asc())
             .all()
         )
-        print(result)
         data = [
             {
                 "subArea": sub_area_schema.dump(x[0]),
@@ -1029,7 +1024,6 @@ def sub_area_id(self, id):
             .order_by(SubAreaMdb.id.asc())
             .all()
         )
-        print(result)
         data = {
             "subArea": sub_area_schema.dump([0]),
             "areaPen": area_penjualan_schema.dump([1]),
@@ -1550,7 +1544,6 @@ def supplier(self):
             .order_by(SupplierMdb.sup_code.asc())
             .all()
         )
-        print(result)
         data = [
             {
                 "supplier": supplier_schema.dump(x[0]),
@@ -1603,7 +1596,6 @@ def supplier_id(self, id):
             .first()
         )
 
-        print(result)
         data = {
             "supplier": supplier_schema.dump(result[0]),
             "jpem": jpem_schema.dump(result[1]),
@@ -2188,7 +2180,6 @@ def groupPro(self):
             .order_by(GroupProMdb.id.asc())
             .all()
         )
-        print(result)
         data = [
             {
                 "groupPro": groupPro_schema.dump(x[0]),
@@ -2233,7 +2224,6 @@ def groupPro_id(self, id):
             .first()
         )
 
-        print(result)
         data = {
             "groupPro": groupPro_schema.dump(result[0]),
             "divisi": division_schema.dump(result[1]),
@@ -2323,7 +2313,7 @@ def jasa(self):
             .order_by(JasaMdb.id.asc())
             .all()
         )
-        print(result)
+
         data = [
             {
                 "jasa": jasa_schema.dump(x[0]),
@@ -2365,7 +2355,7 @@ def jasa_id(self, id):
             .filter(JasaMdb.id == id)
             .first()
         )
-        print(result)
+        
         data = {
             "jasa": jasa_schema.dump(result[0]),
             "account": accou_schema.dump(result[1]),
@@ -4337,7 +4327,6 @@ def sls(self):
             new_jasa = []
             for x in jjasa:
                 if x["jasa_id"] and x["sup_id"] and x["unit_id"] and x["order"]:
-                    print(x["order"])
                     new_jasa.append(
                         JjasaDdb(
                             sls.id,
@@ -5295,7 +5284,6 @@ def giro_id(self, id):
             .filter(GiroHdb.id == id)
             .first()
         )
-        print(result)
         data = {
             "giro": giro_schema.dump(result[0]),
             "bank": bank_schema.dump(result[1]),
@@ -5408,4 +5396,3 @@ def balance(self):
         saldo_cash += x.sld_awal
 
     return response(200, "Berhasil", True, {"cash": saldo_cash})
-
