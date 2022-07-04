@@ -54,6 +54,7 @@ from main.model.setup_mdb import SetupMdb
 from main.model.sjasa_ddb import SjasaDdb
 from main.model.sord_hdb import SordHdb
 from main.model.sprod_ddb import SprodDdb
+from main.model.stcard_mdb import StCard
 from main.model.sub_area_mdb import SubAreaMdb
 from main.model.klasi_mdb import KlasiMdb
 from main.model.kateg_mdb import KategMdb
@@ -129,6 +130,7 @@ from main.schema.giro_hdb import giro_schema, giros_schema, GiroSchema
 from main.schema.apcard_mdb import apcard_schema, apcards_schema, APCardSchema
 from main.schema.retsale_hdb import retsale_schema, retsales_schema, RetSaleSchema
 from main.schema.transddb import trans_schema, transs_schema, TransDDB
+from main.schema.stcard_mdb import st_card_schema, st_cards_schema, StCardSchema
 from main.schema.setup_mdb import *
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import and_, extract, func, or_
@@ -5396,3 +5398,22 @@ def balance(self):
         saldo_cash += x.sld_awal
 
     return response(200, "Berhasil", True, {"cash": saldo_cash})
+
+
+@app.route("/v1/api/stcard", methods=["GET"])
+@token_required
+def st_card(self):
+    st = (
+        db.session.query(StCard, ProdMdb, LocationMdb)
+        .outerjoin(ProdMdb, ProdMdb.id == StCard.prod_id)
+        .outerjoin (LocationMdb, LocationMdb.id == StCard.loc_id)
+        .all()
+    )
+
+    final = []
+    for x in st:
+        x[0].prod_id = prod_schema.dump(x[1]) if x[1] else None
+        x[0].loc_id = loct_schema.dump(x[2]) if x[2] else None
+        final.append(st_card_schema.dump(x[0]))
+
+    return response(200, "Berhasil", True, final)
