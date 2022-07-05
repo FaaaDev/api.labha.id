@@ -4166,6 +4166,17 @@ def retur_order(self):
 
         return response(200, "success", True, result)
 
+@app.route("/v1/api/retur-order/<int:id>", methods=["DELETE"])
+@token_required
+def retur_id(self, id):
+    ret = RetordHdb.query.filter(RetordHdb.id == id).first()
+    if request.method == "DELETE":
+        db.session.delete(ret)
+        db.session.commit()
+
+        return response(200, "success", True, None)
+
+
 
 @app.route("/v1/api/retur-sales", methods=["POST", "GET"])
 @token_required
@@ -4247,6 +4258,15 @@ def retur_sales(self):
 
         return response(200, "success", True, result)
 
+@app.route("/v1/api/retur-sales/<int:id>", methods=["DELETE"])
+@token_required
+def retur_sale_is(self, id):
+    ret = RetSaleHdb.query.filter(RetSaleHdb.id == id).first()
+    if request.method == "DELETE":
+        db.session.delete(ret)
+        db.session.commit()
+
+        return response(200, "success", True, None)
 
 # @app.route("/v1/api/faktur/<int:id>", methods=["PUT", "GET", 'DELETE'])
 # @token_required
