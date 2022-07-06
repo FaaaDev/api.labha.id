@@ -5429,6 +5429,7 @@ def st_card(self):
         db.session.query(StCard, ProdMdb, LocationMdb)
         .outerjoin(ProdMdb, ProdMdb.id == StCard.prod_id)
         .outerjoin (LocationMdb, LocationMdb.id == StCard.loc_id)
+        .order_by(StCard.trx_date.asc())
         .all()
     )
 
