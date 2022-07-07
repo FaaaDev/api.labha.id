@@ -160,8 +160,10 @@ app.config["SQLALCHEMY_DATABASE_URI"] = (
     "postgresql://postgres:12345678@127.0.0.1:" + local_port + "/acc_dev"
 )
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-# app.config["SQLALCHEMY_ECHO"] = True
-app.config["SQLALCHEMY_POOL_RECYCLE"] = 280
+app.config['SQLALCHEMY_POOL_SIZE'] = 10
+app.config['SQLALCHEMY_MAX_OVERFLOW'] = 20
+app.config['SQLALCHEMY_POOL_RECYCLE'] = 1800
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {"pool_pre_ping": True} 
 app.config["JSON_SORT_KEYS"] = False
 app.config["UPLOAD_FOLDER"] = join(dirname(realpath(__file__)), "static/upload")
 app.config[
