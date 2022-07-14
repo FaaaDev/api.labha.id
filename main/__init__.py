@@ -2708,6 +2708,7 @@ def po(self):
                 total_disc,
                 0,
                 0,
+                0,
             )
 
             db.session.add(po)
