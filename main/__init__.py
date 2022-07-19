@@ -30,6 +30,7 @@ from main.model.exp_ddb import ExpDdb
 from main.model.exp_hdb import ExpHdb
 from main.model.fkpb_hdb import FkpbHdb
 from main.model.giro_hdb import GiroHdb
+from main.model.hrgbl_mdb import HrgBlMdb
 from main.model.jjasa_ddb import JjasaDdb
 from main.model.jprod_ddb import JprodDdb
 from main.model.ordpb_hdb import OrdpbHdb
@@ -160,10 +161,10 @@ app.config["SQLALCHEMY_DATABASE_URI"] = (
     "postgresql://postgres:12345678@127.0.0.1:" + local_port + "/acc_dev"
 )
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-app.config['SQLALCHEMY_POOL_SIZE'] = 10
-app.config['SQLALCHEMY_MAX_OVERFLOW'] = 20
-app.config['SQLALCHEMY_POOL_RECYCLE'] = 1800
-app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {"pool_pre_ping": True} 
+app.config["SQLALCHEMY_POOL_SIZE"] = 10
+app.config["SQLALCHEMY_MAX_OVERFLOW"] = 20
+app.config["SQLALCHEMY_POOL_RECYCLE"] = 1800
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"pool_pre_ping": True}
 app.config["JSON_SORT_KEYS"] = False
 app.config["UPLOAD_FOLDER"] = join(dirname(realpath(__file__)), "static/upload")
 app.config[
@@ -580,9 +581,7 @@ def account(self):
             finally:
                 return result
         else:
-            return response(
-                406, "Data isian belum lengkap", False, None
-            )
+            return response(406, "Data isian belum lengkap", False, None)
     else:
         result = (
             db.session.query(AccouMdb, KategMdb, KlasiMdb)
@@ -2361,7 +2360,7 @@ def jasa_id(self, id):
             .filter(JasaMdb.id == id)
             .first()
         )
-        
+
         data = {
             "jasa": jasa_schema.dump(result[0]),
             "account": accou_schema.dump(result[1]),
@@ -4172,6 +4171,7 @@ def retur_order(self):
 
         return response(200, "success", True, result)
 
+
 @app.route("/v1/api/retur-order/<int:id>", methods=["DELETE"])
 @token_required
 def retur_id(self, id):
@@ -4181,7 +4181,6 @@ def retur_id(self, id):
         db.session.commit()
 
         return response(200, "success", True, None)
-
 
 
 @app.route("/v1/api/retur-sales", methods=["POST", "GET"])
@@ -4264,6 +4263,7 @@ def retur_sales(self):
 
         return response(200, "success", True, result)
 
+
 @app.route("/v1/api/retur-sales/<int:id>", methods=["DELETE"])
 @token_required
 def retur_sale_is(self, id):
@@ -4273,6 +4273,7 @@ def retur_sale_is(self, id):
         db.session.commit()
 
         return response(200, "success", True, None)
+
 
 # @app.route("/v1/api/faktur/<int:id>", methods=["PUT", "GET", 'DELETE'])
 # @token_required
@@ -5430,7 +5431,7 @@ def st_card(self):
     st = (
         db.session.query(StCard, ProdMdb, LocationMdb)
         .outerjoin(ProdMdb, ProdMdb.id == StCard.prod_id)
-        .outerjoin (LocationMdb, LocationMdb.id == StCard.loc_id)
+        .outerjoin(LocationMdb, LocationMdb.id == StCard.loc_id)
         .order_by(StCard.trx_date.asc())
         .all()
     )
@@ -5442,3 +5443,29 @@ def st_card(self):
         final.append(st_card_schema.dump(x[0]))
 
     return response(200, "Berhasil", True, final)
+
+
+@app.route("/v1/api/price-history", methods=["GET"])
+@token_required
+def price_history(self):
+    history = (
+        db.session.query(HrgBlMdb, OrdpbHdb, SupplierMdb, ProdMdb)
+        .outerjoin(OrdpbHdb, OrdpbHdb.id == HrgBlMdb.ord_id)
+        .outerjoin(SupplierMdb, SupplierMdb.id == HrgBlMdb.sup_id)
+        .outerjoin(ProdMdb, ProdMdb.id == HrgBlMdb.prod_id)
+        .all()
+    )
+
+    final = [
+        {
+            "id": x[0].id,
+            "order": dord_schema.dump(x[1]),
+            "supplier": supplier_schema.dump(x[2]),
+            "product": prod_schema.dump(x[3]),
+            "price": x[0].price,
+        }
+        for x in history
+    ]
+
+    return response(200, "Berhasil", True, final)
+
