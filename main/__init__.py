@@ -2707,6 +2707,7 @@ def po(self):
                 total_disc,
                 0,
                 0,
+                0,
             )
 
             db.session.add(po)
@@ -3215,6 +3216,7 @@ def so(self):
         so = (
             db.session.query(SordHdb, RulesPayMdb)
             .outerjoin(RulesPayMdb, RulesPayMdb.id == SordHdb.top)
+            .order_by(SordHdb.id.asc())
             .all()
         )
 
@@ -3420,6 +3422,7 @@ def so_id(self, id):
             db.session.query(SordHdb, RulesPayMdb)
             .outerjoin(RulesPayMdb, RulesPayMdb.id == SordHdb.top)
             .filter(SordHdb.id == id)
+            .order_by(SordHdb.id.asc())
             .first()
         )
 
@@ -3573,7 +3576,7 @@ def order(self):
                 db.session.commit()
 
             if faktur:
-                faktur = FkpbHdb(ord_code, ord_date, do.id, None, None)
+                faktur = FkpbHdb(ord_code, ord_date, do.id, None, None, None)
 
                 db.session.add(faktur)
 
@@ -3664,6 +3667,7 @@ def ord_id(self, id):
         try:
             ord_code = request.json["ord_code"]
             ord_date = request.json["ord_date"]
+            faktur = request.json["faktur"]
             dep_id = request.json["dep_id"]
             sup_id = request.json["sup_id"]
             top = request.json["top"]
@@ -3677,6 +3681,7 @@ def ord_id(self, id):
 
             do.ord_code = ord_code
             do.ord_date = ord_date
+            do.faktur = faktur
             do.dep_id = dep_id
             do.sup_id = sup_id
             do.top = top
@@ -3936,8 +3941,9 @@ def faktur(self):
         ord_id = request.json["ord_id"]
         fk_tax = request.json["fk_tax"]
         fk_ppn = request.json["fk_ppn"]
+        fk_desc = request.json["fk_desc"]
 
-        faktur = FkpbHdb(fk_code, fk_date, ord_id, fk_tax, fk_ppn)
+        faktur = FkpbHdb(fk_code, fk_date, ord_id, fk_tax, fk_ppn, fk_desc)
 
         db.session.add(faktur)
 
@@ -4000,6 +4006,7 @@ def faktur(self):
                     "fk_tax": x[0].fk_tax,
                     "fk_ppn": x[0].fk_ppn,
                     "fk_lunas": x[0].fk_lunas,
+                    "fk_desc": x[0].fk_desc,
                     "ord_id": dord_schema.dump(x[1]),
                     "product": product,
                     "jasa": jasa,
@@ -4018,11 +4025,13 @@ def faktur_id(self, id):
         ord_id = request.json["ord_id"]
         fk_tax = request.json["fk_tax"]
         fk_ppn = request.json["fk_ppn"]
+        fk_desc = request.json["fk_desc"]
 
         fk.fk_date = fk_date
         fk.ord_id = ord_id
         fk.fk_tax = fk_tax
         fk.fk_ppn = fk_ppn
+        fk.fk_desc = fk_desc
 
         db.session.commit()
 
@@ -4083,6 +4092,7 @@ def faktur_id(self, id):
             "fk_tax": x[0].fk_tax,
             "fk_ppn": x[0].fk_ppn,
             "fk_lunas": x[0].fk_lunas,
+            "fk_desc": x[0].fk_desc,
             "ord_id": dord_schema.dump(x[1]),
             "product": product,
             "jasa": jasa,
@@ -4171,16 +4181,101 @@ def retur_order(self):
 
         return response(200, "success", True, result)
 
-
-@app.route("/v1/api/retur-order/<int:id>", methods=["DELETE"])
+@app.route("/v1/api/retur-order/<int:id>", methods=["PUT", "DELETE", "GET"])
 @token_required
-def retur_id(self, id):
+def retur_order_id(self, id):
     ret = RetordHdb.query.filter(RetordHdb.id == id).first()
-    if request.method == "DELETE":
+    if request.method == "PUT":
+        try:
+            ret_code = request.json["ret_code"]
+            ret_date = request.json["ret_date"]
+            fk_id = request.json["fk_id"]
+            product = request.json["product"]
+
+            ret.ret_code = ret_code
+            ret.ret_date = ret_date
+            ret.fk_id = fk_id
+
+            # product = ReprodDdb.query.filter(ReprodDdb.id == ret.id)
+
+            new_prod = []
+            for x in product:
+                for y in product:
+                    if x["id"] == y.id:
+                        y.prod_id = x["prod_id"]
+                        y.unit_id = x["unit_id"]
+                        y.retur = x["retur"]
+                        y.price = x["price"]
+                        y.disc = x["disc"]
+                        y.nett_price = x["nett_price"]
+                        y.total = x["total"]
+                if x["id"] == 0 and x["prod_id"] and x["unit_id"] and x["retur"]:
+                    new_prod.append(
+                        ReprodDdb(
+                            ret.id,
+                            x["prod_id"],
+                            x["unit_id"],
+                            x["retur"],
+                            x["price"],
+                            x["disc"],
+                            x["nett_price"],
+                            x["total"],
+                        )
+                    )
+
+            if len(new_prod) > 0:
+                db.session.add_all(new_prod)
+
+            db.session.commit()
+
+            result = response(200, "Berhasil", True, retord_schema.dump(ret))
+
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+
+    elif request.method == "DELETE":
         db.session.delete(ret)
         db.session.commit()
 
         return response(200, "success", True, None)
+
+    else:
+        x = (
+            db.session.query(RetordHdb, FkpbHdb, OrdpbHdb)
+            .outerjoin(FkpbHdb, FkpbHdb.id == RetordHdb.fk_id)
+            .outerjoin(OrdpbHdb, OrdpbHdb.id == FkpbHdb.ord_id)
+            .filter(RetordHdb.id == id)
+            .first()
+        )
+
+        product = (
+            db.session.query(ReprodDdb, ProdMdb, UnitMdb)
+            .outerjoin(ProdMdb, ProdMdb.id == ReprodDdb.prod_id)
+            .outerjoin(UnitMdb, UnitMdb.id == ReprodDdb.unit_id)
+            .all()
+        )
+
+        product = []
+        for y in product:
+            if y[0].id == x[0].id:
+                y[0].prod_id = prod_schema.dump(y[1])
+                y[0].unit_id = unit_schema.dump(y[2])
+                product.append(reprod_schema.dump(y[0]))
+
+
+        final = {
+            "id": x[0].id,
+            "ret_code": x[0].ret_code,
+            "ret_date": RetSaleSchema(only=["ret_date"]).dump(x[0])["ret_date"],
+            "fk_id": fkpb_schema.dump(x[2]) if x[2] else None,
+            "product": product,
+        }
+
+        return response(200, "Berhasil", True, final)
+
 
 
 @app.route("/v1/api/retur-sales", methods=["POST", "GET"])
@@ -4263,17 +4358,100 @@ def retur_sales(self):
 
         return response(200, "success", True, result)
 
-
-@app.route("/v1/api/retur-sales/<int:id>", methods=["DELETE"])
+@app.route("/v1/api/retur-sales/<int:id>", methods=["PUT", "DELETE", "GET"])
 @token_required
-def retur_sale_is(self, id):
+def retur_sale_id(self, id):
     ret = RetSaleHdb.query.filter(RetSaleHdb.id == id).first()
-    if request.method == "DELETE":
+    if request.method == "PUT":
+        try:
+            ret_code = request.json["ret_code"]
+            ret_date = request.json["ret_date"]
+            sale_id = request.json["sale_id"]
+            product = request.json["product"]
+
+            ret.ret_code = ret_code
+            ret.ret_date = ret_date
+            ret.sale_id = sale_id
+
+            # product = ReprodDdb.query.filter(ReprodDdb.id == ret.id)
+
+            new_prod = []
+            for x in product:
+                for y in product:
+                    if x["id"] == y.id:
+                        y.prod_id = x["prod_id"]
+                        y.unit_id = x["unit_id"]
+                        y.retur = x["retur"]
+                        y.price = x["price"]
+                        y.disc = x["disc"]
+                        y.nett_price = x["nett_price"]
+                        y.total = x["total"]
+                if x["id"] == 0 and x["prod_id"] and x["unit_id"] and x["retur"]:
+                    new_prod.append(
+                        ReprodDdb(
+                            ret.id,
+                            x["prod_id"],
+                            x["unit_id"],
+                            x["retur"],
+                            x["price"],
+                            x["disc"],
+                            x["nett_price"],
+                            x["total"],
+                        )
+                    )
+
+            if len(new_prod) > 0:
+                db.session.add_all(new_prod)
+
+            db.session.commit()
+
+            result = response(200, "Berhasil", True, retsale_schema.dump(ret))
+
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+
+    elif request.method == "DELETE":
         db.session.delete(ret)
         db.session.commit()
 
         return response(200, "success", True, None)
 
+    else:
+        x = (
+            db.session.query(RetSaleHdb, OrdpjHdb, SordHdb)
+            .outerjoin(OrdpjHdb, OrdpjHdb.id == RetSaleHdb.sale_id)
+            .outerjoin(SordHdb, SordHdb.id == OrdpjHdb.so_id)
+            .filter(RetSaleHdb.id == id)
+            .first()
+        )
+
+        product = (
+            db.session.query(ReprodDdb, ProdMdb, UnitMdb)
+            .outerjoin(ProdMdb, ProdMdb.id == ReprodDdb.prod_id)
+            .outerjoin(UnitMdb, UnitMdb.id == ReprodDdb.unit_id)
+            .all()
+        )
+
+        product = []
+        for y in product:
+            if y[0].id == x[0].id:
+                y[0].prod_id = prod_schema.dump(y[1])
+                y[0].unit_id = unit_schema.dump(y[2])
+                product.append(reprod_schema.dump(y[0]))
+
+
+        final = {
+            "id": x[0].id,
+            "ret_code": x[0].ret_code,
+            "ret_date": RetSaleSchema(only=["ret_date"]).dump(x[0])["ret_date"],
+            "sale_id": ordpj_schema.dump(x[2]) if x[2] else None,
+            "product": product,
+        }
+
+        return response(200, "Berhasil", True, final)
 
 # @app.route("/v1/api/faktur/<int:id>", methods=["PUT", "GET", 'DELETE'])
 # @token_required
@@ -4603,6 +4781,7 @@ def sls_id(self, id):
             .outerjoin(SordHdb, SordHdb.id == OrdpjHdb.so_id)
             .outerjoin(SalesMdb, SalesMdb.id == OrdpjHdb.slsm_id)
             .filter(OrdpjHdb.id == id)
+            .order_by(OrdpbHdb.id.asc())
             .first()
         )
 
@@ -4760,6 +4939,7 @@ def expense(self):
             db.session.query(ExpHdb, BankMdb, SupplierMdb)
             .outerjoin(BankMdb, BankMdb.id == ExpHdb.bank_id)
             .outerjoin(SupplierMdb, SupplierMdb.id == ExpHdb.acq_sup)
+            .order_by(ExpHdb.id.desc())
             .all()
         )
 
@@ -4893,13 +5073,13 @@ def expense_id(self, id):
         UpdateApPayment(exps.id, True)
         DeleteApPayment(exps.id)
         exp = ExpDdb.query.filter(ExpDdb.exp_id == exps.id)
-        # acq = AcqDdb.query.filter(AcqDdb.exp_id == exps.id)
+        acq = AcqDdb.query.filter(AcqDdb.exp_id == exps.id)
 
         for x in exp:
             db.session.delete(x)
 
-        # for x in acq:
-        #     db.session.delete(x)
+        for x in acq:
+            db.session.delete(x)
 
         db.session.delete(exps)
         db.session.commit()

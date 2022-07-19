@@ -12,10 +12,12 @@ class FkpbHdb(db.Model):
     fk_tax = db.Column(db.String(255))
     fk_ppn = db.Column(db.Integer)
     fk_lunas = db.Column(db.Integer, default=0)
+    fk_desc = db.Column(db.String(255))
 
-    def __init__(self, fk_code, fk_date, ord_id, fk_tax, fk_ppn):
+    def __init__(self, fk_code, fk_date, ord_id, fk_tax, fk_ppn, fk_desc):
         self.fk_code = fk_code
         self.fk_date = fk_date
         self.ord_id = ord_id
         self.fk_tax = fk_tax
         self.fk_ppn = fk_ppn
+        self.fk_desc = fk_desc
