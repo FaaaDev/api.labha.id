@@ -4941,6 +4941,7 @@ def expense(self):
             db.session.query(ExpHdb, BankMdb, SupplierMdb)
             .outerjoin(BankMdb, BankMdb.id == ExpHdb.bank_id)
             .outerjoin(SupplierMdb, SupplierMdb.id == ExpHdb.acq_sup)
+            .order_by(ExpHdb.id.desc())
             .all()
         )
 
@@ -5074,13 +5075,13 @@ def expense_id(self, id):
         UpdateApPayment(exps.id, True)
         DeleteApPayment(exps.id)
         exp = ExpDdb.query.filter(ExpDdb.exp_id == exps.id)
-        # acq = AcqDdb.query.filter(AcqDdb.exp_id == exps.id)
+        acq = AcqDdb.query.filter(AcqDdb.exp_id == exps.id)
 
         for x in exp:
             db.session.delete(x)
 
-        # for x in acq:
-        #     db.session.delete(x)
+        for x in acq:
+            db.session.delete(x)
 
         db.session.delete(exps)
         db.session.commit()
