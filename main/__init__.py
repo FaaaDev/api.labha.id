@@ -42,6 +42,7 @@ from main.model.jpem_mdb import JpemMdb
 from main.model.ordpj_hdb import OrdpjHdb
 from main.model.pjasa_ddb import PjasaDdb
 from main.model.po_mdb import PoMdb
+from main.model.po_sup_ddb import PoSupDdb
 from main.model.pprod_ddb import PprodDdb
 from main.model.preq_mdb import PreqMdb
 from main.model.prod_mdb import ProdMdb
@@ -72,6 +73,7 @@ from main.model.pajak_mdb import PajakMdb
 from main.model.retsale_hdb import RetSaleHdb
 from main.model.apcard_mdb import ApCard
 from main.model.transddb import TransDdb
+from main.model.po_sup_ddb import PoSupDdb
 from main.schema.apcard_mdb import apcard_schema, apcards_schema, APCardSchema
 from main.schema.arcard_mdb import ARCardSchema
 from main.schema.ccost_mdb import ccost_schema, ccosts_schema, CcostSchema
@@ -82,6 +84,7 @@ from main.schema.user import user_schema, users_schema
 from main.schema.bank_mdb import banks_schema, bank_schema
 from main.schema.unit_mdb import unit_schema, units_schema, UnitSchema
 from main.schema.prod_mdb import prod_schema, prods_schema, ProdSchema
+from main.schema.po_sup_ddb import poSup_schema, poSups_schema, PoSupSchema
 from main.schema.adm_user_menu import (
     adm_user_menu_schema,
     adm_user_menus_schema,
@@ -2692,6 +2695,7 @@ def po(self):
             total_disc = request.json["total_disc"]
             pprod = request.json["pprod"]
             pjasa = request.json["pjasa"]
+            psup = request.json["psup"]
 
             po = PoMdb(
                 po_code,
@@ -2775,11 +2779,32 @@ def po(self):
                         )
                     )
 
+            new_sup = []
+            for x in psup:
+                if (
+                    x["sup_id"]
+                    and x["prod_id"]
+                    and x["price"]
+                    and int(x["price"]) > 0
+                ):
+                    new_sup.append(
+                        PoSupDdb(
+                            po.id,
+                            x["po_id"],
+                            x["sup_id"],
+                            x["prod_id"],
+                            x["price"],
+                        )
+                    )
+
             if len(new_prod) > 0:
                 db.session.add_all(new_prod)
 
             if len(new_jasa) > 0:
                 db.session.add_all(new_jasa)
+
+            if len(new_sup) > 0:
+                db.session.add_all(new_sup)
 
             db.session.commit()
 
@@ -2829,6 +2854,12 @@ def po(self):
             .outerjoin(UnitMdb, UnitMdb.id == PjasaDdb.unit_id)
             .all()
         )
+        psup = (
+            db.session.query(PoSupDdb, SupplierMdb, ProdMdb)
+            .outerjoin(SupplierMdb, SupplierMdb.id == PoSupDdb.sup_id)
+            .outerjoin(ProdMdb, ProdMdb.id == PoSupDdb.prod_id)
+            .all()
+        )
 
         final = []
         for x in po:
@@ -2845,6 +2876,13 @@ def po(self):
                     z[0].jasa_id = jasa_schema.dump(z[1])
                     z[0].unit_id = unit_schema.dump(z[2])
                     jasa.append(pjasa_schema.dump(z[0]))
+
+            sup = []
+            for z in psup:
+                if z[0].po == x[0].id:
+                    z[0].sup_id = supplier_schema.dump(z[1])
+                    z[0].prod_id = prod_schema.dump(z[2])
+                    sup.append(poSup_schema.dump(z[0]))
 
             final.append(
                 {
@@ -2878,6 +2916,7 @@ def po(self):
                     "print": x[0].print,
                     "pprod": product,
                     "pjasa": jasa,
+                    "psup": sup,
                 }
             )
 
