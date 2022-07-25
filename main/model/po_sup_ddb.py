@@ -10,10 +10,12 @@ class PoSupDdb(db.Model):
     sup_id = db.Column(db.Integer)
     prod_id = db.Column(db.Integer)
     price = db.Column(db.Float)
+    image = db.Column(db.Text)
     
 
-    def __init__(self, po_id, sup_id, prod_id, price):
+    def __init__(self, po_id, sup_id, prod_id, price, image):
         self.po_id = po_id
         self.sup_id = sup_id
         self.prod_id = prod_id
         self.price = price
+        self.image = image

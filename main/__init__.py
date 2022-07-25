@@ -2786,14 +2786,15 @@ def po(self):
                     and x["prod_id"]
                     and x["price"]
                     and int(x["price"]) > 0
+                    and x["image"]
                 ):
                     new_sup.append(
                         PoSupDdb(
                             po.id,
-                            x["po_id"],
                             x["sup_id"],
                             x["prod_id"],
                             x["price"],
+                            x["image"],
                         )
                     )
 
