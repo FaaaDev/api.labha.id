@@ -2841,7 +2841,7 @@ def po(self):
             .outerjoin(CcostMdb, CcostMdb.id == PreqMdb.req_dep)
             .outerjoin(SupplierMdb, SupplierMdb.id == PoMdb.sup_id)
             .outerjoin(RulesPayMdb, RulesPayMdb.id == PoMdb.top)
-            .order_by(PoMdb.id.asc())
+            .order_by(PoMdb.id.desc())
             .all()
         )
 
