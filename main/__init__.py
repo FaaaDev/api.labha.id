@@ -2686,6 +2686,7 @@ def po(self):
             po_date = request.json["po_date"]
             preq_id = request.json["preq_id"]
             sup_id = request.json["sup_id"]
+            ref_sup = request.json["ref_sup"]
             ppn_type = request.json["ppn_type"]
             top = request.json["top"]
             due_date = request.json["due_date"]
@@ -2702,6 +2703,7 @@ def po(self):
                 po_date,
                 preq_id,
                 sup_id,
+                ref_sup,
                 ppn_type,
                 top,
                 due_date,
@@ -2785,7 +2787,6 @@ def po(self):
                     x["sup_id"]
                     and x["prod_id"]
                     and x["price"]
-                    and int(x["price"]) > 0
                     and x["image"]
                 ):
                     new_sup.append(
@@ -2797,7 +2798,7 @@ def po(self):
                             x["image"],
                         )
                     )
-
+            print(new_sup)
             if len(new_prod) > 0:
                 db.session.add_all(new_prod)
 
@@ -2880,7 +2881,7 @@ def po(self):
 
             sup = []
             for z in psup:
-                if z[0].po == x[0].id:
+                if z[0].po_id == x[0].id:
                     z[0].sup_id = supplier_schema.dump(z[1])
                     z[0].prod_id = prod_schema.dump(z[2])
                     sup.append(poSup_schema.dump(z[0]))
@@ -2904,6 +2905,7 @@ def po(self):
                     else None,
                     "ppn_type": x[0].ppn_type,
                     "sup_id": supplier_schema.dump(x[3]) if x[3] else None,
+                    "ref_sup": x[0].ref_sup,
                     "top": rpay_schema.dump(x[4]) if x[4] else None,
                     "due_date": PoSchema(only=["due_date"]).dump(x[0])["due_date"]
                     if x[0].due_date
@@ -2935,6 +2937,7 @@ def po_id(self, id):
                 po_date = request.json["po_date"]
                 preq_id = request.json["preq_id"]
                 sup_id = request.json["sup_id"]
+                ref_sup = request.json["ref_sup"]
                 ppn_type = request.json["ppn_type"]
                 top = request.json["top"]
                 due_date = request.json["due_date"]
@@ -2949,6 +2952,7 @@ def po_id(self, id):
                 po.po_date = po_date
                 po.preq_id = preq_id
                 po.sup_id = sup_id
+                po.ref_sup = ref_sup
                 po.ppn_type = ppn_type
                 po.top = top
                 po.due_date = due_date
@@ -3143,6 +3147,7 @@ def po_id(self, id):
             },
             "ppn_type": x[0].ppn_type,
             "sup_id": supplier_schema.dump(x[3]),
+            "ref_sup": x[0].ppn_type,
             "top": rpay_schema.dump(x[4]),
             "due_date": PoSchema(only=["due_date"]).dump(x[0])["due_date"],
             "split_inv": x[0].split_inv,
