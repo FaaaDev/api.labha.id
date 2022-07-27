@@ -2782,12 +2782,14 @@ def po(self):
                     )
 
             new_sup = []
+            print(psup)
             for x in psup:
                 if (
                     x["sup_id"]
                     and x["prod_id"]
                     and x["price"]
-                    and x["image"]
+                    and int(x["price"]) > 0
+                    # and x["image"]
                 ):
                     new_sup.append(
                         PoSupDdb(
@@ -2795,7 +2797,7 @@ def po(self):
                             x["sup_id"],
                             x["prod_id"],
                             x["price"],
-                            x["image"],
+                            x["image"]
                         )
                     )
             print(new_sup)
@@ -4226,6 +4228,7 @@ def retur_order(self):
 
         return response(200, "success", True, result)
 
+
 @app.route("/v1/api/retur-order/<int:id>", methods=["PUT", "DELETE", "GET"])
 @token_required
 def retur_order_id(self, id):
@@ -4310,7 +4313,6 @@ def retur_order_id(self, id):
                 y[0].unit_id = unit_schema.dump(y[2])
                 product.append(reprod_schema.dump(y[0]))
 
-
         final = {
             "id": x[0].id,
             "ret_code": x[0].ret_code,
@@ -4320,7 +4322,6 @@ def retur_order_id(self, id):
         }
 
         return response(200, "Berhasil", True, final)
-
 
 
 @app.route("/v1/api/retur-sales", methods=["POST", "GET"])
@@ -4402,6 +4403,7 @@ def retur_sales(self):
             )
 
         return response(200, "success", True, result)
+
 
 @app.route("/v1/api/retur-sales/<int:id>", methods=["PUT", "DELETE", "GET"])
 @token_required
@@ -4487,7 +4489,6 @@ def retur_sale_id(self, id):
                 y[0].unit_id = unit_schema.dump(y[2])
                 product.append(reprod_schema.dump(y[0]))
 
-
         final = {
             "id": x[0].id,
             "ret_code": x[0].ret_code,
@@ -4497,6 +4498,7 @@ def retur_sale_id(self, id):
         }
 
         return response(200, "Berhasil", True, final)
+
 
 # @app.route("/v1/api/faktur/<int:id>", methods=["PUT", "GET", 'DELETE'])
 # @token_required
@@ -5693,4 +5695,3 @@ def price_history(self):
     ]
 
     return response(200, "Berhasil", True, final)
-
