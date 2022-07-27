@@ -33,6 +33,7 @@ from main.model.giro_hdb import GiroHdb
 from main.model.hrgbl_mdb import HrgBlMdb
 from main.model.jjasa_ddb import JjasaDdb
 from main.model.jprod_ddb import JprodDdb
+from main.model.msn_mdb import MsnMdb
 from main.model.ordpb_hdb import OrdpbHdb
 from main.model.dprod_ddb import DprodDdb
 from main.model.group_prod_mdb import GroupProMdb
@@ -135,6 +136,7 @@ from main.schema.apcard_mdb import apcard_schema, apcards_schema, APCardSchema
 from main.schema.retsale_hdb import retsale_schema, retsales_schema, RetSaleSchema
 from main.schema.transddb import trans_schema, transs_schema, TransDDB
 from main.schema.stcard_mdb import st_card_schema, st_cards_schema, StCardSchema
+from main.schema.msn_mdb import msns_schema, msn_schema, MsnSchema
 from main.schema.setup_mdb import *
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import and_, extract, func, or_
@@ -5695,3 +5697,60 @@ def price_history(self):
     ]
 
     return response(200, "Berhasil", True, final)
+
+@app.route("/v1/api/mesin", methods=["GET", "POST"])
+@token_required
+def msn(self):
+    if request.method == "POST":
+        try:
+            msn_code = request.json["msn_code"]
+            msn_name = request.json["msn_name"]
+            desc = request.json["desc"]
+
+            mesin = MsnMdb(msn_code, msn_name, desc)
+
+            db.session.add(mesin)
+            db.session.commit()
+
+            result = response(200, "Berhasil", True, msn_schema.dump(mesin))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    else:
+        mesin = MsnMdb.query.order_by(MsnMdb.id.desc()).all()
+
+        return response(200, "Berhasil", True, msns_schema.dump(mesin))
+
+@app.route("/v1/api/mesin/<int:id>", methods=["GET", "PUT", "DELETE"])
+@token_required
+def msn_id(self, id):
+    mesin = MsnMdb.query.filter(MsnMdb.id == id).first()
+    if request.method == "PUT":
+        try:
+            msn_code = request.json["msn_code"]
+            msn_name = request.json["msn_name"]
+            desc = request.json["desc"]
+            
+            mesin.msn_code = msn_code
+            mesin.msn_name = msn_name
+            mesin.desc = desc
+
+            db.session.commit()
+
+            result = response(200, "Berhasil", True, msn_schema.dump(mesin))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    elif request.method == "DELETE":
+        if mesin:
+            db.session.delete(mesin)
+            db.session.commit
+
+        return response(200, "Berhasil", True, None)
+    else:
+        return response(200, "Berhasil", True, msn_schema.dump(mesin))
+
