@@ -5749,7 +5749,8 @@ def mesin_id(self, id):
     elif request.method == "DELETE":
         if mesin:
             db.session.delete(mesin)
-            db.session.commit
+            db.session.commit()
+            
             return response(200, "Berhasil", True, None)
 
         return response(400, "Data Tidak Ditemukan", False, None)
