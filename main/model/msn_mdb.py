@@ -1,4 +1,3 @@
-from flask_sqlalchemy import SQLAlchemy
 from main.shared.shared import db
 
 class MsnMdb(db.Model):
@@ -6,7 +5,7 @@ class MsnMdb(db.Model):
     __tablename__ = 'MSNMDB'
 
     id = db.Column(db.Integer, primary_key=True)
-    msn_code = db.Column(db.String(100))
+    msn_code = db.Column(db.String(100), unique=True)
     msn_name = db.Column(db.String(100))
     desc = db.Column(db.Text)
 

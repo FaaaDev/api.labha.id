@@ -3573,6 +3573,7 @@ def order(self):
                 total_disc,
                 0,
                 0,
+                0,
             )
 
             db.session.add(do)
@@ -5700,7 +5701,7 @@ def price_history(self):
 
 @app.route("/v1/api/mesin", methods=["GET", "POST"])
 @token_required
-def msn(self):
+def mesin(self):
     if request.method == "POST":
         try:
             msn_code = request.json["msn_code"]
@@ -5725,7 +5726,7 @@ def msn(self):
 
 @app.route("/v1/api/mesin/<int:id>", methods=["GET", "PUT", "DELETE"])
 @token_required
-def msn_id(self, id):
+def mesin_id(self, id):
     mesin = MsnMdb.query.filter(MsnMdb.id == id).first()
     if request.method == "PUT":
         try:
@@ -5749,8 +5750,9 @@ def msn_id(self, id):
         if mesin:
             db.session.delete(mesin)
             db.session.commit
+            return response(200, "Berhasil", True, None)
 
-        return response(200, "Berhasil", True, None)
+        return response(400, "Data Tidak Ditemukan", False, None)
     else:
         return response(200, "Berhasil", True, msn_schema.dump(mesin))
 
