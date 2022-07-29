@@ -5838,12 +5838,12 @@ def formula(self):
                     y[0].unit_id = unit_schema.dump(y[2])
                     prod.append(fprod_schema.dump(y[0]))
 
-            material = []
+            mtrl = []
             for y in material:
                 if x.id == y[0].id:
                     y[0].prod_id = prod_schema.dump(y[1])
                     y[0].unit_id = unit_schema.dump(y[2])
-                    material.append(fmtrl_schema.dump(y[0]))
+                    mtrl.append(fmtrl_schema.dump(y[0]))
 
             final.append(
                 {
@@ -5860,8 +5860,8 @@ def formula(self):
                     "date_updated": FprdcSchema(only=["date_updated"]).dump(x)[
                         "date_updated"
                     ],
-                    "product": product,
-                    "material": material,
+                    "product": prod,
+                    "material": mtrl,
                 }
             )
 
@@ -6013,12 +6013,12 @@ def formula_id(self, id):
                 y[0].unit_id = unit_schema.dump(y[2])
                 prod.append(fprod_schema.dump(y[0]))
 
-        material = []
+        mtrl = []
         for y in material:
             if x.id == y[0].id:
                 y[0].prod_id = prod_schema.dump(y[1])
                 y[0].unit_id = unit_schema.dump(y[2])
-                material.append(fmtrl_schema.dump(y[0]))
+                mtrl.append(fmtrl_schema.dump(y[0]))
 
         final = {
             "id": x.id,
@@ -6030,8 +6030,8 @@ def formula_id(self, id):
             "active": x.active,
             "date_created": FprdcSchema(only=["date_created"]).dump(x)["date_created"],
             "date_updated": FprdcSchema(only=["date_updated"]).dump(x)["date_updated"],
-            "product": product,
-            "material": material,
+            "product": prod,
+            "material": mtrl,
         }
 
         return response(200, "Berhasil", True, final)
