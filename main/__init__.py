@@ -3575,7 +3575,6 @@ def order(self):
                 total_disc,
                 0,
                 0,
-                0,
             )
 
             db.session.add(do)
