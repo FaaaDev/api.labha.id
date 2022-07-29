@@ -16,10 +16,11 @@ class FprdcHdb(db.Model):
     active = db.Column(db.Boolean)
     
 
-    def __init__(self, fcode, fname, version, rev, desc, active):
+    def __init__(self, fcode, fname, version, rev, desc, active, date_created):
         self.fcode = fcode
         self.fname = fname
         self.version = version
         self.rev = rev
         self.desc = desc
         self.active = active
+        self.date_created = date_created

@@ -45,6 +45,8 @@ from main.model.jpel_mdb import JpelMdb
 from main.model.jpem_mdb import JpemMdb
 from main.model.ordpj_hdb import OrdpjHdb
 from main.model.pjasa_ddb import PjasaDdb
+from main.model.plan_hdb import PlanHdb
+from main.model.plmch_ddb import PlmchDdb
 from main.model.po_mdb import PoMdb
 from main.model.po_sup_ddb import PoSupDdb
 from main.model.pprod_ddb import PprodDdb
@@ -143,6 +145,8 @@ from main.schema.retsale_hdb import retsale_schema, retsales_schema, RetSaleSche
 from main.schema.transddb import trans_schema, transs_schema, TransDDB
 from main.schema.stcard_mdb import st_card_schema, st_cards_schema, StCardSchema
 from main.schema.msn_mdb import msns_schema, msn_schema, MsnSchema
+from main.schema.plan_hdb import plan_schema, plans_schema, PlanSchema
+from main.schema.plmch_ddb import plmch_schema, plmchs_schema, PlmchSchema
 from main.schema.setup_mdb import *
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import and_, extract, func, or_
@@ -5772,10 +5776,11 @@ def formula(self):
             rev = request.json["rev"]
             desc = request.json["desc"]
             active = request.json["active"]
+            date_created = request.json["date_created"]
             product = request.json["product"]
             material = request.json["material"]
 
-            form = FprdcHdb(fcode, fname, version, rev, desc, active)
+            form = FprdcHdb(fcode, fname, version, rev, desc, active, date_created)
 
             db.session.add(form)
             db.session.commit()
@@ -6035,3 +6040,99 @@ def formula_id(self, id):
         }
 
         return response(200, "Berhasil", True, final)
+
+
+@app.route("/v1/api/planning", methods=["GET", "POST"])
+@token_required
+def planning(self):
+    if request.method == "POST":
+        try:
+            pcode = request.json['pcode']
+            pname = request.json['pname']
+            form_id = request.json['form_id']
+            desc = request.json['desc']
+            date_planing = request.json['date_planing']
+            total = request.json['total']
+            unit = request.json['unit']
+            mesin = request.json['mesin']
+
+            plan = PlanHdb(pcode, pname, form_id, desc, date_planing, total, unit)
+
+            db.session.add(plan)
+            db.session.commit()
+
+            new_mesin = []
+            for x in mesin:
+                if x["mch_id"]:
+                    new_mesin.append(
+                        PlmchDdb(
+                            plan.id, x["mch_id"]
+                        )
+                    )
+
+            if len(new_mesin) > 0:
+                db.session.add_all(new_mesin)
+
+            db.session.commit()
+
+            result = response(200, "Berhasil", True, plan_schema.dump(plan))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    # else:
+    #     form = FprdcHdb.query.order_by(FprdcHdb.date_updated.desc()).all()
+
+    #     product = (
+    #         db.session.query(FprodDdb, ProdMdb, UnitMdb)
+    #         .outerjoin(ProdMdb, ProdMdb.id == FprodDdb.prod_id)
+    #         .outerjoin(UnitMdb, UnitMdb.id == FprodDdb.unit_id)
+    #         .all()
+    #     )
+
+    #     material = (
+    #         db.session.query(FmtrlDdb, ProdMdb, UnitMdb)
+    #         .outerjoin(ProdMdb, ProdMdb.id == FmtrlDdb.prod_id)
+    #         .outerjoin(UnitMdb, UnitMdb.id == FmtrlDdb.unit_id)
+    #         .all()
+    #     )
+
+    #     final = []
+    #     for x in form:
+    #         prod = []
+    #         for y in product:
+    #             if x.id == y[0].id:
+    #                 y[0].prod_id = prod_schema.dump(y[1])
+    #                 y[0].unit_id = unit_schema.dump(y[2])
+    #                 prod.append(fprod_schema.dump(y[0]))
+
+    #         material = []
+    #         for y in material:
+    #             if x.id == y[0].id:
+    #                 y[0].prod_id = prod_schema.dump(y[1])
+    #                 y[0].unit_id = unit_schema.dump(y[2])
+    #                 material.append(fmtrl_schema.dump(y[0]))
+
+    #         final.append(
+    #             {
+    #                 "id": x.id,
+    #                 "fcode": x.fcode,
+    #                 "fname": x.fname,
+    #                 "version": x.version,
+    #                 "rev": x.rev,
+    #                 "desc": x.desc,
+    #                 "active": x.active,
+    #                 "date_created": FprdcSchema(only=["date_created"]).dump(x)[
+    #                     "date_created"
+    #                 ],
+    #                 "date_updated": FprdcSchema(only=["date_updated"]).dump(x)[
+    #                     "date_updated"
+    #                 ],
+    #                 "product": product,
+    #                 "material": material,
+    #             }
+    #         )
+
+    #     return response(200, "Berhasil", True, final)
+
