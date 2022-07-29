@@ -6047,14 +6047,14 @@ def formula_id(self, id):
 def planning(self):
     if request.method == "POST":
         try:
-            pcode = request.json['pcode']
-            pname = request.json['pname']
-            form_id = request.json['form_id']
-            desc = request.json['desc']
-            date_planing = request.json['date_planing']
-            total = request.json['total']
-            unit = request.json['unit']
-            mesin = request.json['mesin']
+            pcode = request.json["pcode"]
+            pname = request.json["pname"]
+            form_id = request.json["form_id"]
+            desc = request.json["desc"]
+            date_planing = request.json["date_planing"]
+            total = request.json["total"]
+            unit = request.json["unit"]
+            mesin = request.json["mesin"]
 
             plan = PlanHdb(pcode, pname, form_id, desc, date_planing, total, unit)
 
@@ -6064,11 +6064,7 @@ def planning(self):
             new_mesin = []
             for x in mesin:
                 if x["mch_id"]:
-                    new_mesin.append(
-                        PlmchDdb(
-                            plan.id, x["mch_id"]
-                        )
-                    )
+                    new_mesin.append(PlmchDdb(plan.id, x["mch_id"]))
 
             if len(new_mesin) > 0:
                 db.session.add_all(new_mesin)
@@ -6081,58 +6077,76 @@ def planning(self):
             result = response(400, "Kode sudah digunakan", False, None)
         finally:
             return result
-    # else:
-    #     form = FprdcHdb.query.order_by(FprdcHdb.date_updated.desc()).all()
+    else:
+        plan = (
+            db.session.query(PlanHdb, FprdcHdb, UnitMdb)
+            .outerjoin(FprdcHdb, FprdcHdb.id == PlanHdb.form_id)
+            .outerjoin(UnitMdb, UnitMdb.id == PlanHdb.unit)
+            .order_by(PlanHdb.id.desc())
+            .all()
+        )
 
-    #     product = (
-    #         db.session.query(FprodDdb, ProdMdb, UnitMdb)
-    #         .outerjoin(ProdMdb, ProdMdb.id == FprodDdb.prod_id)
-    #         .outerjoin(UnitMdb, UnitMdb.id == FprodDdb.unit_id)
-    #         .all()
-    #     )
+        product = (
+            db.session.query(FprodDdb, ProdMdb, UnitMdb)
+            .outerjoin(ProdMdb, ProdMdb.id == FprodDdb.prod_id)
+            .outerjoin(UnitMdb, UnitMdb.id == FprodDdb.unit_id)
+            .all()
+        )
 
-    #     material = (
-    #         db.session.query(FmtrlDdb, ProdMdb, UnitMdb)
-    #         .outerjoin(ProdMdb, ProdMdb.id == FmtrlDdb.prod_id)
-    #         .outerjoin(UnitMdb, UnitMdb.id == FmtrlDdb.unit_id)
-    #         .all()
-    #     )
+        material = (
+            db.session.query(FmtrlDdb, ProdMdb, UnitMdb)
+            .outerjoin(ProdMdb, ProdMdb.id == FmtrlDdb.prod_id)
+            .outerjoin(UnitMdb, UnitMdb.id == FmtrlDdb.unit_id)
+            .all()
+        )
 
-    #     final = []
-    #     for x in form:
-    #         prod = []
-    #         for y in product:
-    #             if x.id == y[0].id:
-    #                 y[0].prod_id = prod_schema.dump(y[1])
-    #                 y[0].unit_id = unit_schema.dump(y[2])
-    #                 prod.append(fprod_schema.dump(y[0]))
+        mesin = (
+            db.session.query(PlmchDdb, MsnMdb)
+            .outerjoin(MsnMdb, MsnMdb.id, PlmchDdb)
+            .all()
+        )
 
-    #         material = []
-    #         for y in material:
-    #             if x.id == y[0].id:
-    #                 y[0].prod_id = prod_schema.dump(y[1])
-    #                 y[0].unit_id = unit_schema.dump(y[2])
-    #                 material.append(fmtrl_schema.dump(y[0]))
+        final = []
+        for x in plan:
+            prod = []
+            for y in product:
+                if x[1].id == y[0].form_id:
+                    y[0].prod_id = prod_schema.dump(y[1])
+                    y[0].unit_id = unit_schema.dump(y[2])
+                    prod.append(fprod_schema.dump(y[0]))
 
-    #         final.append(
-    #             {
-    #                 "id": x.id,
-    #                 "fcode": x.fcode,
-    #                 "fname": x.fname,
-    #                 "version": x.version,
-    #                 "rev": x.rev,
-    #                 "desc": x.desc,
-    #                 "active": x.active,
-    #                 "date_created": FprdcSchema(only=["date_created"]).dump(x)[
-    #                     "date_created"
-    #                 ],
-    #                 "date_updated": FprdcSchema(only=["date_updated"]).dump(x)[
-    #                     "date_updated"
-    #                 ],
-    #                 "product": product,
-    #                 "material": material,
-    #             }
-    #         )
+            mat = []
+            for y in material:
+                if x[1].id == y[0].form_id:
+                    y[0].prod_id = prod_schema.dump(y[1])
+                    y[0].unit_id = unit_schema.dump(y[2])
+                    mat.append(fmtrl_schema.dump(y[0]))
 
-    #     return response(200, "Berhasil", True, final)
+            msn = []
+            for y in mesin:
+                if x[0].id == y[0].pl_id:
+                    y[0].mch_id = msn_schema.dump(y[1])
+                    msn.append(plmch_schema.dump(y[0]))
 
+            final.append(
+                {
+                    "id": x[0].id,
+                    "pcode": x[0].pcode,
+                    "pname": x[0].pname,
+                    "form_id": fprdc_schema.dump(x[1]),
+                    "desc": x[0].desc,
+                    "date_created": PlanSchema(only=["date_creaded"]).dump(x[0])[
+                        "date_created"
+                    ],
+                    "date_planing": PlanSchema(only=["date_planing"]).dump(x[0])[
+                        "date_planing"
+                    ],
+                    "total": x[0].total,
+                    "unit": units_schema.dump(x[2]),
+                    "material": mat,
+                    "product": prod,
+                    "mesin": msn,
+                }
+            )
+
+        return response(200, "Berhasil", True, final)
