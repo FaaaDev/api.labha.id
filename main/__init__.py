@@ -29,6 +29,9 @@ from main.model.djasa_ddb import DjasaDdb
 from main.model.exp_ddb import ExpDdb
 from main.model.exp_hdb import ExpHdb
 from main.model.fkpb_hdb import FkpbHdb
+from main.model.fmtrl_ddb import FmtrlDdb
+from main.model.fprdc_hdb import FprdcHdb
+from main.model.fprod_ddb import FprodDdb
 from main.model.giro_hdb import GiroHdb
 from main.model.hrgbl_mdb import HrgBlMdb
 from main.model.jjasa_ddb import JjasaDdb
@@ -86,6 +89,9 @@ from main.schema.bank_mdb import banks_schema, bank_schema
 from main.schema.unit_mdb import unit_schema, units_schema, UnitSchema
 from main.schema.prod_mdb import prod_schema, prods_schema, ProdSchema
 from main.schema.po_sup_ddb import poSup_schema, poSups_schema, PoSupSchema
+from main.schema.fprdc_hdb import fprdc_schema, fprdcs_schema, FprdcSchema
+from main.schema.fprod_ddb import fprod_schema, fprods_schema, FprodSchema
+from main.schema.fmtrl_ddb import fmtrl_schema, fmtrls_schema, FmtrlSchema
 from main.schema.adm_user_menu import (
     adm_user_menu_schema,
     adm_user_menus_schema,
@@ -2795,11 +2801,7 @@ def po(self):
                 ):
                     new_sup.append(
                         PoSupDdb(
-                            po.id,
-                            x["sup_id"],
-                            x["prod_id"],
-                            x["price"],
-                            x["image"]
+                            po.id, x["sup_id"], x["prod_id"], x["price"], x["image"]
                         )
                     )
             print(new_sup)
@@ -5699,6 +5701,7 @@ def price_history(self):
 
     return response(200, "Berhasil", True, final)
 
+
 @app.route("/v1/api/mesin", methods=["GET", "POST"])
 @token_required
 def mesin(self):
@@ -5724,6 +5727,7 @@ def mesin(self):
 
         return response(200, "Berhasil", True, msns_schema.dump(mesin))
 
+
 @app.route("/v1/api/mesin/<int:id>", methods=["GET", "PUT", "DELETE"])
 @token_required
 def mesin_id(self, id):
@@ -5733,7 +5737,7 @@ def mesin_id(self, id):
             msn_code = request.json["msn_code"]
             msn_name = request.json["msn_name"]
             desc = request.json["desc"]
-            
+
             mesin.msn_code = msn_code
             mesin.msn_name = msn_name
             mesin.desc = desc
@@ -5750,10 +5754,285 @@ def mesin_id(self, id):
         if mesin:
             db.session.delete(mesin)
             db.session.commit()
-            
+
             return response(200, "Berhasil", True, None)
 
         return response(400, "Data Tidak Ditemukan", False, None)
     else:
         return response(200, "Berhasil", True, msn_schema.dump(mesin))
 
+
+@app.route("/v1/api/formula", methods=["GET", "POST"])
+@token_required
+def formula(self):
+    if request.method == "POST":
+        try:
+            fcode = request.json["fcode"]
+            fname = request.json["fname"]
+            version = request.json["version"]
+            rev = request.json["rev"]
+            desc = request.json["desc"]
+            active = request.json["active"]
+            product = request.json["product"]
+            material = request.json["material"]
+
+            form = FprdcHdb(fcode, fname, version, rev, desc, active)
+
+            db.session.add(form)
+            db.session.commit()
+
+            new_product = []
+            for x in product:
+                if x["prod_id"] and x["unit_id"] and x["qty"] and int(x["qty"]) > 0:
+                    new_product.append(
+                        FprodDdb(
+                            form.id, x["prod_id"], x["unit_id"], x["qty"], x["aloc"]
+                        )
+                    )
+
+            new_material = []
+            for x in material:
+                if x["prod_id"] and x["unit_id"] and x["qty"] and int(x["qty"]) > 0:
+                    new_material.append(
+                        FmtrlDdb(
+                            form.id, x["prod_id"], x["unit_id"], x["qty"], x["price"]
+                        )
+                    )
+
+            if len(new_product) > 0:
+                db.session.add_all(new_product)
+
+            if len(new_material) > 0:
+                db.session.add_all(new_material)
+
+            db.session.commit()
+
+            result = response(200, "Berhasil", True, fprdc_schema.dump(form))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    else:
+        form = FprdcHdb.query.order_by(FprdcHdb.date_updated.desc()).all()
+
+        product = (
+            db.session.query(FprodDdb, ProdMdb, UnitMdb)
+            .outerjoin(ProdMdb, ProdMdb.id == FprodDdb.prod_id)
+            .outerjoin(UnitMdb, UnitMdb.id == FprodDdb.unit_id)
+            .all()
+        )
+
+        material = (
+            db.session.query(FmtrlDdb, ProdMdb, UnitMdb)
+            .outerjoin(ProdMdb, ProdMdb.id == FmtrlDdb.prod_id)
+            .outerjoin(UnitMdb, UnitMdb.id == FmtrlDdb.unit_id)
+            .all()
+        )
+
+        final = []
+        for x in form:
+            prod = []
+            for y in product:
+                if x.id == y[0].id:
+                    y[0].prod_id = prod_schema.dump(y[1])
+                    y[0].unit_id = unit_schema.dump(y[2])
+                    prod.append(fprod_schema.dump(y[0]))
+
+            material = []
+            for y in material:
+                if x.id == y[0].id:
+                    y[0].prod_id = prod_schema.dump(y[1])
+                    y[0].unit_id = unit_schema.dump(y[2])
+                    material.append(fmtrl_schema.dump(y[0]))
+
+            final.append(
+                {
+                    "id": x.id,
+                    "fcode": x.fcode,
+                    "fname": x.fname,
+                    "version": x.version,
+                    "rev": x.rev,
+                    "desc": x.desc,
+                    "active": x.active,
+                    "date_created": FprdcSchema(only=["date_created"]).dump(x)[
+                        "date_created"
+                    ],
+                    "date_updated": FprdcSchema(only=["date_updated"]).dump(x)[
+                        "date_updated"
+                    ],
+                    "product": product,
+                    "material": material,
+                }
+            )
+
+        return response(200, "Berhasil", True, final)
+
+
+@app.route("/v1/api/formula/<int:id>", methods=["GET", "PUT", "DELETE"])
+@token_required
+def formula_id(self, id):
+    x = FprdcHdb.query.filter(FprdcHdb.id == id).first()
+    if request.method == "PUT":
+        try:
+            fcode = request.json["fcode"]
+            fname = request.json["fname"]
+            version = request.json["version"]
+            rev = request.json["rev"]
+            desc = request.json["desc"]
+            active = request.json["active"]
+            product = request.json["product"]
+            material = request.json["material"]
+
+            x.fcode = fcode
+            x.fname = fname
+            x.version = version
+            x.rev = rev
+            x.desc = desc
+            x.active = active
+
+            db.session.commit()
+
+            old_prod = FprodDdb.query.filter(FprodDdb.form_id == id).all()
+            new_product = []
+            for y in old_prod:
+                for z in product:
+                    if z["id"]:
+                        if z["id"] == y.id:
+                            if (
+                                z["id"]
+                                and z["prod_id"]
+                                and z["unit_id"]
+                                and z["qty"]
+                                and int(z["qty"]) > 0
+                            ):
+                                y.prod_id = z["prod_id"]
+                                y.unit_id = z["unit_id"]
+                                y.qty = z["qty"]
+                                y.aloc = z["aloc"]
+                    else:
+                        if (
+                            z["prod_id"]
+                            and z["unit_id"]
+                            and z["qty"]
+                            and int(z["qty"]) > 0
+                        ):
+                            new_product.append(
+                                FprodDdb(
+                                    z.id,
+                                    z["prod_id"],
+                                    z["unit_id"],
+                                    z["qty"],
+                                    z["aloc"],
+                                )
+                            )
+
+            old_material = FmtrlDdb.query.filter(FmtrlDdb.form_id == id).all()
+            new_material = []
+            for y in old_material:
+                for z in material:
+                    if z["id"]:
+                        if z["id"] == y.id:
+                            if (
+                                z["id"]
+                                and z["prod_id"]
+                                and z["unit_id"]
+                                and z["qty"]
+                                and int(z["qty"]) > 0
+                            ):
+                                y.prod_id = z["prod_id"]
+                                y.unit_id = z["unit_id"]
+                                y.qty = z["qty"]
+                                y.price = z["price"]
+                    else:
+                        if (
+                            z["prod_id"]
+                            and z["unit_id"]
+                            and z["qty"]
+                            and int(z["qty"]) > 0
+                        ):
+                            new_material.append(
+                                FmtrlDdb(
+                                    z.id,
+                                    z["prod_id"],
+                                    z["unit_id"],
+                                    z["qty"],
+                                    z["price"],
+                                )
+                            )
+
+            if len(new_product) > 0:
+                db.session.add_all(new_product)
+
+            if len(new_material) > 0:
+                db.session.add_all(new_material)
+
+            db.session.commit()
+
+            result = response(200, "Berhasil", True, fprdc_schema.dump(x))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    elif request.method == "DELETE":
+        old_prod = FprodDdb.query.filter(FprodDdb.form_id == id).all()
+        old_material = FmtrlDdb.query.filter(FmtrlDdb.form_id == id).all()
+
+        for y in old_prod:
+            db.session.delete(y)
+
+        for y in old_material:
+            db.session.delete(y)
+
+        db.session.delete(x)
+        db.session.commit()
+
+        return response(200, "Berhasil", True, None)
+    else:
+        product = (
+            db.session.query(FprodDdb, ProdMdb, UnitMdb)
+            .outerjoin(ProdMdb, ProdMdb.id == FprodDdb.prod_id)
+            .outerjoin(UnitMdb, UnitMdb.id == FprodDdb.unit_id)
+            .filter(FprodDdb.form_id == id)
+            .all()
+        )
+
+        material = (
+            db.session.query(FmtrlDdb, ProdMdb, UnitMdb)
+            .outerjoin(ProdMdb, ProdMdb.id == FmtrlDdb.prod_id)
+            .outerjoin(UnitMdb, UnitMdb.id == FmtrlDdb.unit_id)
+            .filter(FprodDdb.form_id == id)
+            .all()
+        )
+
+        final = []
+        prod = []
+        for y in product:
+            if x.id == y[0].id:
+                y[0].prod_id = prod_schema.dump(y[1])
+                y[0].unit_id = unit_schema.dump(y[2])
+                prod.append(fprod_schema.dump(y[0]))
+
+        material = []
+        for y in material:
+            if x.id == y[0].id:
+                y[0].prod_id = prod_schema.dump(y[1])
+                y[0].unit_id = unit_schema.dump(y[2])
+                material.append(fmtrl_schema.dump(y[0]))
+
+        final = {
+            "id": x.id,
+            "fcode": x.fcode,
+            "fname": x.fname,
+            "version": x.version,
+            "rev": x.rev,
+            "desc": x.desc,
+            "active": x.active,
+            "date_created": FprdcSchema(only=["date_created"]).dump(x)["date_created"],
+            "date_updated": FprdcSchema(only=["date_updated"]).dump(x)["date_updated"],
+            "product": product,
+            "material": material,
+        }
+
+        return response(200, "Berhasil", True, final)
