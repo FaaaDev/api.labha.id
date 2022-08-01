@@ -6150,3 +6150,133 @@ def planning(self):
             )
 
         return response(200, "Berhasil", True, final)
+
+
+@app.route("/v1/api/planning/<int:id>", methods=["GET", "PUT", "DELETE"])
+@token_required
+def planning_id(self, id):
+    x = PlanHdb.query.filter(PlanHdb.id == id).first()
+    if request.method == "PUT":
+        try:
+            pcode = request.json["pcode"]
+            pname = request.json["pname"]
+            form_id = request.json["form_id"]
+            desc = request.json["desc"]
+            date_planing = request.json["date_planing"]
+            total = request.json["total"]
+            unit = request.json["unit"]
+            mesin = request.json["mesin"]
+
+            x.pcode = pcode
+            x.pname = pname
+            x.form_id = form_id
+            x.desc = desc
+            x.date_planing = date_planing
+            x.total = total
+            x.unit = unit
+
+            db.session.commit()
+
+            old_mesin = PlmchDdb.query.filter(PlmchDdb.pl_id == id).all()
+            new_mesin = []
+
+            for z in mesin:
+                if z["id"]:
+                    for y in old_mesin:
+                        if z["id"] == y.id:
+                            if z["mch_id"]:
+                                y.mch_id = z["mch_id"]
+                else:
+                    if z["mch_id"]:
+                        new_mesin.append(PlmchDdb(id, x["mch_id"]))
+
+            if len(new_mesin) > 0:
+                db.session.add_all(new_mesin)
+
+            db.session.commit()
+
+            result = response(200, "Berhasil", True, plan_schema.dump(x))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    elif request.method == "DELETE":
+        old_mesin = PlmchDdb.query.filter(PlmchDdb.pl_id == id).all()
+
+        for y in old_mesin:
+            db.session.delete(y)
+
+        db.session.delete(x)
+        db.session.commit()
+
+        return response(200, "Berhasil", True, None)
+    else:
+        x = (
+            db.session.query(PlanHdb, FprdcHdb, UnitMdb)
+            .outerjoin(FprdcHdb, FprdcHdb.id == PlanHdb.form_id)
+            .outerjoin(UnitMdb, UnitMdb.id == PlanHdb.unit)
+            .filter(PlanHdb.id == id)
+            .first()
+        )
+
+        product = (
+            db.session.query(FprodDdb, ProdMdb, UnitMdb)
+            .outerjoin(ProdMdb, ProdMdb.id == FprodDdb.prod_id)
+            .outerjoin(UnitMdb, UnitMdb.id == FprodDdb.unit_id)
+            .all()
+        )
+
+        material = (
+            db.session.query(FmtrlDdb, ProdMdb, UnitMdb)
+            .outerjoin(ProdMdb, ProdMdb.id == FmtrlDdb.prod_id)
+            .outerjoin(UnitMdb, UnitMdb.id == FmtrlDdb.unit_id)
+            .all()
+        )
+
+        mesin = (
+            db.session.query(PlmchDdb, MsnMdb)
+            .outerjoin(MsnMdb, MsnMdb.id, PlmchDdb)
+            .all()
+        )
+
+        prod = []
+        for y in product:
+            if x[1].id == y[0].form_id:
+                y[0].prod_id = prod_schema.dump(y[1])
+                y[0].unit_id = unit_schema.dump(y[2])
+                prod.append(fprod_schema.dump(y[0]))
+
+        mat = []
+        for y in material:
+            if x[1].id == y[0].form_id:
+                y[0].prod_id = prod_schema.dump(y[1])
+                y[0].unit_id = unit_schema.dump(y[2])
+                mat.append(fmtrl_schema.dump(y[0]))
+
+        msn = []
+        for y in mesin:
+            if x[0].id == y[0].pl_id:
+                y[0].mch_id = msn_schema.dump(y[1])
+                msn.append(plmch_schema.dump(y[0]))
+
+        final = {
+            "id": x[0].id,
+            "pcode": x[0].pcode,
+            "pname": x[0].pname,
+            "form_id": fprdc_schema.dump(x[1]),
+            "desc": x[0].desc,
+            "date_created": PlanSchema(only=["date_creaded"]).dump(x[0])[
+                "date_created"
+            ],
+            "date_planing": PlanSchema(only=["date_planing"]).dump(x[0])[
+                "date_planing"
+            ],
+            "total": x[0].total,
+            "unit": units_schema.dump(x[2]),
+            "material": mat,
+            "product": prod,
+            "mesin": msn,
+        }
+
+        return response(200, "Berhasil", True, final)
