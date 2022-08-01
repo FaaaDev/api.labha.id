@@ -6102,7 +6102,7 @@ def planning(self):
 
         mesin = (
             db.session.query(PlmchDdb, MsnMdb)
-            .outerjoin(MsnMdb, MsnMdb.id, PlmchDdb)
+            .outerjoin(MsnMdb, MsnMdb.id == PlmchDdb.mch_id)
             .all()
         )
 
@@ -6135,14 +6135,14 @@ def planning(self):
                     "pname": x[0].pname,
                     "form_id": fprdc_schema.dump(x[1]),
                     "desc": x[0].desc,
-                    "date_created": PlanSchema(only=["date_creaded"]).dump(x[0])[
+                    "date_created": PlanSchema(only=["date_created"]).dump(x[0])[
                         "date_created"
                     ],
                     "date_planing": PlanSchema(only=["date_planing"]).dump(x[0])[
                         "date_planing"
                     ],
                     "total": x[0].total,
-                    "unit": units_schema.dump(x[2]),
+                    "unit": unit_schema.dump(x[2]),
                     "material": mat,
                     "product": prod,
                     "mesin": msn,
@@ -6236,7 +6236,7 @@ def planning_id(self, id):
 
         mesin = (
             db.session.query(PlmchDdb, MsnMdb)
-            .outerjoin(MsnMdb, MsnMdb.id, PlmchDdb)
+            .outerjoin(MsnMdb, MsnMdb.id == PlmchDdb.mch_id)
             .all()
         )
 
