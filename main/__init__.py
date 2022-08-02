@@ -5846,14 +5846,14 @@ def formula(self):
         for x in form:
             prod = []
             for y in product:
-                if x.id == y[0].id:
+                if x.id == y[0].form_id:
                     y[0].prod_id = prod_schema.dump(y[1])
                     y[0].unit_id = unit_schema.dump(y[2])
                     prod.append(fprod_schema.dump(y[0]))
 
             mtrl = []
             for y in material:
-                if x.id == y[0].id:
+                if x.id == y[0].form_id:
                     y[0].prod_id = prod_schema.dump(y[1])
                     y[0].unit_id = unit_schema.dump(y[2])
                     mtrl.append(fmtrl_schema.dump(y[0]))
@@ -6021,14 +6021,14 @@ def formula_id(self, id):
         final = []
         prod = []
         for y in product:
-            if x.id == y[0].id:
+            if x.id == y[0].form_id:
                 y[0].prod_id = prod_schema.dump(y[1])
                 y[0].unit_id = unit_schema.dump(y[2])
                 prod.append(fprod_schema.dump(y[0]))
 
         mtrl = []
         for y in material:
-            if x.id == y[0].id:
+            if x.id == y[0].form_id:
                 y[0].prod_id = prod_schema.dump(y[1])
                 y[0].unit_id = unit_schema.dump(y[2])
                 mtrl.append(fmtrl_schema.dump(y[0]))
