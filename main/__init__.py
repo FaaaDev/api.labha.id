@@ -1673,6 +1673,8 @@ def setup_account(self):
             sto_general = request.json["sto_general"]
             sto_production = request.json["sto_production"]
             sto_wip = request.json["sto_wip"]
+            sto_bb = request.json["sto_bb"]
+            sto_bbp = request.json["sto_bbp"]
             fixed_assets = request.json["fixed_assets"]
 
             setup = SetupMdb(
@@ -1703,6 +1705,8 @@ def setup_account(self):
                 sto_production,
                 sto_hpp_diff,
                 sto_wip,
+                sto_bb,
+                sto_bbp,
                 fixed_assets,
             )
             db.session.add(setup)
@@ -1766,6 +1770,8 @@ def setup_account_id(self, id):
         setup.sto_production = request.json["sto_production"]
         setup.sto_hpp_diff = request.json["sto_hpp_diff"]
         setup.sto_wip = request.json["sto_wip"]
+        setup.sto_bb = request.json["sto_bb"]
+        setup.sto_bbp = request.json["sto_bbp"]
         setup.fixed_assets = request.json["fixed_assets"]
         db.session.commit()
 
