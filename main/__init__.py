@@ -6527,14 +6527,14 @@ def phj(self):
 
             new_product = []
             for x in product:
-                if x["prod_id"] and x["unit_id"] and x["qty"] and int(x["qty"] > 0):
+                if x["prod_id"] and x["unit_id"] and x["qty"] and int(x["qty"]) > 0:
                     new_product.append(
                         PphjDdb(phj.id, x["prod_id"], x["unit_id"], x["qty"])
                     )
 
             new_reject = []
             for x in reject:
-                if x["prod_id"] and x["unit_id"] and x["qty"] and int(x["qty"] > 0):
+                if x["prod_id"] and x["unit_id"] and x["qty"] and int(x["qty"]) > 0:
                     new_reject.append(
                         RphjDdb(phj.id, x["prod_id"], x["unit_id"], x["qty"])
                     )
@@ -6580,17 +6580,17 @@ def phj(self):
         for x in phj:
             prod = []
             for y in product:
-                if x[1].id == y[0].phj_id:
+                if x[0].id == y[0].phj_id:
                     y[0].prod_id = prod_schema.dump(y[1])
                     y[0].unit_id = unit_schema.dump(y[2])
                     prod.append(pphj_schema.dump(y[0]))
 
-            mat = []
+            rej = []
             for y in reject:
-                if x[1].id == y[0].phj_id:
+                if x[0].id == y[0].phj_id:
                     y[0].prod_id = prod_schema.dump(y[1])
                     y[0].unit_id = unit_schema.dump(y[2])
-                    mat.append(rphj_schema.dump(y[0]))
+                    rej.append(rphj_schema.dump(y[0]))
 
             x[1].plan_id = plan_schema.dump(x[2])
             final.append(
@@ -6599,6 +6599,8 @@ def phj(self):
                     "phj_code": x[0].phj_code,
                     "phj_date": PhjSchema(only=["phj_date"]).dump(x[0])["phj_date"],
                     "batch_id": batch_schema.dump(x[1]),
+                    "product": prod,
+                    "reject": rej
                 }
             )
 
@@ -6626,24 +6628,36 @@ def phj_id(self, id):
             old_product = PphjDdb.query.filter(PphjDdb.phj_id == id).all()
             new_product = []
 
-            for z in product:
-                if z["id"]:
-                    for y in old_product:
+            for y in old_product:
+                for z in product:
+                    if z["id"]:
                         if z["id"] == y.id:
                             if (
-                                x["prod_id"]
-                                and x["unit_id"]
-                                and x["qty"]
-                                and int(x["qty"] > 0)
+                                z["id"]
+                                and z["prod_id"]
+                                and z["unit_id"]
+                                and z["qty"]
+                                and int(z["qty"]) > 0
                             ):
                                 y.prod_id = z["prod_id"]
                                 y.unit_id = z["unit_id"]
                                 y.qty = z["qty"]
-                else:
-                    if x["prod_id"] and x["unit_id"] and x["qty"] and int(x["qty"] > 0):
-                        new_product.append(
-                            PphjDdb(phj.id, x["prod_id"], x["unit_id"], x["qty"])
-                        )
+                    else:
+                        if (
+                            z["prod_id"]
+                            and z["unit_id"]
+                            and z["qty"]
+                            and int(z["qty"]) > 0
+                        ):
+                            new_product.append(
+                                PphjDdb(
+                                    z.id,
+                                    z["prod_id"],
+                                    z["unit_id"],
+                                    z["qty"],
+                                )
+                            )
+
 
             if len(new_product) > 0:
                 db.session.add_all(new_product)
@@ -6651,24 +6665,35 @@ def phj_id(self, id):
             old_reject = RphjDdb.query.filter(RphjDdb.phj_id == id).all()
             new_reject = []
 
-            for z in reject:
-                if z["id"]:
-                    for y in old_reject:
+            for y in old_reject:
+                for z in reject:
+                    if z["id"]:
                         if z["id"] == y.id:
                             if (
-                                x["prod_id"]
-                                and x["unit_id"]
-                                and x["qty"]
-                                and int(x["qty"] > 0)
+                                z["id"]
+                                and z["prod_id"]
+                                and z["unit_id"]
+                                and z["qty"]
+                                and int(z["qty"]) > 0
                             ):
                                 y.prod_id = z["prod_id"]
                                 y.unit_id = z["unit_id"]
                                 y.qty = z["qty"]
-                else:
-                    if x["prod_id"] and x["unit_id"] and x["qty"] and int(x["qty"] > 0):
-                        new_reject.append(
-                            RphjDdb(phj.id, x["prod_id"], x["unit_id"], x["qty"])
-                        )
+                    else:
+                        if (
+                            z["prod_id"]
+                            and z["unit_id"]
+                            and z["qty"]
+                            and int(z["qty"]) > 0
+                        ):
+                            new_reject.append(
+                                RphjDdb(
+                                    z.id,
+                                    z["prod_id"],
+                                    z["unit_id"],
+                                    z["qty"],
+                                )
+                            )
 
             if len(new_reject) > 0:
                 db.session.add_all(new_reject)
@@ -6730,12 +6755,12 @@ def phj_id(self, id):
                         y[0].unit_id = unit_schema.dump(y[2])
                         prod.append(pphj_schema.dump(y[0]))
 
-                mat = []
+                rej = []
                 for y in reject:
                     if x[1].id == y[0].phj_id:
                         y[0].prod_id = prod_schema.dump(y[1])
                         y[0].unit_id = unit_schema.dump(y[2])
-                        mat.append(rphj_schema.dump(y[0]))
+                        rej.append(rphj_schema.dump(y[0]))
 
                 x[1].plan_id = plan_schema.dump(x[2])
                 final.append(
@@ -6744,6 +6769,8 @@ def phj_id(self, id):
                         "phj_code": x[0].phj_code,
                         "phj_date": PhjSchema(only=["phj_date"]).dump(x[0])["phj_date"],
                         "batch_id": batch_schema.dump(x[1]),
+                        "product": prod,
+                        "reject": rej
                     }
                 )
 
