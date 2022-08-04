@@ -6627,10 +6627,9 @@ def phj_id(self, id):
 
             old_product = PphjDdb.query.filter(PphjDdb.phj_id == id).all()
             new_product = []
-
-            for y in old_product:
-                for z in product:
-                    if z["id"]:
+            for z in product:
+                if z["id"]:
+                    for y in old_product:
                         if z["id"] == y.id:
                             if (
                                 z["id"]
@@ -6642,7 +6641,7 @@ def phj_id(self, id):
                                 y.prod_id = z["prod_id"]
                                 y.unit_id = z["unit_id"]
                                 y.qty = z["qty"]
-                    else:
+                else:
                         if (
                             z["prod_id"]
                             and z["unit_id"]
@@ -6651,7 +6650,7 @@ def phj_id(self, id):
                         ):
                             new_product.append(
                                 PphjDdb(
-                                    z.id,
+                                    x.id,
                                     z["prod_id"],
                                     z["unit_id"],
                                     z["qty"],
@@ -6664,10 +6663,11 @@ def phj_id(self, id):
 
             old_reject = RphjDdb.query.filter(RphjDdb.phj_id == id).all()
             new_reject = []
-
-            for y in old_reject:
-                for z in reject:
-                    if z["id"]:
+            for z in reject:
+                if z["id"]:
+                    for y in old_reject:
+                
+                    
                         if z["id"] == y.id:
                             if (
                                 z["id"]
@@ -6679,7 +6679,7 @@ def phj_id(self, id):
                                 y.prod_id = z["prod_id"]
                                 y.unit_id = z["unit_id"]
                                 y.qty = z["qty"]
-                    else:
+                else:
                         if (
                             z["prod_id"]
                             and z["unit_id"]
@@ -6688,7 +6688,7 @@ def phj_id(self, id):
                         ):
                             new_reject.append(
                                 RphjDdb(
-                                    z.id,
+                                    x.id,
                                     z["prod_id"],
                                     z["unit_id"],
                                     z["qty"],
