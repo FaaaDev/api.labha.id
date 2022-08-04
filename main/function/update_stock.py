@@ -70,7 +70,7 @@ class UpdateStock:
         krtst = []
         for x in product:
             if delete:
-                old_history = HrgBlMdb.query(
+                old_history = HrgBlMdb.query.filter(
                     and_(
                         HrgBlMdb.ord_id == order.id,
                         HrgBlMdb.sup_id == order.sup_id,
