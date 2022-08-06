@@ -16,13 +16,14 @@ class GroupProMdb(db.Model):
     acc_terima = db.Column(db.Integer)
     hrg_pokok = db.Column(db.Integer)
     acc_penj = db.Column(db.Integer)
+    acc_wip = db.Column(db.Integer)
     potongan = db.Column(db.Integer)
     pengembalian = db.Column(db.Integer)
     selisih = db.Column(db.Integer)
     
 
     def __init__(self, code, name, div_code, acc_sto, acc_send,
-    acc_terima, hrg_pokok, acc_penj, potongan, pengembalian, selisih):
+    acc_terima, hrg_pokok, acc_penj, acc_wip, potongan, pengembalian, selisih):
         self.code = code
         self.name = name
         self.div_code = div_code
@@ -31,6 +32,7 @@ class GroupProMdb(db.Model):
         self.acc_terima = acc_terima
         self.hrg_pokok = hrg_pokok
         self.acc_penj = acc_penj
+        self.acc_wip = acc_wip
         self.potongan = potongan
         self.pengembalian = pengembalian
         self.selisih = selisih

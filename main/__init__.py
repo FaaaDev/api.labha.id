@@ -2180,6 +2180,7 @@ def groupPro(self):
         acc_terima = request.json["acc_terima"]
         hrg_pokok = request.json["hrg_pokok"]
         acc_penj = request.json["acc_penj"]
+        acc_wip = request.json["acc_wip"]
         potongan = request.json["potongan"]
         pengembalian = request.json["pengembalian"]
         selisih = request.json["selisih"]
@@ -2193,6 +2194,7 @@ def groupPro(self):
                 acc_terima,
                 hrg_pokok,
                 acc_penj,
+                acc_wip,
                 potongan,
                 pengembalian,
                 selisih,
@@ -2238,6 +2240,7 @@ def groupPro_id(self, id):
         groupPro.acc_terima = request.json["acc_terima"]
         groupPro.hrg_pokok = request.json["hrg_pokok"]
         groupPro.acc_penj = request.json["acc_penj"]
+        groupPro.acc_wip = request.json["acc_wip"]
         groupPro.potongan = request.json["potongan"]
         groupPro.pengembalian = request.json["pengembalian"]
         groupPro.selisih = request.json["selisih"]
