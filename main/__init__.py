@@ -5835,7 +5835,7 @@ def formula(self):
         finally:
             return result
     else:
-        form = FprdcHdb.query.order_by(FprdcHdb.date_updated.desc()).all()
+        form = FprdcHdb.query.order_by(FprdcHdb.id.desc()).all()
 
         product = (
             db.session.query(FprodDdb, ProdMdb, UnitMdb)
