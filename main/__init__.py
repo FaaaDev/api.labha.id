@@ -14,6 +14,7 @@ from main.function.delete_ap_payment import DeleteApPayment
 from main.function.update_ap_giro import UpdateApGiro
 from main.function.update_ap_payment import UpdateApPayment
 from main.function.update_ar import UpdateAr
+from main.function.update_batch import updateBatch
 from main.function.update_pembelian import UpdatePembelian
 from main.function.update_stock import UpdateStock
 from main.model.accou_mdb import AccouMdb
@@ -2175,6 +2176,7 @@ def groupPro(self):
         code = request.json["code"]
         name = request.json["name"]
         div_code = request.json["div_code"]
+        wip = request.json["wip"]
         acc_sto = request.json["acc_sto"]
         acc_send = request.json["acc_send"]
         acc_terima = request.json["acc_terima"]
@@ -2189,6 +2191,7 @@ def groupPro(self):
                 code,
                 name,
                 div_code,
+                wip,
                 acc_sto,
                 acc_send,
                 acc_terima,
@@ -2235,6 +2238,7 @@ def groupPro_id(self, id):
         groupPro.code = request.json["code"]
         groupPro.name = request.json["name"]
         groupPro.div_code = request.json["div_code"]
+        groupPro.wip = request.json["wip"]
         groupPro.acc_sto = request.json["acc_sto"]
         groupPro.acc_send = request.json["acc_send"]
         groupPro.acc_terima = request.json["acc_terima"]
@@ -6321,6 +6325,8 @@ def batch(self):
             db.session.add(batch)
             db.session.commit()
 
+            updateBatch(batch.id, False)
+
             result = response(200, "Berhasil", True, batch_schema.dump(batch))
         except IntegrityError:
             db.session.rollback()
@@ -6334,7 +6340,7 @@ def batch(self):
             .outerjoin(FprdcHdb, FprdcHdb.id == PlanHdb.form_id)
             .outerjoin(UnitMdb, UnitMdb.id == PlanHdb.unit)
             .outerjoin(CcostMdb, CcostMdb.id == BatchMdb.dep_id)
-            .order_by(PlanHdb.id.desc())
+            .order_by(BatchMdb.id.desc())
             .all()
         )
 
@@ -6432,6 +6438,7 @@ def batch_id(self, id):
         finally:
             return result
     elif request.method == "DELETE":
+        updateBatch(x.id, True)
         db.session.delete(x)
         db.session.commit()
 

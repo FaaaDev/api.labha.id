@@ -11,6 +11,7 @@ class GroupProMdb(db.Model):
     code = db.Column(db.String(20), unique = True)
     name = db.Column(db.String(100))
     div_code = db.Column(db.Integer)
+    wip = db.Column(db.Boolean)
     acc_sto = db.Column(db.Integer)
     acc_send = db.Column(db.Integer)
     acc_terima = db.Column(db.Integer)
@@ -22,11 +23,12 @@ class GroupProMdb(db.Model):
     selisih = db.Column(db.Integer)
     
 
-    def __init__(self, code, name, div_code, acc_sto, acc_send,
+    def __init__(self, code, name, div_code, wip, acc_sto, acc_send,
     acc_terima, hrg_pokok, acc_penj, acc_wip, potongan, pengembalian, selisih):
         self.code = code
         self.name = name
         self.div_code = div_code
+        self.wip = wip
         self.acc_sto = acc_sto
         self.acc_send = acc_send
         self.acc_terima = acc_terima
