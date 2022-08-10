@@ -3675,7 +3675,7 @@ def order(self):
             .outerjoin(SupplierMdb, SupplierMdb.id == OrdpbHdb.sup_id)
             .outerjoin(RulesPayMdb, RulesPayMdb.id == OrdpbHdb.top)
             .outerjoin(PoMdb, PoMdb.id == OrdpbHdb.po_id)
-            .order_by(OrdpbHdb.id.asc())
+            .order_by(OrdpbHdb.id.desc())
             .all()
         )
 
