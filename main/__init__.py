@@ -6073,13 +6073,14 @@ def planning(self):
             pname = request.json["pname"]
             form_id = request.json["form_id"]
             dep_id = request.json["dep_id"]
+            loc_id = request.json["loc_id"]
             desc = request.json["desc"]
             date_planing = request.json["date_planing"]
             total = request.json["total"]
             unit = request.json["unit"]
             mesin = request.json["mesin"]
 
-            plan = PlanHdb(pcode, pname, form_id, dep_id, desc, date_planing, total, unit)
+            plan = PlanHdb(pcode, pname, form_id, dep_id, loc_id, desc, date_planing, total, unit)
 
             db.session.add(plan)
             db.session.commit()
@@ -6102,10 +6103,11 @@ def planning(self):
             return result
     else:
         plan = (
-            db.session.query(PlanHdb, FprdcHdb, UnitMdb, CcostMdb)
+            db.session.query(PlanHdb, FprdcHdb, UnitMdb, CcostMdb, LocationMdb)
             .outerjoin(FprdcHdb, FprdcHdb.id == PlanHdb.form_id)
             .outerjoin(UnitMdb, UnitMdb.id == PlanHdb.unit)
             .outerjoin(CcostMdb, CcostMdb.id == PlanHdb.dep_id)
+            .outerjoin(LocationMdb, LocationMdb.id == PlanHdb.loc_id)
             .order_by(PlanHdb.id.desc())
             .all()
         )
@@ -6159,6 +6161,7 @@ def planning(self):
                     "pname": x[0].pname,
                     "form_id": fprdc_schema.dump(x[1]),
                     "dep_id": ccost_schema.dump(x[3]),
+                    "loc_id": loct_schema.dump(x[4]),
                     "desc": x[0].desc,
                     "date_created": PlanSchema(only=["date_created"]).dump(x[0])[
                         "date_created"
@@ -6187,6 +6190,7 @@ def planning_id(self, id):
             pname = request.json["pname"]
             form_id = request.json["form_id"]
             dep_id = request.json["dep_id"]
+            loc_id = request.json["loc_id"]
             desc = request.json["desc"]
             date_planing = request.json["date_planing"]
             total = request.json["total"]
@@ -6197,6 +6201,7 @@ def planning_id(self, id):
             x.pname = pname
             x.form_id = form_id
             x.dep_id = dep_id
+            x.loc_id = loc_id
             x.desc = desc
             x.date_planing = date_planing
             x.total = total
@@ -6240,10 +6245,11 @@ def planning_id(self, id):
         return response(200, "Berhasil", True, None)
     else:
         x = (
-            db.session.query(PlanHdb, FprdcHdb, UnitMdb, CcostMdb)
+            db.session.query(PlanHdb, FprdcHdb, UnitMdb, CcostMdb, LocationMdb)
             .outerjoin(FprdcHdb, FprdcHdb.id == PlanHdb.form_id)
             .outerjoin(UnitMdb, UnitMdb.id == PlanHdb.unit)
             .outerjoin(CcostMdb, CcostMdb.id == PlanHdb.dep_id)
+            .outerjoin(LocationMdb, LocationMdb.id == PlanHdb.loc_id)
             .filter(PlanHdb.id == id)
             .first()
         )
@@ -6294,6 +6300,7 @@ def planning_id(self, id):
             "pname": x[0].pname,
             "form_id": fprdc_schema.dump(x[1]),
             "dep_id": ccost_schema.dump(x[3]),
+            "loc_id": loct_schema.dump(x[4]),
             "desc": x[0].desc,
             "date_created": PlanSchema(only=["date_creaded"]).dump(x[0])[
                 "date_created"

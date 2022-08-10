@@ -10,6 +10,7 @@ class PlanHdb(db.Model):
     pname = db.Column(db.String(255))
     form_id = db.Column(db.Integer)
     dep_id = db.Column(db.Integer)
+    loc_id = db.Column(db.Integer)
     desc = db.Column(db.Text)
     date_created = db.Column(db.TIMESTAMP(timezone=False), default=datetime.datetime.utcnow())
     date_planing = db.Column(db.TIMESTAMP(timezone=False))
@@ -17,11 +18,12 @@ class PlanHdb(db.Model):
     unit = db.Column(db.Integer)
     
 
-    def __init__(self, pcode, pname, form_id, dep_id, desc, date_planing, total, unit):
+    def __init__(self, pcode, pname, form_id, dep_id, loc_id, desc, date_planing, total, unit):
         self.pcode = pcode
         self.pname = pname
         self.form_id = form_id
         self.dep_id = dep_id
+        self.loc_id = loc_id
         self.desc = desc
         self.date_planing = date_planing
         self.total = total
