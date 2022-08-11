@@ -6343,11 +6343,12 @@ def batch(self):
             return result
     else:
         batch = (
-            db.session.query(BatchMdb, PlanHdb, FprdcHdb, UnitMdb, CcostMdb)
+            db.session.query(BatchMdb, PlanHdb, FprdcHdb, UnitMdb, CcostMdb, LocationMdb)
             .outerjoin(PlanHdb, PlanHdb.id == BatchMdb.plan_id)
             .outerjoin(FprdcHdb, FprdcHdb.id == PlanHdb.form_id)
             .outerjoin(UnitMdb, UnitMdb.id == PlanHdb.unit)
             .outerjoin(CcostMdb, CcostMdb.id == BatchMdb.dep_id)
+            .outerjoin(LocationMdb, LocationMdb.id == PlanHdb.loc_id)
             .order_by(BatchMdb.id.desc())
             .all()
         )
@@ -6407,6 +6408,7 @@ def batch(self):
                         "pcode": x[1].pcode,
                         "pname": x[1].pname,
                         "form_id": fprdc_schema.dump(x[1]),
+                        "loc_id": loct_schema.dump(x[1]),
                         "desc": x[1].desc,
                         "date_created": PlanSchema(only=["date_created"]).dump(x[1])[
                             "date_created"
@@ -6453,11 +6455,12 @@ def batch_id(self, id):
         return response(200, "Berhasil", True, None)
     else:
         batch = (
-            db.session.query(BatchMdb, PlanHdb, FprdcHdb, UnitMdb, CcostMdb)
+            db.session.query(BatchMdb, PlanHdb, FprdcHdb, UnitMdb, CcostMdb, LocationMdb)
             .outerjoin(PlanHdb, PlanHdb.id == BatchMdb.plan_id)
             .outerjoin(FprdcHdb, FprdcHdb.id == PlanHdb.form_id)
             .outerjoin(UnitMdb, UnitMdb.id == PlanHdb.unit)
             .outerjoin(CcostMdb, CcostMdb.id == BatchMdb.dep_id)
+            .outerjoin(LocationMdb, LocationMdb.id == PlanHdb.loc_id)
             .order_by(PlanHdb.id.desc())
             .all()
         )
@@ -6516,6 +6519,7 @@ def batch_id(self, id):
                         "pcode": x[1].pcode,
                         "pname": x[1].pname,
                         "form_id": fprdc_schema.dump(x[1]),
+                        "loc_id": loct_schema.dump(x[1]),
                         "desc": x[1].desc,
                         "date_created": PlanSchema(only=["date_created"]).dump(x[1])[
                             "date_created"
