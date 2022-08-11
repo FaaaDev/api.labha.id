@@ -16,6 +16,7 @@ from main.function.update_ap_payment import UpdateApPayment
 from main.function.update_ar import UpdateAr
 from main.function.update_batch import updateBatch
 from main.function.update_pembelian import UpdatePembelian
+from main.function.update_rpbb import UpdateRpbb
 from main.function.update_stock import UpdateStock
 from main.model.accou_mdb import AccouMdb
 from main.model.acq_ddb import AcqDdb
@@ -59,6 +60,7 @@ from main.model.prod_mdb import ProdMdb
 from main.model.reprod_ddb import ReprodDdb
 from main.model.retord_hdb import RetordHdb
 from main.model.rjasa_mdb import RjasaMdb
+from main.model.rpbb_mdb import RpbbMdb
 from main.model.rphj_ddb import RphjDdb
 from main.model.rprod_mdb import RprodMdb
 from main.model.sales_mdb import SalesMdb
@@ -89,6 +91,7 @@ from main.schema.apcard_mdb import apcard_schema, apcards_schema, APCardSchema
 from main.schema.arcard_mdb import ARCardSchema
 from main.schema.ccost_mdb import ccost_schema, ccosts_schema, CcostSchema
 from main.schema.proj_mdb import proj_schema, projs_schema, ProjSchema
+from main.schema.rpbb_mdb import rpbb_schema
 from main.shared.shared import db, ma
 from main.model.user import User
 from main.schema.user import user_schema, users_schema
@@ -6080,7 +6083,9 @@ def planning(self):
             unit = request.json["unit"]
             mesin = request.json["mesin"]
 
-            plan = PlanHdb(pcode, pname, form_id, dep_id, loc_id, desc, date_planing, total, unit)
+            plan = PlanHdb(
+                pcode, pname, form_id, dep_id, loc_id, desc, date_planing, total, unit
+            )
 
             db.session.add(plan)
             db.session.commit()
@@ -6094,6 +6099,8 @@ def planning(self):
                 db.session.add_all(new_mesin)
 
             db.session.commit()
+
+            UpdateRpbb(plan.id, False)
 
             result = response(200, "Berhasil", True, plan_schema.dump(plan))
         except IntegrityError:
@@ -6227,6 +6234,8 @@ def planning_id(self, id):
 
             db.session.commit()
 
+            UpdateRpbb(x.id, False)
+
             result = response(200, "Berhasil", True, plan_schema.dump(x))
         except IntegrityError:
             db.session.rollback()
@@ -6234,6 +6243,7 @@ def planning_id(self, id):
         finally:
             return result
     elif request.method == "DELETE":
+        UpdateRpbb(x.id, True)
         old_mesin = PlmchDdb.query.filter(PlmchDdb.pl_id == id).all()
 
         for y in old_mesin:
@@ -6343,7 +6353,9 @@ def batch(self):
             return result
     else:
         batch = (
-            db.session.query(BatchMdb, PlanHdb, FprdcHdb, UnitMdb, CcostMdb, LocationMdb)
+            db.session.query(
+                BatchMdb, PlanHdb, FprdcHdb, UnitMdb, CcostMdb, LocationMdb
+            )
             .outerjoin(PlanHdb, PlanHdb.id == BatchMdb.plan_id)
             .outerjoin(FprdcHdb, FprdcHdb.id == PlanHdb.form_id)
             .outerjoin(UnitMdb, UnitMdb.id == PlanHdb.unit)
@@ -6455,7 +6467,9 @@ def batch_id(self, id):
         return response(200, "Berhasil", True, None)
     else:
         batch = (
-            db.session.query(BatchMdb, PlanHdb, FprdcHdb, UnitMdb, CcostMdb, LocationMdb)
+            db.session.query(
+                BatchMdb, PlanHdb, FprdcHdb, UnitMdb, CcostMdb, LocationMdb
+            )
             .outerjoin(PlanHdb, PlanHdb.id == BatchMdb.plan_id)
             .outerjoin(FprdcHdb, FprdcHdb.id == PlanHdb.form_id)
             .outerjoin(UnitMdb, UnitMdb.id == PlanHdb.unit)
@@ -6629,7 +6643,7 @@ def phj(self):
                     "phj_date": PhjSchema(only=["phj_date"]).dump(x[0])["phj_date"],
                     "batch_id": batch_schema.dump(x[1]),
                     "product": prod,
-                    "reject": rej
+                    "reject": rej,
                 }
             )
 
@@ -6671,21 +6685,15 @@ def phj_id(self, id):
                                 y.unit_id = z["unit_id"]
                                 y.qty = z["qty"]
                 else:
-                        if (
-                            z["prod_id"]
-                            and z["unit_id"]
-                            and z["qty"]
-                            and int(z["qty"]) > 0
-                        ):
-                            new_product.append(
-                                PphjDdb(
-                                    x.id,
-                                    z["prod_id"],
-                                    z["unit_id"],
-                                    z["qty"],
-                                )
+                    if z["prod_id"] and z["unit_id"] and z["qty"] and int(z["qty"]) > 0:
+                        new_product.append(
+                            PphjDdb(
+                                x.id,
+                                z["prod_id"],
+                                z["unit_id"],
+                                z["qty"],
                             )
-
+                        )
 
             if len(new_product) > 0:
                 db.session.add_all(new_product)
@@ -6695,8 +6703,7 @@ def phj_id(self, id):
             for z in reject:
                 if z["id"]:
                     for y in old_reject:
-                
-                    
+
                         if z["id"] == y.id:
                             if (
                                 z["id"]
@@ -6709,20 +6716,15 @@ def phj_id(self, id):
                                 y.unit_id = z["unit_id"]
                                 y.qty = z["qty"]
                 else:
-                        if (
-                            z["prod_id"]
-                            and z["unit_id"]
-                            and z["qty"]
-                            and int(z["qty"]) > 0
-                        ):
-                            new_reject.append(
-                                RphjDdb(
-                                    x.id,
-                                    z["prod_id"],
-                                    z["unit_id"],
-                                    z["qty"],
-                                )
+                    if z["prod_id"] and z["unit_id"] and z["qty"] and int(z["qty"]) > 0:
+                        new_reject.append(
+                            RphjDdb(
+                                x.id,
+                                z["prod_id"],
+                                z["unit_id"],
+                                z["qty"],
                             )
+                        )
 
             if len(new_reject) > 0:
                 db.session.add_all(new_reject)
@@ -6799,8 +6801,31 @@ def phj_id(self, id):
                         "phj_date": PhjSchema(only=["phj_date"]).dump(x[0])["phj_date"],
                         "batch_id": batch_schema.dump(x[1]),
                         "product": prod,
-                        "reject": rej
+                        "reject": rej,
                     }
                 )
 
         return response(200, "Berhasil", True, final)
+
+
+@app.route("/v1/api/rpbb", methods=["GET"])
+@token_required
+def rpbb(self):
+    rpbb = (
+        db.session.query(RpbbMdb, PlanHdb, FprdcHdb, ProdMdb, LocationMdb)
+        .outerjoin(PlanHdb, PlanHdb.id == RpbbMdb.pl_id)
+        .outerjoin(FprdcHdb, FprdcHdb.id == PlanHdb.form_id)
+        .outerjoin(ProdMdb, ProdMdb.id == RpbbMdb.prod_id)
+        .outerjoin(LocationMdb, LocationMdb.id == RpbbMdb.loc_id)
+        .all()
+    )
+
+    final = []
+    for x in rpbb:
+        x[1].form_id = fprdc_schema.dump(x[2])
+        x[0].pl_id = plan_schema.dump(x[1])
+        x[0].prod_id = prod_schema.dump(x[3])
+        x[0].loc_id = loct_schema.dump(x[4])
+        final.append(rpbb_schema.dump(x[0]))
+
+    return response(200, "Berhasil", True, final)
