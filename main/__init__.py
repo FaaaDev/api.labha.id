@@ -45,12 +45,14 @@ from main.model.jasa_mdb import JasaMdb
 from main.model.jpel_mdb import JpelMdb
 from main.model.jpem_mdb import JpemMdb
 from main.model.ordpj_hdb import OrdpjHdb
+from main.model.pbb_hdb import PbbHdb
 from main.model.phj_hdb import PhjHdb
 from main.model.pjasa_ddb import PjasaDdb
 from main.model.plan_hdb import PlanHdb
 from main.model.plmch_ddb import PlmchDdb
 from main.model.po_mdb import PoMdb
 from main.model.po_sup_ddb import PoSupDdb
+from main.model.ppbb_ddb import PpbbDdb
 from main.model.pphj_ddb import PphjDdb
 from main.model.pprod_ddb import PprodDdb
 from main.model.preq_mdb import PreqMdb
@@ -58,6 +60,7 @@ from main.model.prod_mdb import ProdMdb
 from main.model.reprod_ddb import ReprodDdb
 from main.model.retord_hdb import RetordHdb
 from main.model.rjasa_mdb import RjasaMdb
+from main.model.rpbb_ddb import RpbbDdb
 from main.model.rphj_ddb import RphjDdb
 from main.model.rprod_mdb import RprodMdb
 from main.model.sales_mdb import SalesMdb
@@ -153,6 +156,7 @@ from main.schema.plan_hdb import plan_schema, plans_schema, PlanSchema
 from main.schema.plmch_ddb import plmch_schema, plmchs_schema, PlmchSchema
 from main.schema.batch_mdb import batch_schema, batchs_schema, BatchSchema
 from main.schema.phj_hdb import phj_schema, phjs_schema, PhjSchema
+from main.schema.pbb_hdb import pbb_schema, pbbs_schema, PbbSchema
 from main.schema.pphj_ddb import pphj_schema, pphjs_schema, PphjSchema
 from main.schema.rphj_ddb import rphj_schema, rphjs_schema, RphjSchema
 from main.schema.setup_mdb import *
@@ -6769,6 +6773,283 @@ def phj_id(self, id):
                         "phj_code": x[0].phj_code,
                         "phj_date": PhjSchema(only=["phj_date"]).dump(x[0])["phj_date"],
                         "batch_id": batch_schema.dump(x[1]),
+                        "product": prod,
+                        "reject": rej
+                    }
+                )
+
+        return response(200, "Berhasil", True, final)
+
+
+@app.route("/v1/api/pbb", methods=["GET", "POST"])
+@token_required
+def pbb(self):
+    if request.method == "POST":
+        try:
+            pbb_code = request.json["pbb_code"]
+            pbb_name = request.json["pbb_name"]
+            pbb_date = request.json["pbb_date"]
+            batch_id = request.json["batch_id"]
+            acc_cred = request.json["acc_cred"]
+            # product = request.json["product"]
+            # reject = request.json["reject"]
+
+            pbb = PbbHdb(pbb_code, pbb_name, pbb_date, batch_id, acc_cred)
+
+            db.session.add(pbb)
+            db.session.commit()
+
+            # new_product = []
+            # for x in product:
+            #     if x["prod_id"] and x["unit_id"] and x["qty"] and int(x["qty"]) > 0:
+            #         new_product.append(
+            #             PprodDdb(pbb.id, x["prod_id"], x["unit_id"], x["qty"])
+            #         )
+
+            # new_reject = []
+            # for x in reject:
+            #     if x["prod_id"] and x["unit_id"] and x["qty"] and int(x["qty"]) > 0:
+            #         new_reject.append(
+            #             RpbbDdb(pbb.id, x["prod_id"], x["unit_id"], x["qty"])
+            #         )
+
+            # if len(new_product) > 0:
+            #     db.session.add_all(new_product)
+
+            # if len(new_reject) > 0:
+            #     db.session.add_all(new_reject)
+
+            db.session.commit()
+
+            result = response(200, "Berhasil", True, pbb_schema.dump(pbb))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    else:
+        pbb = (
+            db.session.query(PbbHdb, BatchMdb, PlanHdb, AccouMdb)
+            .outerjoin(BatchMdb, BatchMdb.id == PbbHdb.batch_id)
+            .outerjoin(PlanHdb, PlanHdb.id == BatchMdb.plan_id)
+            .outerjoin(AccouMdb, AccouMdb.id == PbbHdb.acc_cred)
+            .order_by(PbbHdb.id.desc())
+            .all()
+        )
+
+        # product = (
+        #     db.session.query(PpbbDdb, ProdMdb, UnitMdb)
+        #     .outerjoin(ProdMdb, ProdMdb.id == PpbbDdb.prod_id)
+        #     .outerjoin(UnitMdb, UnitMdb.id == PpbbDdb.unit_id)
+        #     .all()
+        # )
+
+        # reject = (
+        #     db.session.query(RpbbDdb, ProdMdb, UnitMdb)
+        #     .outerjoin(ProdMdb, ProdMdb.id == RpbbDdb.prod_id)
+        #     .outerjoin(UnitMdb, UnitMdb.id == RpbbDdb.unit_id)
+        #     .all()
+        # )
+
+        final = []
+        for x in pbb:
+        #     prod = []
+        #     for y in product:
+        #         if x[0].id == y[0].pbb_id:
+        #             y[0].prod_id = prod_schema.dump(y[1])
+        #             y[0].unit_id = unit_schema.dump(y[2])
+        #             prod.append(ppbb_schema.dump(y[0]))
+
+        #     rej = []
+        #     for y in reject:
+        #         if x[0].id == y[0].pbb_id:
+        #             y[0].prod_id = prod_schema.dump(y[1])
+        #             y[0].unit_id = unit_schema.dump(y[2])
+        #             rej.append(rpbb_schema.dump(y[0]))
+
+            x[1].plan_id = plan_schema.dump(x[2])
+            final.append(
+                {
+                    "id": x[0].id,
+                    "pbb_code": x[0].pbb_code,
+                    "pbb_name": x[0].pbb_name,
+                    "acc_cred": accou_schema.dump(x[3]),
+                    "pbb_date": PbbSchema(only=["pbb_date"]).dump(x[0])["pbb_date"],
+                    "batch_id": batch_schema.dump(x[1]),
+                    # "product": prod,
+                    # "reject": rej
+                }
+            )
+
+        return response(200, "Berhasil", True, final)
+
+
+@app.route("/v1/api/pbb/<int:id>", methods=["GET", "PUT", "DELETE"])
+@token_required
+def pbb_id(self, id):
+    x = PbbHdb.query.filter(PbbHdb.id == id).first()
+    if request.method == "PUT":
+        try:
+            pbb_code = request.json["pbb_code"]
+            pbb_date = request.json["pbb_date"]
+            acc_cred = request.json["acc_cred"]
+            batch_id = request.json["batch_id"]
+            product = request.json["product"]
+            reject = request.json["reject"]
+
+            x.pbb_code = pbb_code
+            x.pbb_date = pbb_date
+            x.batch_id = batch_id
+            x.acc_cred = acc_cred
+
+            db.session.commit()
+
+            # old_product = PpbbDdb.query.filter(PpbbDdb.pbb_id == id).all()
+            # new_product = []
+            # for z in product:
+            #     if z["id"]:
+            #         for y in old_product:
+            #             if z["id"] == y.id:
+            #                 if (
+            #                     z["id"]
+            #                     and z["prod_id"]
+            #                     and z["unit_id"]
+            #                     and z["qty"]
+            #                     and int(z["qty"]) > 0
+            #                 ):
+            #                     y.prod_id = z["prod_id"]
+            #                     y.unit_id = z["unit_id"]
+            #                     y.qty = z["qty"]
+            #     else:
+            #             if (
+            #                 z["prod_id"]
+            #                 and z["unit_id"]
+            #                 and z["qty"]
+            #                 and int(z["qty"]) > 0
+            #             ):
+            #                 new_product.append(
+            #                     PpbbDdb(
+            #                         x.id,
+            #                         z["prod_id"],
+            #                         z["unit_id"],
+            #                         z["qty"],
+            #                     )
+            #                 )
+
+
+            # if len(new_product) > 0:
+            #     db.session.add_all(new_product)
+
+            # old_reject = RpbbDdb.query.filter(RpbbDdb.pbb_id == id).all()
+            # new_reject = []
+            # for z in reject:
+            #     if z["id"]:
+            #         for y in old_reject:
+                
+                    
+            #             if z["id"] == y.id:
+            #                 if (
+            #                     z["id"]
+            #                     and z["prod_id"]
+            #                     and z["unit_id"]
+            #                     and z["qty"]
+            #                     and int(z["qty"]) > 0
+            #                 ):
+            #                     y.prod_id = z["prod_id"]
+            #                     y.unit_id = z["unit_id"]
+            #                     y.qty = z["qty"]
+            #     else:
+            #             if (
+            #                 z["prod_id"]
+            #                 and z["unit_id"]
+            #                 and z["qty"]
+            #                 and int(z["qty"]) > 0
+            #             ):
+            #                 new_reject.append(
+            #                     RpbbDdb(
+            #                         x.id,
+            #                         z["prod_id"],
+            #                         z["unit_id"],
+            #                         z["qty"],
+            #                     )
+            #                 )
+
+            # if len(new_reject) > 0:
+            #     db.session.add_all(new_reject)
+
+            db.session.commit()
+
+            result = response(200, "Berhasil", True, pbb_schema.dump(x))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    elif request.method == "DELETE":
+        old_product = PpbbDdb.query.filter(PpbbDdb.pbb_id == id).all()
+        old_reject = RpbbDdb.query.filter(RpbbDdb.pbb_id == id).all()
+
+        if old_product:
+            for y in old_product:
+                db.session.delete(y)
+
+        if old_reject:
+            for y in old_reject:
+                db.session.delete(y)
+
+        db.session.delete(x)
+        db.session.commit()
+
+        return response(200, "Berhasil", True, None)
+    else:
+        pbb = (
+            db.session.query(PbbHdb, BatchMdb, PlanHdb, AccouMdb)
+            .outerjoin(BatchMdb, BatchMdb.id == PbbHdb.batch_id)
+            .outerjoin(PlanHdb, PlanHdb.id == BatchMdb.plan_id)
+            .outerjoin(AccouMdb, AccouMdb.id == PbbHdb.acc_cred)
+            .order_by(PbbHdb.id.desc())
+            .all()
+        )
+
+        product = (
+            db.session.query(PpbbDdb, ProdMdb, UnitMdb)
+            .outerjoin(ProdMdb, ProdMdb.id == PpbbDdb.prod_id)
+            .outerjoin(UnitMdb, UnitMdb.id == PpbbDdb.unit_id)
+            .all()
+        )
+
+        reject = (
+            db.session.query(RpbbDdb, ProdMdb, UnitMdb)
+            .outerjoin(ProdMdb, ProdMdb.id == RpbbDdb.prod_id)
+            .outerjoin(UnitMdb, UnitMdb.id == RpbbDdb.unit_id)
+            .all()
+        )
+
+        final = []
+        for x in pbb:
+            if x[0].id == id:
+                prod = []
+                for y in product:
+                    if x[1].id == y[0].pbb_id:
+                        y[0].prod_id = prod_schema.dump(y[1])
+                        y[0].unit_id = unit_schema.dump(y[2])
+                        prod.append(pbb_schema.dump(y[0]))
+
+                rej = []
+                for y in reject:
+                    if x[1].id == y[0].pbb_id:
+                        y[0].prod_id = prod_schema.dump(y[1])
+                        y[0].unit_id = unit_schema.dump(y[2])
+                        rej.append(pbb_schema.dump(y[0]))
+
+                x[1].plan_id = plan_schema.dump(x[2])
+                final.append(
+                    {
+                        "id": x[0].id,
+                        "pbb_code": x[0].pbb_code,
+                        "pbb_date": PbbSchema(only=["pbb_date"]).dump(x[0])["pbb_date"],
+                        "batch_id": batch_schema.dump(x[1]),
+                        "acc_cred": accou_schema.dump(x[3]),
                         "product": prod,
                         "reject": rej
                     }
