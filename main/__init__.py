@@ -6639,7 +6639,9 @@ def phj(self):
                     y[0].unit_id = unit_schema.dump(y[2])
                     rej.append(rphj_schema.dump(y[0]))
 
-            x[1].plan_id = plan_schema.dump(x[2])
+            if x[1]:
+                x[1].plan_id = plan_schema.dump(x[2])
+                
             final.append(
                 {
                     "id": x[0].id,
