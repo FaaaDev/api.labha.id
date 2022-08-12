@@ -7,6 +7,8 @@ class DordSchema(ma.Schema):
         fields = ('id',
                   'ord_code',
                   'ord_date',
+                  'no_doc',
+                  'doc_date',
                   'faktur',
                   'po_id',
                   'dep_id',
