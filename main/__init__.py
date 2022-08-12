@@ -3579,6 +3579,8 @@ def order(self):
         try:
             ord_code = request.json["ord_code"]
             ord_date = request.json["ord_date"]
+            no_doc = request.json["no_doc"]
+            doc_date = request.json["doc_date"]
             faktur = request.json["faktur"]
             po_id = request.json["po_id"]
             dep_id = request.json["dep_id"]
@@ -3595,6 +3597,8 @@ def order(self):
             do = OrdpbHdb(
                 ord_code,
                 ord_date,
+                no_doc,
+                doc_date,
                 faktur,
                 po_id,
                 dep_id,
@@ -3723,6 +3727,8 @@ def order(self):
                     "id": x[0].id,
                     "ord_code": x[0].ord_code,
                     "ord_date": DordSchema(only=["ord_date"]).dump(x[0])["ord_date"],
+                    "no_doc": x[0].no_doc,
+                    "doc_date": DordSchema(only=["doc_date"]).dump(x[0])["doc_date"],
                     "faktur": x[0].faktur,
                     "po_id": po_schema.dump(x[4]),
                     "dep_id": ccost_schema.dump(x[1]),
@@ -3751,6 +3757,8 @@ def ord_id(self, id):
         try:
             ord_code = request.json["ord_code"]
             ord_date = request.json["ord_date"]
+            no_doc = request.json["no_doc"]
+            doc_date = request.json["doc_date"]
             faktur = request.json["faktur"]
             dep_id = request.json["dep_id"]
             sup_id = request.json["sup_id"]
@@ -3765,6 +3773,8 @@ def ord_id(self, id):
 
             do.ord_code = ord_code
             do.ord_date = ord_date
+            do.no_doc = no_doc
+            do.doc_date = doc_date
             do.faktur = faktur
             do.dep_id = dep_id
             do.sup_id = sup_id
@@ -3916,6 +3926,8 @@ def ord_id(self, id):
             "id": x[0].id,
             "ord_code": x[0].ord_code,
             "ord_date": DordSchema(only=["ord_date"]).dump(x[0])["ord_date"],
+            "no_doc": x[0].no_doc,
+            "doc_date": DordSchema(only=["doc_date"]).dump(x[0])["doc_date"],
             "faktur": x[0].faktur,
             "po_id": po_schema.dump(x[4]),
             "dep_id": ccost_schema.dump(x[1]),
@@ -6639,7 +6651,9 @@ def phj(self):
                     y[0].unit_id = unit_schema.dump(y[2])
                     rej.append(rphj_schema.dump(y[0]))
 
-            x[1].plan_id = plan_schema.dump(x[2])
+            if x[1]:
+                x[1].plan_id = plan_schema.dump(x[2])
+                
             final.append(
                 {
                     "id": x[0].id,
