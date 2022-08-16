@@ -65,6 +65,7 @@ from main.model.rjasa_mdb import RjasaMdb
 
 # from main.model.rpbb_ddb import RpbbDdb
 from main.model.rpbb_ddb import RpbbDdb
+from main.model.rpbb_mdb import RpbbMdb
 from main.model.rphj_ddb import RphjDdb
 from main.model.rprod_mdb import RprodMdb
 from main.model.sales_mdb import SalesMdb
@@ -6962,6 +6963,29 @@ def pbb_id(self, id):
             )
 
         return response(200, "Berhasil", True, final)
+
+
+@app.route("/v1/api/rpbb", methods=["GET"])
+@token_required
+def rpbb(self):
+    rpbb = (
+        db.session.query(RpbbMdb, PlanHdb, FprdcHdb, ProdMdb, LocationMdb)
+        .outerjoin(PlanHdb, PlanHdb.id == RpbbMdb.pl_id)
+        .outerjoin(FprdcHdb, FprdcHdb.id == PlanHdb.form_id)
+        .outerjoin(ProdMdb, ProdMdb.id == RpbbMdb.prod_id)
+        .outerjoin(LocationMdb, LocationMdb.id == RpbbMdb.loc_id)
+        .all()
+    )
+
+    final = []
+    for x in rpbb:
+        x[1].form_id = fprdc_schema.dump(x[2])
+        x[0].pl_id = plan_schema.dump(x[1])
+        x[0].prod_id = prod_schema.dump(x[3])
+        x[0].loc_id = loct_schema.dump(x[4])
+        final.append(rpbb_schema.dump(x[0]))
+
+    return response(200, "Berhasil", True, final)
 
 
 @app.route("/v1/api/apprv-bnk", methods=["GET"])
