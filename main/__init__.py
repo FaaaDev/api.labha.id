@@ -5035,9 +5035,17 @@ def expense(self):
             db.session.commit()
 
             if company and not company[1].appr_payment:
+                print("HEHEHE")
                 if acq_pay and acq_pay == 3:
                     giro = GiroHdb(
-                        giro_date, giro_num, bank_id, exps.id, exp_date, acq_sup, value, 0
+                        giro_date,
+                        giro_num,
+                        bank_id,
+                        exps.id,
+                        exp_date,
+                        acq_sup,
+                        value,
+                        0,
                     )
                     db.session.add(giro)
                     db.session.commit()
@@ -6959,6 +6967,13 @@ def pbb_id(self, id):
 @app.route("/v1/api/apprv-bnk", methods=["GET"])
 @token_required
 def approve_bank(self):
+    company = (
+        db.session.query(User, CompMdb)
+        .outerjoin(CompMdb, User.company == CompMdb.id)
+        .filter(User.id == self.id)
+        .first()
+    )
+
     exps = (
         db.session.query(ExpHdb, BankMdb, SupplierMdb, CcostMdb, ProjMdb)
         .outerjoin(BankMdb, BankMdb.id == ExpHdb.bank_id)
@@ -6985,50 +7000,51 @@ def approve_bank(self):
     )
 
     final = []
-    for x in exps:
-        all_exp = []
-        for y in exp:
-            if y[0].exp_id == x[0].id:
-                y[0].acc_code = accou_schema.dump(y[1])
-                all_exp.append(dexp_schema.dump(y[0]))
+    if company and company[1].appr_payment:
+        for x in exps:
+            all_exp = []
+            for y in exp:
+                if y[0].exp_id == x[0].id:
+                    y[0].acc_code = accou_schema.dump(y[1])
+                    all_exp.append(dexp_schema.dump(y[0]))
 
-        all_acq = []
-        for z in acq:
-            if z[0].exp_id == x[0].id:
-                z[0].fk_id = fkpb_schema.dump(z[1])
-                all_acq.append(dacq_schema.dump(z[0]))
+            all_acq = []
+            for z in acq:
+                if z[0].exp_id == x[0].id:
+                    z[0].fk_id = fkpb_schema.dump(z[1])
+                    all_acq.append(dacq_schema.dump(z[0]))
 
-        if x[0].exp_acc:
-            for a in acc:
-                if a.id == x[0].exp_acc:
-                    x[0].exp_acc = accou_schema.dump(a)
+            if x[0].exp_acc:
+                for a in acc:
+                    if a.id == x[0].exp_acc:
+                        x[0].exp_acc = accou_schema.dump(a)
 
-        if x[0].kas_acc:
-            for b in acc:
-                if b.id == x[0].kas_acc:
-                    x[0].kas_acc = accou_schema.dump(b)
+            if x[0].kas_acc:
+                for b in acc:
+                    if b.id == x[0].kas_acc:
+                        x[0].kas_acc = accou_schema.dump(b)
 
-        final.append(
-            {
-                "id": x[0].id,
-                "exp_code": x[0].exp_code,
-                "exp_date": ExpSchema(only=["exp_date"]).dump(x[0])["exp_date"],
-                "exp_type": x[0].exp_type,
-                "exp_acc": x[0].exp_acc,
-                "exp_dep": ccost_schema.dump(x[3]) if x[3] else None,
-                "exp_prj": proj_schema.dump(x[4]) if x[4] else None,
-                "acq_sup": supplier_schema.dump(x[2]) if x[2] else None,
-                "acq_pay": x[0].acq_pay,
-                "kas_acc": x[0].kas_acc,
-                "bank_acc": x[0].bank_acc,
-                "bank_id": bank_schema.dump(x[1]) if x[1] else None,
-                "bank_ref": x[0].bank_ref,
-                "giro_num": x[0].giro_num,
-                "giro_date": ExpSchema(only=["giro_date"]).dump(x[0])["giro_date"],
-                "approve": x[0].approve,
-                "exp": all_exp,
-                "acq": all_acq,
-            }
-        )
+            final.append(
+                {
+                    "id": x[0].id,
+                    "exp_code": x[0].exp_code,
+                    "exp_date": ExpSchema(only=["exp_date"]).dump(x[0])["exp_date"],
+                    "exp_type": x[0].exp_type,
+                    "exp_acc": x[0].exp_acc,
+                    "exp_dep": ccost_schema.dump(x[3]) if x[3] else None,
+                    "exp_prj": proj_schema.dump(x[4]) if x[4] else None,
+                    "acq_sup": supplier_schema.dump(x[2]) if x[2] else None,
+                    "acq_pay": x[0].acq_pay,
+                    "kas_acc": x[0].kas_acc,
+                    "bank_acc": x[0].bank_acc,
+                    "bank_id": bank_schema.dump(x[1]) if x[1] else None,
+                    "bank_ref": x[0].bank_ref,
+                    "giro_num": x[0].giro_num,
+                    "giro_date": ExpSchema(only=["giro_date"]).dump(x[0])["giro_date"],
+                    "approve": x[0].approve,
+                    "exp": all_exp,
+                    "acq": all_acq,
+                }
+            )
 
     return response(200, "Berhasil", True, final)

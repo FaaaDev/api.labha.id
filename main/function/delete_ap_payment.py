@@ -26,5 +26,6 @@ class DeleteApPayment():
 
         giro = GiroHdb.query.filter(GiroHdb.pay_code == exp_id).first()
 
-        db.session.delete(giro)
-        db.session.commit()
+        if giro:
+            db.session.delete(giro)
+            db.session.commit()
