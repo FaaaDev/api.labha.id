@@ -6836,34 +6836,10 @@ def pbb(self):
             pbb_date = request.json["pbb_date"]
             batch_id = request.json["batch_id"]
             acc_cred = request.json["acc_cred"]
-            # product = request.json["product"]
-            # reject = request.json["reject"]
 
             pbb = PbbHdb(pbb_code, pbb_name, pbb_date, batch_id, acc_cred)
 
             db.session.add(pbb)
-            db.session.commit()
-
-            # new_product = []
-            # for x in product:
-            #     if x["prod_id"] and x["unit_id"] and x["qty"] and int(x["qty"]) > 0:
-            #         new_product.append(
-            #             PprodDdb(pbb.id, x["prod_id"], x["unit_id"], x["qty"])
-            #         )
-
-            # new_reject = []
-            # for x in reject:
-            #     if x["prod_id"] and x["unit_id"] and x["qty"] and int(x["qty"]) > 0:
-            #         new_reject.append(
-            #             RpbbDdb(pbb.id, x["prod_id"], x["unit_id"], x["qty"])
-            #         )
-
-            # if len(new_product) > 0:
-            #     db.session.add_all(new_product)
-
-            # if len(new_reject) > 0:
-            #     db.session.add_all(new_reject)
-
             db.session.commit()
 
             result = response(200, "Berhasil", True, pbb_schema.dump(pbb))
@@ -6882,36 +6858,8 @@ def pbb(self):
             .all()
         )
 
-        # product = (
-        #     db.session.query(PpbbDdb, ProdMdb, UnitMdb)
-        #     .outerjoin(ProdMdb, ProdMdb.id == PpbbDdb.prod_id)
-        #     .outerjoin(UnitMdb, UnitMdb.id == PpbbDdb.unit_id)
-        #     .all()
-        # )
-
-        # reject = (
-        #     db.session.query(RpbbDdb, ProdMdb, UnitMdb)
-        #     .outerjoin(ProdMdb, ProdMdb.id == RpbbDdb.prod_id)
-        #     .outerjoin(UnitMdb, UnitMdb.id == RpbbDdb.unit_id)
-        #     .all()
-        # )
-
         final = []
         for x in pbb:
-            #     prod = []
-            #     for y in product:
-            #         if x[0].id == y[0].pbb_id:
-            #             y[0].prod_id = prod_schema.dump(y[1])
-            #             y[0].unit_id = unit_schema.dump(y[2])
-            #             prod.append(ppbb_schema.dump(y[0]))
-
-            #     rej = []
-            #     for y in reject:
-            #         if x[0].id == y[0].pbb_id:
-            #             y[0].prod_id = prod_schema.dump(y[1])
-            #             y[0].unit_id = unit_schema.dump(y[2])
-            #             rej.append(rpbb_schema.dump(y[0]))
-
             x[1].plan_id = plan_schema.dump(x[2])
             final.append(
                 {
@@ -6921,8 +6869,6 @@ def pbb(self):
                     "acc_cred": accou_schema.dump(x[3]),
                     "pbb_date": PbbSchema(only=["pbb_date"]).dump(x[0])["pbb_date"],
                     "batch_id": batch_schema.dump(x[1]),
-                    # "product": prod,
-                    # "reject": rej
                 }
             )
 
@@ -6939,8 +6885,6 @@ def pbb_id(self, id):
             pbb_date = request.json["pbb_date"]
             acc_cred = request.json["acc_cred"]
             batch_id = request.json["batch_id"]
-            # product = request.json["product"]
-            # reject = request.json["reject"]
 
             x.pbb_code = pbb_code
             x.pbb_date = pbb_date
@@ -6949,76 +6893,7 @@ def pbb_id(self, id):
 
             db.session.commit()
 
-            # old_product = PpbbDdb.query.filter(PpbbDdb.pbb_id == id).all()
-            # new_product = []
-            # for z in product:
-            #     if z["id"]:
-            #         for y in old_product:
-            #             if z["id"] == y.id:
-            #                 if (
-            #                     z["id"]
-            #                     and z["prod_id"]
-            #                     and z["unit_id"]
-            #                     and z["qty"]
-            #                     and int(z["qty"]) > 0
-            #                 ):
-            #                     y.prod_id = z["prod_id"]
-            #                     y.unit_id = z["unit_id"]
-            #                     y.qty = z["qty"]
-            #     else:
-            #             if (
-            #                 z["prod_id"]
-            #                 and z["unit_id"]
-            #                 and z["qty"]
-            #                 and int(z["qty"]) > 0
-            #             ):
-            #                 new_product.append(
-            #                     PpbbDdb(
-            #                         x.id,
-            #                         z["prod_id"],
-            #                         z["unit_id"],
-            #                         z["qty"],
-            #                     )
-            #                 )
-
-            # if len(new_product) > 0:
-            #     db.session.add_all(new_product)
-
-            # old_reject = RpbbDdb.query.filter(RpbbDdb.pbb_id == id).all()
-            # new_reject = []
-            # for z in reject:
-            #     if z["id"]:
-            #         for y in old_reject:
-
-            #             if z["id"] == y.id:
-            #                 if (
-            #                     z["id"]
-            #                     and z["prod_id"]
-            #                     and z["unit_id"]
-            #                     and z["qty"]
-            #                     and int(z["qty"]) > 0
-            #                 ):
-            #                     y.prod_id = z["prod_id"]
-            #                     y.unit_id = z["unit_id"]
-            #                     y.qty = z["qty"]
-            #     else:
-            #             if (
-            #                 z["prod_id"]
-            #                 and z["unit_id"]
-            #                 and z["qty"]
-            #                 and int(z["qty"]) > 0
-            #             ):
-            #                 new_reject.append(
-            #                     RpbbDdb(
-            #                         x.id,
-            #                         z["prod_id"],
-            #                         z["unit_id"],
-            #                         z["qty"],
-            #                     )
-            #                 )
-
-            # if len(new_reject) > 0:
-            #     db.session.add_all(new_reject)
+        
 
             db.session.commit()
 
@@ -7029,17 +6904,6 @@ def pbb_id(self, id):
         finally:
             return result
     elif request.method == "DELETE":
-        # old_product = PpbbDdb.query.filter(PpbbDdb.pbb_id == id).all()
-        # old_reject = RpbbDdb.query.filter(RpbbDdb.pbb_id == id).all()
-
-        # if old_product:
-        #     for y in old_product:
-        #         db.session.delete(y)
-
-        # if old_reject:
-        #     for y in old_reject:
-        #         db.session.delete(y)
-
         db.session.delete(x)
         db.session.commit()
 
@@ -7054,37 +6918,8 @@ def pbb_id(self, id):
             .all()
         )
 
-        # product = (
-        #     db.session.query(PpbbDdb, ProdMdb, UnitMdb)
-        #     .outerjoin(ProdMdb, ProdMdb.id == PpbbDdb.prod_id)
-        #     .outerjoin(UnitMdb, UnitMdb.id == PpbbDdb.unit_id)
-        #     .all()
-        # )
-
-        # reject = (
-        #     db.session.query(RpbbDdb, ProdMdb, UnitMdb)
-        #     .outerjoin(ProdMdb, ProdMdb.id == RpbbDdb.prod_id)
-        #     .outerjoin(UnitMdb, UnitMdb.id == RpbbDdb.unit_id)
-        #     .all()
-        # )
-
         final = []
         for x in pbb:
-            # if x[0].id == id:
-            #     prod = []
-            #     for y in product:
-            #         if x[1].id == y[0].pbb_id:
-            #             y[0].prod_id = prod_schema.dump(y[1])
-            #             y[0].unit_id = unit_schema.dump(y[2])
-            #             prod.append(pbb_schema.dump(y[0]))
-
-            #     rej = []
-            #     for y in reject:
-            #         if x[1].id == y[0].pbb_id:
-            #             y[0].prod_id = prod_schema.dump(y[1])
-            #             y[0].unit_id = unit_schema.dump(y[2])
-            #             rej.append(pbb_schema.dump(y[0]))
-
             x[1].plan_id = plan_schema.dump(x[2])
             final.append(
                 {
@@ -7093,32 +6928,86 @@ def pbb_id(self, id):
                     "pbb_date": PbbSchema(only=["pbb_date"]).dump(x[0])["pbb_date"],
                     "batch_id": batch_schema.dump(x[1]),
                     "acc_cred": accou_schema.dump(x[3]),
-                    # "product": prod,
-                    # "reject": rej
                 }
             )
 
         return response(200, "Berhasil", True, final)
 
 
-# @app.route("/v1/api/rpbb", methods=["GET"])
-# @token_required
-# def rpbb(self):
-#     rpbb = (
-#         db.session.query(RpbbMdb, PlanHdb, FprdcHdb, ProdMdb, LocationMdb)
-#         .outerjoin(PlanHdb, PlanHdb.id == RpbbMdb.pl_id)
-#         .outerjoin(FprdcHdb, FprdcHdb.id == PlanHdb.form_id)
-#         .outerjoin(ProdMdb, ProdMdb.id == RpbbMdb.prod_id)
-#         .outerjoin(LocationMdb, LocationMdb.id == RpbbMdb.loc_id)
-#         .all()
-#     )
+@app.route("/v1/api/apprv-bnk", methods=["GET"])
+@token_required
+def approve_bank(self):
+    exps = (
+        db.session.query(ExpHdb, BankMdb, SupplierMdb, CcostMdb, ProjMdb)
+        .outerjoin(BankMdb, BankMdb.id == ExpHdb.bank_id)
+        .outerjoin(SupplierMdb, SupplierMdb.id == ExpHdb.acq_sup)
+        .outerjoin(CcostMdb, CcostMdb.id == ExpHdb.exp_dep)
+        .outerjoin(ProjMdb, ProjMdb.id == ExpHdb.exp_prj)
+        .filter(ExpHdb.approve == False)
+        .order_by(ExpHdb.id.desc())
+        .all()
+    )
 
-#     final = []
-#     for x in rpbb:
-#         x[1].form_id = fprdc_schema.dump(x[2])
-#         x[0].pl_id = plan_schema.dump(x[1])
-#         x[0].prod_id = prod_schema.dump(x[3])
-#         x[0].loc_id = loct_schema.dump(x[4])
-#         final.append(rpbb_schema.dump(x[0]))
+    acc = AccouMdb.query.all()
 
-#     return response(200, "Berhasil", True, final)
+    exp = (
+        db.session.query(ExpDdb, AccouMdb)
+        .outerjoin(AccouMdb, AccouMdb.id == ExpDdb.acc_code)
+        .all()
+    )
+
+    acq = (
+        db.session.query(AcqDdb, FkpbHdb)
+        .outerjoin(FkpbHdb, FkpbHdb.id == AcqDdb.fk_id)
+        .all()
+    )
+
+    final = []
+    for x in exps:
+        all_exp = []
+        for y in exp:
+            if y[0].exp_id == x[0].id:
+                y[0].acc_code = accou_schema.dump(y[1])
+                all_exp.append(dexp_schema.dump(y[0]))
+
+        all_acq = []
+        for z in acq:
+            if z[0].exp_id == x[0].id:
+                z[0].fk_id = fkpb_schema.dump(z[1])
+                all_acq.append(dacq_schema.dump(z[0]))
+
+        if x[0].exp_acc:
+            for a in acc:
+                if a.id == x[0].exp_acc:
+                    x[0].exp_acc = accou_schema.dump(a)
+
+        if x[0].kas_acc:
+            for b in acc:
+                if b.id == x[0].kas_acc:
+                    x[0].kas_acc = accou_schema.dump(b)
+
+        final.append(
+            {
+                "id": x[0].id,
+                "exp_code": x[0].exp_code,
+                "exp_date": ExpSchema(only=["exp_date"]).dump(x[0])["exp_date"],
+                "exp_type": x[0].exp_type,
+                "exp_acc": x[0].exp_acc,
+                "exp_dep": ccost_schema.dump(x[3]) if x[3] else None,
+                "exp_prj": proj_schema.dump(x[4]) if x[4] else None,
+                "acq_sup": supplier_schema.dump(x[2]) if x[2] else None,
+                "acq_pay": x[0].acq_pay,
+                "kas_acc": x[0].kas_acc,
+                "bank_acc": x[0].bank_acc,
+                "bank_id": bank_schema.dump(x[1]) if x[1] else None,
+                "bank_ref": x[0].bank_ref,
+                "giro_num": x[0].giro_num,
+                "giro_date": ExpSchema(only=["giro_date"]).dump(x[0])["giro_date"],
+                "approve": x[0].approve,
+                "exp": all_exp,
+                "acq": all_acq,
+            }
+        )
+
+    return response(200, "Berhasil", True, final)
+
