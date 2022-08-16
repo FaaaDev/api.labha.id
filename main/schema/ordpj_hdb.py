@@ -7,6 +7,8 @@ class OrdpjSchema(ma.Schema):
         fields = ('id',
                   'ord_code',
                   'ord_date',
+                  'no_doc',
+                  'doc_date',
                   'so_id',
                   'invoice',
                   'pel_id',
