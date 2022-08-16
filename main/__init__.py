@@ -4567,6 +4567,8 @@ def sls(self):
         try:
             ord_code = request.json["ord_code"]
             ord_date = request.json["ord_date"]
+            no_doc = request.json["no_doc"]
+            doc_date = request.json["doc_date"]
             so_id = request.json["so_id"]
             invoice = request.json["invoice"]
             pel_id = request.json["pel_id"]
@@ -4587,6 +4589,8 @@ def sls(self):
             sls = OrdpjHdb(
                 ord_code,
                 ord_date,
+                no_doc,
+                doc_date,
                 so_id,
                 invoice,
                 pel_id,
@@ -4712,6 +4716,8 @@ def sls(self):
                     "id": x[0].id,
                     "ord_code": x[0].ord_code,
                     "ord_date": OrdpjSchema(only=["ord_date"]).dump(x[0])["ord_date"],
+                    "no_doc": x[0].no_doc,
+                    "doc_date": OrdpjSchema(only=["doc_date"]).dump(x[0])["doc_date"],
                     "so_id": sord_schema.dump(x[2]) if x[2] else None,
                     "invoice": x[0].invoice,
                     "pel_id": x[0].pel_id,
@@ -4744,6 +4750,8 @@ def sls_id(self, id):
         try:
             ord_code = request.json["ord_code"]
             ord_date = request.json["ord_date"]
+            no_doc = request.json["no_doc"]
+            doc_date = request.json["doc_date"]
             so_id = request.json["so_id"]
             invoice = request.json["invoice"]
             pel_id = request.json["pel_id"]
@@ -4763,6 +4771,8 @@ def sls_id(self, id):
 
             sls.ord_code = ord_code
             sls.ord_date = ord_date
+            sls.no_doc = no_doc
+            sls.doc_date = doc_date
             sls.so_id = so_id
             sls.invoice = invoice
             sls.pel_id = pel_id
@@ -4924,6 +4934,8 @@ def sls_id(self, id):
             "id": x[0].id,
             "ord_code": x[0].ord_code,
             "ord_date": OrdpjSchema(only=["ord_date"]).dump(x[0])["ord_date"],
+            "no_doc": x[0].no_doc,
+            "doc_date": OrdpjSchema(only=["doc_date"]).dump(x[0])["doc_date"],
             "so_id": sord_schema.dump(x[2]) if x[2] else None,
             "invoice": x[0].invoice,
             "pel_id": x[0].pel_id,
