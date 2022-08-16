@@ -5036,7 +5036,6 @@ def expense(self):
             db.session.commit()
 
             if company and not company[1].appr_payment:
-                print("HEHEHE")
                 if acq_pay and acq_pay == 3:
                     giro = GiroHdb(
                         giro_date,
@@ -7072,3 +7071,43 @@ def approve_bank(self):
             )
 
     return response(200, "Berhasil", True, final)
+
+@app.route("/v1/api/apprv-bnk/<int:id>", methods=["GET"])
+@token_required
+def approve_bank_id(self, id):
+    exps = ExpHdb.query.filter(ExpHdb.id == id).first()
+
+    acq = (
+        db.session.query(AcqDdb, FkpbHdb)
+        .outerjoin(FkpbHdb, FkpbHdb.id == AcqDdb.fk_id)
+        .all()
+    )
+    if exps:
+        value = 0
+        for x in acq:
+            if x[0].exp_id == exps.id:
+                value += x[0].payment
+
+        if exps.acq_pay == 3:
+            giro = GiroHdb(
+                exps.giro_date,
+                exps.giro_num,
+                exps.bank_id,
+                exps.id,
+                exps.exp_date,
+                exps.acq_sup,
+                value,
+                0,
+            )
+            db.session.add(giro)
+            db.session.commit()
+            UpdateApGiro(giro.id)
+
+        if exps.acq_pay != 3:
+            UpdateApPayment(exps.id, False)
+
+        exps.approve = True
+
+        db.session.commit()
+    return response(200, "Berhasil", True, None)
+
