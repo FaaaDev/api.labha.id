@@ -113,7 +113,7 @@ class UpdateApPayment():
                                     None, None, None, None, x.value, "K", "JURNAL PENGELUARAN %s"%(exp.exp_code), None, None))
                     
                 # insert jurnal ap
-                trans_sup = TransDdb(exp.exp_code, exp.exp_date, exp.acc_id, None, None,
+                trans_sup = TransDdb(exp.exp_code, exp.exp_date, exp.exp_acc, None, None,
                                     None, None, None, None, total, "D", "JURNAL PENGELUARAN %s"%(exp.exp_code), None, None)
 
                 
