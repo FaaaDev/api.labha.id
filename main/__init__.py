@@ -62,6 +62,7 @@ from main.model.prod_mdb import ProdMdb
 from main.model.reprod_ddb import ReprodDdb
 from main.model.retord_hdb import RetordHdb
 from main.model.rjasa_mdb import RjasaMdb
+
 # from main.model.rpbb_ddb import RpbbDdb
 from main.model.rpbb_ddb import RpbbDdb
 from main.model.rphj_ddb import RphjDdb
@@ -4952,6 +4953,13 @@ def sls_id(self, id):
 def expense(self):
     if request.method == "POST":
         try:
+            company = (
+                db.session.query(User, CompMdb)
+                .outerjoin(CompMdb, User.company == CompMdb.id)
+                .filter(User.id == self.id)
+                .first()
+            )
+
             exp_code = request.json["exp_code"]
             exp_date = request.json["exp_date"]
             exp_type = request.json["exp_type"]
@@ -4984,6 +4992,7 @@ def expense(self):
                 bank_ref,
                 giro_num,
                 giro_date,
+                False if company and company[1].appr_payment else True,
             )
 
             db.session.add(exps)
@@ -5011,18 +5020,19 @@ def expense(self):
             if len(new_acq) > 0:
                 db.session.add_all(new_acq)
 
-            if acq_pay and acq_pay == 3:
-                giro = GiroHdb(
-                    giro_date, giro_num, bank_id, exps.id, exp_date, acq_sup, value, 0
-                )
-                db.session.add(giro)
-                db.session.commit()
-                UpdateApGiro(giro.id)
-
             db.session.commit()
 
-            if acq_pay and acq_pay != 3:
-                UpdateApPayment(exps.id, False)
+            if company and not company[1].appr_payment:
+                if acq_pay and acq_pay == 3:
+                    giro = GiroHdb(
+                        giro_date, giro_num, bank_id, exps.id, exp_date, acq_sup, value, 0
+                    )
+                    db.session.add(giro)
+                    db.session.commit()
+                    UpdateApGiro(giro.id)
+
+                if acq_pay and acq_pay != 3:
+                    UpdateApPayment(exps.id, False)
 
             result = response(200, "Berhasil", True, exp_schema.dump(exps))
         except IntegrityError:
@@ -5094,6 +5104,7 @@ def expense(self):
                     "bank_ref": x[0].bank_ref,
                     "giro_num": x[0].giro_num,
                     "giro_date": ExpSchema(only=["giro_date"]).dump(x[0])["giro_date"],
+                    "approve": x[0].approve,
                     "exp": all_exp,
                     "acq": all_acq,
                 }
@@ -5245,6 +5256,7 @@ def expense_id(self, id):
                     "bank_ref": x[0].bank_ref,
                     "giro_num": x[0].giro_num,
                     "giro_date": ExpSchema(only=["giro_date"]).dump(x[0])["giro_date"],
+                    "approve": x[0].approve,
                     "exp": all_exp,
                     "acq": all_acq,
                 }
@@ -6653,7 +6665,7 @@ def phj(self):
 
             if x[1]:
                 x[1].plan_id = plan_schema.dump(x[2])
-                
+
             final.append(
                 {
                     "id": x[0].id,
@@ -6893,8 +6905,6 @@ def pbb_id(self, id):
 
             db.session.commit()
 
-        
-
             db.session.commit()
 
             result = response(200, "Berhasil", True, pbb_schema.dump(x))
@@ -7010,4 +7020,3 @@ def approve_bank(self):
         )
 
     return response(200, "Berhasil", True, final)
-
