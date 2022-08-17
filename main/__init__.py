@@ -6460,7 +6460,7 @@ def batch(self):
 
             msn = []
             for y in mesin:
-                if x[1].id == y[0].pl_id:
+                if x[1] and x[1].id == y[0].pl_id:
                     y[0].mch_id = msn_schema.dump(y[1])
                     msn.append(plmch_schema.dump(y[0]))
 
