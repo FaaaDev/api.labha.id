@@ -7348,6 +7348,7 @@ def mutasi(self):
             db.session.query(MtsiHdb, CcostMdb, ProjMdb)
             .outerjoin(CcostMdb, CcostMdb.id == MtsiHdb.dep_id)
             .outerjoin(ProjMdb, ProjMdb.id == MtsiHdb.prj_id)
+            .order_by(MtsiHdb.id.desc())
             .all()
         )
 
