@@ -7415,77 +7415,48 @@ def mutasi_id(self, id):
             x.prj_id = prj_id
             x.doc = doc
             x.doc_date = doc_date
-            
+
             db.session.commit()
 
+            old_mutasi = MtsiDdb.query.filter(MtsiDdb.mtsi_id == id).all()
             new_mutasi = []
-            for x in mutasi:
-                if x["prod_id"] and x["qty"] and x["unit_id"]:
-                    new_mutasi.append(
-                        MtsiDdb(
-                            mt.id,
-                            x["prod_id"],
-                            x["unit_id"],
-                            x["qty"],
+            for z in mutasi:
+                if z["id"]:
+                    for y in old_mutasi:
+                        if z["id"] == y.id:
+                            if z["id"] and x["prod_id"] and x["qty"] and x["unit_id"]:
+                                y.prod_id = z["prod_id"]
+                                y.unit_id = z["unit_id"]
+                                y.qty = z["qty"]
+                else:
+                    if x["prod_id"] and x["qty"] and x["unit_id"]:
+                        new_mutasi.append(
+                            MtsiDdb(
+                                x.id,
+                                x["prod_id"],
+                                x["unit_id"],
+                                x["qty"],
+                            )
                         )
-                    )
 
             if len(new_mutasi) > 0:
                 db.session.add_all(new_mutasi)
-                db.session.commit()
+            
+            db.session.commit()
 
-            result = response(200, "Berhasil", True, mtsi_schema.dump(mt))
+            result = response(200, "Berhasil", True, mtsi_schema.dump(x))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
         finally:
             return result
     else:
-        mt = (
-            db.session.query(MtsiHdb, CcostMdb, ProjMdb)
-            .outerjoin(CcostMdb, CcostMdb.id == MtsiHdb.dep_id)
-            .outerjoin(ProjMdb, ProjMdb.id == MtsiHdb.prj_id)
-            .all()
-        )
+        old_mutasi = MtsiDdb.query.filter(MtsiDdb.mtsi_id == id).all()
+        if old_mutasi:
+            for y in old_mutasi:
+                db.session.delete(y)
 
-        mts = (
-            db.session.query(MtsiDdb, ProdMdb, UnitMdb)
-            .outerjoin(ProdMdb, ProdMdb.id == MtsiDdb.prod_id)
-            .outerjoin(UnitMdb, UnitMdb.id == MtsiDdb.unit_id)
-            .all()
-        )
+        db.session.delete(x)
+        db.session.commit()
 
-        loc = LocationMdb.query.all()
-
-        final = []
-        for x in mt:
-            mut = []
-            for y in mts:
-                if x[0].id == y[0].mtsi_id:
-                    y[0].prod_id = prod_schema.dump(y[1])
-                    y[0].unit_id = unit_schema.dump(y[2])
-                    mut.append(mtsiddb_schema.dump(y[0]))
-
-            for y in loc:
-                if x[0].loc_from == y.id:
-                    x[0].loc_from = loct_schema.dump(y)
-
-                if x[0].loc_to == y.id:
-                    x[0].loc_to = loct_schema.dump(y)
-
-            final.append(
-                {
-                    "id": x[0].id,
-                    "mtsi_code": x[0].mtsi_code,
-                    "mtsi_date": MtsiSchema(only=["mtsi_date"]).dump(x[0])["mtsi_date"],
-                    "loc_from": x[0].loc_from,
-                    "loc_to": x[0].loc_to,
-                    "dep_id": ccost_schema.dump(x[1]) if x[1] else None,
-                    "prj_id": proj_schema.dump(x[2]) if x[2] else None,
-                    "doc": x[0].doc,
-                    "doc_date": MtsiSchema(only=["doc_date"]).dump(x[0])["doc_date"],
-                    "mutasi": mut,
-                }
-            )
-
-        return response(200, "Berhasil", True, final)
+        return response(200, "Berhasil", True, None)
