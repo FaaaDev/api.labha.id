@@ -6490,7 +6490,7 @@ def batch(self):
                         "material": mat,
                         "product": prod,
                         "mesin": msn,
-                    },
+                    } if x[1] else None,
                 }
             )
 
