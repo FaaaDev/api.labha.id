@@ -7424,7 +7424,7 @@ def mutasi_id(self, id):
                 if z["id"]:
                     for y in old_mutasi:
                         if z["id"] == y.id:
-                            if z["id"] and x["prod_id"] and x["qty"] and x["unit_id"]:
+                            if z["id"] and z["prod_id"] and z["qty"] and z["unit_id"]:
                                 y.prod_id = z["prod_id"]
                                 y.unit_id = z["unit_id"]
                                 y.qty = z["qty"]
