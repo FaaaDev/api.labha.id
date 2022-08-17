@@ -6490,7 +6490,9 @@ def batch(self):
                         "material": mat,
                         "product": prod,
                         "mesin": msn,
-                    } if x[1] else None,
+                    }
+                    if x[1]
+                    else None,
                 }
             )
 
@@ -7445,7 +7447,7 @@ def mutasi_id(self, id):
 
             if len(new_mutasi) > 0:
                 db.session.add_all(new_mutasi)
-            
+
             db.session.commit()
 
             UpdateMutasi(x.id, False)
@@ -7467,3 +7469,45 @@ def mutasi_id(self, id):
         db.session.commit()
 
         return response(200, "Berhasil", True, None)
+
+
+@app.route("/v1/api/sto/<int:id>", methods=["GET"])
+@token_required
+def sto_loc(self, id):
+    product = ProdMdb.query.all()
+    sto = StCard.query.filter(and_(StCard.trx_dbcr == "d", StCard.loc_id == id)).all()
+
+    final = []
+    for x in product:
+        hrg_pokok = 0
+        total_sto = 0
+        for y in sto:
+            if x.id == y.prod_id:
+                total_sto += y.trx_qty
+                hrg_pokok += y.trx_hpok
+        
+        if total_sto > 0:
+            final.append({
+                'id': x.id,
+                'code': x.code,
+                'name': x.name,
+                'group': x.group,
+                'type': x.type,
+                'codeb': x.codeb,
+                'unit': x.unit,
+                'suplier': x.suplier,
+                'b_price': x.b_price,
+                's_price': x.s_price,
+                'barcode': x.barcode,
+                'metode': x.metode,
+                'max_stock': x.max_stock,
+                'min_stock': x.min_stock,
+                're_stock': x.re_stock,
+                'lt_stock': x.lt_stock,
+                'max_order': x.max_order,
+                'image': x.image,
+                'stock': total_sto,
+                'hpok': hrg_pokok/total_sto
+            })
+
+    return response(200, "Berhasil", True, final)
