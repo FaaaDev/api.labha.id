@@ -7377,13 +7377,13 @@ def mutasi(self):
                 {
                     "id": x[0].id,
                     "mtsi_code": x[0].mtsi_code,
-                    "mtsi_date": MtsiSchema(only=["mtsi_date"]).dump(x)["mtsi_date"],
+                    "mtsi_date": MtsiSchema(only=["mtsi_date"]).dump(x[0])["mtsi_date"],
                     "loc_from": x[0].loc_from,
                     "loc_to": x[0].loc_to,
                     "dep_id": ccost_schema.dump(x[1]) if x[1] else None,
                     "prj_id": proj_schema.dump(x[2]) if x[2] else None,
                     "doc": x[0].doc,
-                    "doc_date": MtsiSchema(only=["doc_date"]).dump(x)["doc_date"],
+                    "doc_date": MtsiSchema(only=["doc_date"]).dump(x[0])["doc_date"],
                     "mutasi": mut,
                 }
             )
