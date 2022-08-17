@@ -6446,14 +6446,14 @@ def batch(self):
         for x in batch:
             prod = []
             for y in product:
-                if x[2].id == y[0].form_id:
+                if x[2] and x[2].id == y[0].form_id:
                     y[0].prod_id = prod_schema.dump(y[1])
                     y[0].unit_id = unit_schema.dump(y[2])
                     prod.append(fprod_schema.dump(y[0]))
 
             mat = []
             for y in material:
-                if x[2].id == y[0].form_id:
+                if x[2] and x[2].id == y[0].form_id:
                     y[0].prod_id = prod_schema.dump(y[1])
                     y[0].unit_id = unit_schema.dump(y[2])
                     mat.append(fmtrl_schema.dump(y[0]))
