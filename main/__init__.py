@@ -7405,7 +7405,7 @@ def mutasi_id(self, id):
             prj_id = request.json["prj_id"]
             doc = request.json["doc"]
             doc_date = request.json["doc_date"]
-            mutasi = request.json["mutasi"]
+            mt = request.json["mutasi"]
 
             x.mtsi_code = mtsi_code
             x.mtsi_date = mtsi_date
@@ -7420,7 +7420,7 @@ def mutasi_id(self, id):
 
             old_mutasi = MtsiDdb.query.filter(MtsiDdb.mtsi_id == id).all()
             new_mutasi = []
-            for z in mutasi:
+            for z in mt:
                 if z["id"]:
                     for y in old_mutasi:
                         if z["id"] == y.id:
