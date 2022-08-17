@@ -92,6 +92,8 @@ from main.model.retsale_hdb import RetSaleHdb
 from main.model.apcard_mdb import ApCard
 from main.model.transddb import TransDdb
 from main.model.po_sup_ddb import PoSupDdb
+from main.model.memo_ddb import MemoDdb
+from main.model.memo_hdb import MemoHdb
 from main.schema.apcard_mdb import apcard_schema, apcards_schema, APCardSchema
 from main.schema.arcard_mdb import ARCardSchema
 from main.schema.ccost_mdb import ccost_schema, ccosts_schema, CcostSchema
@@ -107,6 +109,8 @@ from main.schema.po_sup_ddb import poSup_schema, poSups_schema, PoSupSchema
 from main.schema.fprdc_hdb import fprdc_schema, fprdcs_schema, FprdcSchema
 from main.schema.fprod_ddb import fprod_schema, fprods_schema, FprodSchema
 from main.schema.fmtrl_ddb import fmtrl_schema, fmtrls_schema, FmtrlSchema
+from main.schema.memo_ddb import mddb_schema, mddbs_schema, MddbSchema
+from main.schema.memo_hdb import mhdb_schema, mhdbs_schema, MhdbSchema
 from main.schema.adm_user_menu import (
     adm_user_menu_schema,
     adm_user_menus_schema,
@@ -7110,4 +7114,185 @@ def approve_bank_id(self, id):
 
         db.session.commit()
     return response(200, "Berhasil", True, None)
+
+
+
+@app.route("/v1/api/memorial", methods=["GET", "POST"])
+@token_required
+def memorial(self):
+    if request.method == "POST":
+        try:
+            code = request.json["code"]
+            date = request.json["date"]
+            desc = request.json["desc"]
+            memo = request.json["memo"]
+
+            m = MemoHdb(code, date, desc)
+
+            db.session.add(m)
+            db.session.commit()
+
+            print(memo)
+            new_memo = []
+            for x in memo:
+                if x["acc_id"] and x["dbcr"] and x["amnt"]:
+                    new_memo.append(
+                        MemoDdb(
+                            m.id,
+                            x["acc_id"],
+                            x["dep_id"],
+                            x["currency"],
+                            x["dbcr"],
+                            x["amnt"],
+                            x["amnh"],
+                            x["desc"],
+                        )
+                    )
+
+            print(len(new_memo))
+            if len(new_memo) > 0:
+                db.session.add_all(new_memo)
+                db.session.commit()
+
+            result = response(200, "Berhasil", True, mhdb_schema.dump(m))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    else:
+        m = MemoHdb.query.order_by(MemoHdb.id.desc()).all()
+
+        memo = (
+            db.session.query(MemoDdb, AccouMdb, CcostMdb, CurrencyMdb)
+            .outerjoin(AccouMdb, AccouMdb.id == MemoDdb.acc_id)
+            .outerjoin(CcostMdb, CcostMdb.id == MemoDdb.dep_id)
+            .outerjoin(CurrencyMdb, CurrencyMdb.id == MemoDdb.currency)
+            .all()
+        )
+
+        final = []
+        for x in m:
+            mm = []
+            for y in memo:
+                if x.id == y[0].mcode:
+                    y[0].acc_id = accou_schema.dump(y[1])
+                    y[0].dep_id = ccost_schema.dump(y[2])
+                    y[0].currency = currency_schema.dump(y[3]) if y[3] else None
+                    mm.append(mddb_schema.dump(y[0]))
+
+            final.append(
+                {
+                    "id": x.id,
+                    "code": x.code,
+                    "date": MhdbSchema(only=["date"]).dump(x)["date"],
+                    "desc": x.desc,
+                    "memo": mm,
+                }
+            )
+
+        return response(200, "Berhasil", True, final)
+
+
+@app.route("/v1/api/memorial/<int:id>", methods=["GET", "PUT", "DELETE"])
+@token_required
+def memorial_id(self, id):
+    x = MemoHdb.query.filter(MemoHdb.id == id).first()
+    if request.method == "PUT":
+        try:
+            code = request.json["code"]
+            date = request.json["date"]
+            desc = request.json["desc"]
+            memo = request.json["memo"]
+
+            x.code = code
+            x.date = date
+            x.desc = desc
+
+            db.session.commit()
+
+            old_memo = MemoDdb.query.filter(MemoDdb.mcode == id).all()
+            new_memo = []
+            for y in old_memo:
+                for z in memo:
+                    if z["id"]:
+                        if z["id"] == y.id:
+                            if (
+                                z["id"]
+                                and z["acc_id"]
+                                and z["dbcr"]
+                                and z["amnt"]
+                            ):
+                                y.acc_id = z["acc_id"]
+                                y.dep_id = z["dep_id"]
+                                y.currency = z["currency"]
+                                y.dbcr = z["dbcr"]
+                                y.amnt = z["amnt"]
+                                y.amnh = z["amnh"]
+                                y.desc = z["desc"]
+
+                    else:
+
+                        if (z["acc_id"] and z["dbcr"] and z["amnt"]):
+                            new_memo.append(
+                                MemoDdb(
+                                    x.id,
+                                    z["acc_id"],
+                                    z["dep_id"],
+                                    z["currency"],
+                                    z["dbcr"],
+                                    z["amnt"],
+                                    z["amnh"],
+                                    z["desc"],
+                                )
+                            )
+
+            if len(new_memo) > 0:
+                db.session.add_all(new_memo)
+
+            db.session.commit()
+
+            result = response(200, "Berhasil", True, mhdb_schema.dump(x))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    elif request.method == "DELETE":
+        old_memo = MemoDdb.query.filter(MemoDdb.mcode == id).all()
+
+        if old_memo:
+            for y in old_memo:
+                db.session.delete(y)
+
+        db.session.delete(x)
+        db.session.commit()
+
+        return response(200, "Berhasil", True, None)
+    else:
+        memo = (
+            db.session.query(MemoDdb, AccouMdb, CcostMdb, CurrencyMdb)
+            .outerjoin(AccouMdb, AccouMdb.id == MemoDdb.acc_id)
+            .outerjoin(CcostMdb, CcostMdb.id == MemoDdb.dep_id)
+            .outerjoin(CurrencyMdb, CurrencyMdb.id == MemoDdb.currency)
+            .all()
+        )
+
+        mm = []
+        for y in memo:
+            if x.id == y[0].mcode:
+                y[0].acc_id = accou_schema.dump(y[1])
+                y[0].dep_id = ccost_schema.dump(y[2])
+                y[0].currency = currency_schema.dump(y[3]) if y[3] else None
+                mm.append(mddb_schema.dump(y[0]))
+
+        final = {
+            "id": x.id,
+            "code": x.code,
+            "date": MhdbSchema(only=["date"]).dump(x)["date"],
+            "desc": x.desc,
+            "memo": mm,
+        }
+
+        return response(200, "Berhasil", True, final)
 
