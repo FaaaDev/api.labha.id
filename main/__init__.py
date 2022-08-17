@@ -7447,7 +7447,7 @@ def mutasi_id(self, id):
             
             db.session.commit()
 
-            UpdateMutasi(mt.id, False)
+            UpdateMutasi(x.id, False)
 
             result = response(200, "Berhasil", True, mtsi_schema.dump(x))
         except IntegrityError:
