@@ -15,6 +15,7 @@ from main.function.update_ap_giro import UpdateApGiro
 from main.function.update_ap_payment import UpdateApPayment
 from main.function.update_ar import UpdateAr
 from main.function.update_batch import updateBatch
+from .function.update_mutasi import UpdateMutasi
 from main.function.update_pembelian import UpdatePembelian
 from main.function.update_rpbb import UpdateRpbb
 from main.function.update_stock import UpdateStock
@@ -7334,6 +7335,8 @@ def mutasi(self):
                 db.session.add_all(new_mutasi)
                 db.session.commit()
 
+            UpdateMutasi(mt.id, False)
+
             result = response(200, "Berhasil", True, mtsi_schema.dump(mt))
         except IntegrityError:
             db.session.rollback()
@@ -7444,6 +7447,8 @@ def mutasi_id(self, id):
             
             db.session.commit()
 
+            UpdateMutasi(mt.id, False)
+
             result = response(200, "Berhasil", True, mtsi_schema.dump(x))
         except IntegrityError:
             db.session.rollback()
@@ -7451,6 +7456,7 @@ def mutasi_id(self, id):
         finally:
             return result
     else:
+        UpdateMutasi(mt.id, True)
         old_mutasi = MtsiDdb.query.filter(MtsiDdb.mtsi_id == id).all()
         if old_mutasi:
             for y in old_mutasi:
