@@ -5051,7 +5051,7 @@ def expense(self):
                     db.session.commit()
                     UpdateApGiro(giro.id)
 
-                if acq_pay and acq_pay != 3:
+                if exps.acq_pay != 3:
                     UpdateApPayment(exps.id, False)
 
             result = response(200, "Berhasil", True, exp_schema.dump(exps))
