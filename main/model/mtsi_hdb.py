@@ -15,7 +15,7 @@ class MtsiHdb(db.Model):
     loc_to = db.Column(db.Integer)
     dep_id = db.Column(db.Integer)
     prj_id = db.Column(db.Integer)
-    doc = db.Column(db.Integer)
+    doc = db.Column(db.String(255))
     doc_date = db.Column(
         db.TIMESTAMP(timezone=False), default=datetime.datetime.utcnow()
     )

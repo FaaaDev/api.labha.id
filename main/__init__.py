@@ -40,6 +40,8 @@ from main.model.hrgbl_mdb import HrgBlMdb
 from main.model.jjasa_ddb import JjasaDdb
 from main.model.jprod_ddb import JprodDdb
 from main.model.msn_mdb import MsnMdb
+from .model.mtsi_ddb import MtsiDdb
+from .model.mtsi_hdb import MtsiHdb
 from main.model.ordpb_hdb import OrdpbHdb
 from main.model.dprod_ddb import DprodDdb
 from main.model.group_prod_mdb import GroupProMdb
@@ -169,6 +171,8 @@ from main.schema.phj_hdb import phj_schema, phjs_schema, PhjSchema
 from main.schema.pbb_hdb import pbb_schema, pbbs_schema, PbbSchema
 from main.schema.pphj_ddb import pphj_schema, pphjs_schema, PphjSchema
 from main.schema.rphj_ddb import rphj_schema, rphjs_schema, RphjSchema
+from main.schema.mtsi_hdb import mtsi_schema, mtsis_schema, MtsiSchema
+from main.schema.mtsi_ddb import mtsiddb_schema, mtsiddbs_schema, MtsiddbSchema
 from main.schema.setup_mdb import *
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import and_, extract, func, or_
@@ -7076,6 +7080,7 @@ def approve_bank(self):
 
     return response(200, "Berhasil", True, final)
 
+
 @app.route("/v1/api/apprv-bnk/<int:id>", methods=["GET"])
 @token_required
 def approve_bank_id(self, id):
@@ -7114,7 +7119,6 @@ def approve_bank_id(self, id):
 
         db.session.commit()
     return response(200, "Berhasil", True, None)
-
 
 
 @app.route("/v1/api/memorial", methods=["GET", "POST"])
@@ -7217,12 +7221,7 @@ def memorial_id(self, id):
                 for z in memo:
                     if z["id"]:
                         if z["id"] == y.id:
-                            if (
-                                z["id"]
-                                and z["acc_id"]
-                                and z["dbcr"]
-                                and z["amnt"]
-                            ):
+                            if z["id"] and z["acc_id"] and z["dbcr"] and z["amnt"]:
                                 y.acc_id = z["acc_id"]
                                 y.dep_id = z["dep_id"]
                                 y.currency = z["currency"]
@@ -7233,7 +7232,7 @@ def memorial_id(self, id):
 
                     else:
 
-                        if (z["acc_id"] and z["dbcr"] and z["amnt"]):
+                        if z["acc_id"] and z["dbcr"] and z["amnt"]:
                             new_memo.append(
                                 MemoDdb(
                                     x.id,
@@ -7296,3 +7295,97 @@ def memorial_id(self, id):
 
         return response(200, "Berhasil", True, final)
 
+
+@app.route("/v1/api/mutasi", methods=["GET", "POST"])
+@token_required
+def mutasi(self):
+    if request.method == "POST":
+        try:
+            mtsi_code = request.json["mtsi_code"]
+            mtsi_date = request.json["mtsi_date"]
+            loc_from = request.json["loc_from"]
+            loc_to = request.json["loc_to"]
+            dep_id = request.json["dep_id"]
+            prj_id = request.json["prj_id"]
+            doc = request.json["doc"]
+            doc_date = request.json["doc_date"]
+            mutasi = request.json["mutasi"]
+
+            mt = MtsiHdb(
+                mtsi_code, mtsi_date, loc_from, loc_to, dep_id, prj_id, doc, doc_date
+            )
+
+            db.session.add(mt)
+            db.session.commit()
+
+            new_mutasi = []
+            for x in mutasi:
+                if x["prod_id"] and x["qty"] and x["unit_id"]:
+                    new_mutasi.append(
+                        MtsiDdb(
+                            mt.id,
+                            x["prod_id"],
+                            x["unit_id"],
+                            x["qty"],
+                        )
+                    )
+
+            if len(new_mutasi) > 0:
+                db.session.add_all(new_mutasi)
+                db.session.commit()
+
+            result = response(200, "Berhasil", True, mtsi_schema.dump(mt))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    else:
+        mt = (
+            db.session.query(MtsiHdb, CcostMdb, ProjMdb)
+            .outerjoin(CcostMdb, CcostMdb.id == MtsiHdb.dep_id)
+            .outerjoin(ProjMdb, ProjMdb.id == MtsiHdb.prj_id)
+            .all()
+        )
+
+        mts = (
+            db.session.query(MtsiDdb, ProdMdb, UnitMdb)
+            .outerjoin(ProdMdb, ProdMdb.id == MtsiDdb.prod_id)
+            .outerjoin(UnitMdb, UnitMdb.id == MtsiDdb.unit_id)
+            .all()
+        )
+
+        loc = LocationMdb.query.all()
+
+        final = []
+        for x in mt:
+            mut = []
+            for y in mts:
+                if x[0].id == y[0].mtsi_id:
+                    y[0].prod_id = prod_schema.dump(y[1])
+                    y[0].unit_id = unit_schema.dump(y[2])
+                    mut.append(mtsiddb_schema.dump(y[0]))
+            
+            for y in loc:
+                if x[0].loc_from == y.id:
+                    x[0].loc_from = loct_schema.dump(y)
+
+                if x[0].loc_to == y.id:
+                    x[0].loc_to = loct_schema.dump(y)
+
+            final.append(
+                {
+                    "id": x[0].id,
+                    "mtsi_code": x[0].mtsi_code,
+                    "mtsi_date": MtsiSchema(only=["mtsi_date"]).dump(x)["mtsi_date"],
+                    "loc_from": x[0].loc_from,
+                    "loc_to": x[0].loc_to,
+                    "dep_id": ccost_schema.dump(x[1]) if x[1] else None,
+                    "prj_id": proj_schema.dump(x[2]) if x[2] else None,
+                    "doc": x[0].doc,
+                    "doc_date": MtsiSchema(only=["doc_date"]).dump(x)["doc_date"],
+                    "mutasi": mut,
+                }
+            )
+
+        return response(200, "Berhasil", True, final)
