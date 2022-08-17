@@ -19,7 +19,7 @@ class UpdateMutasi:
     def __init__(self, mtsi_id, delete):
         mtsi = MtsiHdb.query.filter(MtsiHdb.id == mtsi_id).first()
 
-        product = MtsiDdb.query.filter(MtsiDdb.id == mtsi_id).all()
+        product = MtsiDdb.query.filter(MtsiDdb.mtsi_id == mtsi_id).all()
 
         sto = StCard.query.filter(
             and_(StCard.trx_dbcr == "d", StCard.loc_id == mtsi.loc_from)
