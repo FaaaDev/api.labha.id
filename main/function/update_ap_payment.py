@@ -110,11 +110,11 @@ class UpdateApPayment():
                 for x in exps:
                     total += x.value
                     trans_exp.append(TransDdb(exp.exp_code, exp.exp_date, x.acc_code, None, None,
-                                    None, None, None, None, x.value, "K", "JURNAL PENGELUARAN %s"%(exp.exp_code), None, None))
+                                    None, None, None, None, x.value, "D", "JURNAL PENGELUARAN %s"%(exp.exp_code), None, None))
                     
                 # insert jurnal ap
                 trans_sup = TransDdb(exp.exp_code, exp.exp_date, exp.exp_acc, None, None,
-                                    None, None, None, None, total, "D", "JURNAL PENGELUARAN %s"%(exp.exp_code), None, None)
+                                    None, None, None, None, total, "K", "JURNAL PENGELUARAN %s"%(exp.exp_code), None, None)
 
                 
 
