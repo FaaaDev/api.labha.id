@@ -5061,7 +5061,7 @@ def expense(self):
                     db.session.commit()
                     UpdateApGiro(giro.id)
 
-                # if acq_pay and acq_pay != 3:
+                    # if acq_pay and acq_pay != 3:
                     UpdateApPayment(exps.id, False)
 
             result = response(200, "Berhasil", True, exp_schema.dump(exps))
@@ -7162,6 +7162,37 @@ def memorial(self):
                 db.session.add_all(new_memo)
                 db.session.commit()
 
+                old_trans = TransDdb.query.filter(TransDdb.trx_code == m.code).all()
+                if old_trans:
+                    for x in old_trans:
+                        db.session.delete(x)
+                        db.session.commit()
+
+                all_trans = []
+                for x in new_memo:
+                    all_trans.append(
+                        TransDdb(
+                            m.code,
+                            m.date,
+                            x.acc_id,
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                            x.amnt,
+                            "D" if x.dbcr == "d" else "K",
+                            "JURNAL MEMORIAL %s" % (m.code),
+                            None,
+                            None,
+                        )
+                    )
+
+                    if len(all_trans) > 0:
+                        db.session.add_all(all_trans)
+                        db.session.commit()
+
             result = response(200, "Berhasil", True, mhdb_schema.dump(m))
         except IntegrityError:
             db.session.rollback()
@@ -7255,6 +7286,38 @@ def memorial_id(self, id):
 
             db.session.commit()
 
+            new_memo = MemoDdb.query.filter(MemoDdb.mcode == id).all()
+            old_trans = TransDdb.query.filter(TransDdb.trx_code == x.code).all()
+            if old_trans:
+                for y in old_trans:
+                    db.session.delete(y)
+                    db.session.commit()
+
+            all_trans = []
+            for y in new_memo:
+                all_trans.append(
+                    TransDdb(
+                        x.code,
+                        x.date,
+                        y.acc_id,
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                        y.amnt,
+                        "D" if y.dbcr == "d" else "K",
+                        "JURNAL MEMORIAL %s" % (x.code),
+                        None,
+                        None,
+                    )
+                )
+
+            if len(all_trans) > 0:
+                db.session.add_all(all_trans)
+                db.session.commit()
+
             result = response(200, "Berhasil", True, mhdb_schema.dump(x))
         except IntegrityError:
             db.session.rollback()
@@ -7262,6 +7325,11 @@ def memorial_id(self, id):
         finally:
             return result
     elif request.method == "DELETE":
+        old_trans = TransDdb.query.filter(TransDdb.trx_code == x.code).all()
+        if old_trans:
+            for y in old_trans:
+                db.session.delete(y)
+                db.session.commit()
         old_memo = MemoDdb.query.filter(MemoDdb.mcode == id).all()
 
         if old_memo:
@@ -7486,29 +7554,31 @@ def sto_loc(self, id):
             if x.id == y.prod_id:
                 total_sto += y.trx_qty
                 hrg_pokok += y.trx_hpok
-        
+
         if total_sto > 0:
-            final.append({
-                'id': x.id,
-                'code': x.code,
-                'name': x.name,
-                'group': x.group,
-                'type': x.type,
-                'codeb': x.codeb,
-                'unit': x.unit,
-                'suplier': x.suplier,
-                'b_price': x.b_price,
-                's_price': x.s_price,
-                'barcode': x.barcode,
-                'metode': x.metode,
-                'max_stock': x.max_stock,
-                'min_stock': x.min_stock,
-                're_stock': x.re_stock,
-                'lt_stock': x.lt_stock,
-                'max_order': x.max_order,
-                'image': x.image,
-                'stock': total_sto,
-                'hpok': hrg_pokok/total_sto
-            })
+            final.append(
+                {
+                    "id": x.id,
+                    "code": x.code,
+                    "name": x.name,
+                    "group": x.group,
+                    "type": x.type,
+                    "codeb": x.codeb,
+                    "unit": x.unit,
+                    "suplier": x.suplier,
+                    "b_price": x.b_price,
+                    "s_price": x.s_price,
+                    "barcode": x.barcode,
+                    "metode": x.metode,
+                    "max_stock": x.max_stock,
+                    "min_stock": x.min_stock,
+                    "re_stock": x.re_stock,
+                    "lt_stock": x.lt_stock,
+                    "max_order": x.max_order,
+                    "image": x.image,
+                    "stock": total_sto,
+                    "hpok": hrg_pokok / total_sto,
+                }
+            )
 
     return response(200, "Berhasil", True, final)
