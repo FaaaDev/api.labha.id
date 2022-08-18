@@ -5036,6 +5036,7 @@ def expense(self):
             db.session.commit()
 
             if company and not company[1].appr_payment:
+                print("HEHEH")
                 if acq_pay and acq_pay == 3:
                     giro = GiroHdb(
                         giro_date,
@@ -5051,8 +5052,8 @@ def expense(self):
                     db.session.commit()
                     UpdateApGiro(giro.id)
 
-                if acq_pay and acq_pay != 3:
-                    UpdateApPayment(exps.id, False)
+                # if acq_pay and acq_pay != 3:
+                UpdateApPayment(exps.id, False)
 
             result = response(200, "Berhasil", True, exp_schema.dump(exps))
         except IntegrityError:
@@ -7103,8 +7104,8 @@ def approve_bank_id(self, id):
             db.session.commit()
             UpdateApGiro(giro.id)
 
-        if exps.acq_pay != 3:
-            UpdateApPayment(exps.id, False)
+        # if exps.acq_pay != 3:
+        UpdateApPayment(exps.id, False)
 
         exps.approve = True
 
