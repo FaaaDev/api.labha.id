@@ -15,6 +15,7 @@ from main.function.update_ap_giro import UpdateApGiro
 from main.function.update_ap_payment import UpdateApPayment
 from main.function.update_ar import UpdateAr
 from main.function.update_batch import updateBatch
+from .function.update_mutasi import UpdateMutasi
 from main.function.update_pembelian import UpdatePembelian
 from main.function.update_rpbb import UpdateRpbb
 from main.function.update_stock import UpdateStock
@@ -40,6 +41,8 @@ from main.model.hrgbl_mdb import HrgBlMdb
 from main.model.jjasa_ddb import JjasaDdb
 from main.model.jprod_ddb import JprodDdb
 from main.model.msn_mdb import MsnMdb
+from .model.mtsi_ddb import MtsiDdb
+from .model.mtsi_hdb import MtsiHdb
 from main.model.ordpb_hdb import OrdpbHdb
 from main.model.dprod_ddb import DprodDdb
 from main.model.group_prod_mdb import GroupProMdb
@@ -92,6 +95,8 @@ from main.model.retsale_hdb import RetSaleHdb
 from main.model.apcard_mdb import ApCard
 from main.model.transddb import TransDdb
 from main.model.po_sup_ddb import PoSupDdb
+from main.model.memo_ddb import MemoDdb
+from main.model.memo_hdb import MemoHdb
 from main.schema.apcard_mdb import apcard_schema, apcards_schema, APCardSchema
 from main.schema.arcard_mdb import ARCardSchema
 from main.schema.ccost_mdb import ccost_schema, ccosts_schema, CcostSchema
@@ -107,6 +112,8 @@ from main.schema.po_sup_ddb import poSup_schema, poSups_schema, PoSupSchema
 from main.schema.fprdc_hdb import fprdc_schema, fprdcs_schema, FprdcSchema
 from main.schema.fprod_ddb import fprod_schema, fprods_schema, FprodSchema
 from main.schema.fmtrl_ddb import fmtrl_schema, fmtrls_schema, FmtrlSchema
+from main.schema.memo_ddb import mddb_schema, mddbs_schema, MddbSchema
+from main.schema.memo_hdb import mhdb_schema, mhdbs_schema, MhdbSchema
 from main.schema.adm_user_menu import (
     adm_user_menu_schema,
     adm_user_menus_schema,
@@ -165,6 +172,8 @@ from main.schema.phj_hdb import phj_schema, phjs_schema, PhjSchema
 from main.schema.pbb_hdb import pbb_schema, pbbs_schema, PbbSchema
 from main.schema.pphj_ddb import pphj_schema, pphjs_schema, PphjSchema
 from main.schema.rphj_ddb import rphj_schema, rphjs_schema, RphjSchema
+from main.schema.mtsi_hdb import mtsi_schema, mtsis_schema, MtsiSchema
+from main.schema.mtsi_ddb import mtsiddb_schema, mtsiddbs_schema, MtsiddbSchema
 from main.schema.setup_mdb import *
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import and_, extract, func, or_
@@ -5053,7 +5062,7 @@ def expense(self):
                     UpdateApGiro(giro.id)
 
                 # if acq_pay and acq_pay != 3:
-                UpdateApPayment(exps.id, False)
+                    UpdateApPayment(exps.id, False)
 
             result = response(200, "Berhasil", True, exp_schema.dump(exps))
         except IntegrityError:
@@ -6438,21 +6447,21 @@ def batch(self):
         for x in batch:
             prod = []
             for y in product:
-                if x[2].id == y[0].form_id:
+                if x[2] and x[2].id == y[0].form_id:
                     y[0].prod_id = prod_schema.dump(y[1])
                     y[0].unit_id = unit_schema.dump(y[2])
                     prod.append(fprod_schema.dump(y[0]))
 
             mat = []
             for y in material:
-                if x[2].id == y[0].form_id:
+                if x[2] and x[2].id == y[0].form_id:
                     y[0].prod_id = prod_schema.dump(y[1])
                     y[0].unit_id = unit_schema.dump(y[2])
                     mat.append(fmtrl_schema.dump(y[0]))
 
             msn = []
             for y in mesin:
-                if x[1].id == y[0].pl_id:
+                if x[1] and x[1].id == y[0].pl_id:
                     y[0].mch_id = msn_schema.dump(y[1])
                     msn.append(plmch_schema.dump(y[0]))
 
@@ -6482,7 +6491,9 @@ def batch(self):
                         "material": mat,
                         "product": prod,
                         "mesin": msn,
-                    },
+                    }
+                    if x[1]
+                    else None,
                 }
             )
 
@@ -7073,6 +7084,7 @@ def approve_bank(self):
 
     return response(200, "Berhasil", True, final)
 
+
 @app.route("/v1/api/apprv-bnk/<int:id>", methods=["GET"])
 @token_required
 def approve_bank_id(self, id):
@@ -7112,3 +7124,391 @@ def approve_bank_id(self, id):
         db.session.commit()
     return response(200, "Berhasil", True, None)
 
+
+@app.route("/v1/api/memorial", methods=["GET", "POST"])
+@token_required
+def memorial(self):
+    if request.method == "POST":
+        try:
+            code = request.json["code"]
+            date = request.json["date"]
+            desc = request.json["desc"]
+            memo = request.json["memo"]
+
+            m = MemoHdb(code, date, desc)
+
+            db.session.add(m)
+            db.session.commit()
+
+            print(memo)
+            new_memo = []
+            for x in memo:
+                if x["acc_id"] and x["dbcr"] and x["amnt"]:
+                    new_memo.append(
+                        MemoDdb(
+                            m.id,
+                            x["acc_id"],
+                            x["dep_id"],
+                            x["currency"],
+                            x["dbcr"],
+                            x["amnt"],
+                            x["amnh"],
+                            x["desc"],
+                        )
+                    )
+
+            print(len(new_memo))
+            if len(new_memo) > 0:
+                db.session.add_all(new_memo)
+                db.session.commit()
+
+            result = response(200, "Berhasil", True, mhdb_schema.dump(m))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    else:
+        m = MemoHdb.query.order_by(MemoHdb.id.desc()).all()
+
+        memo = (
+            db.session.query(MemoDdb, AccouMdb, CcostMdb, CurrencyMdb)
+            .outerjoin(AccouMdb, AccouMdb.id == MemoDdb.acc_id)
+            .outerjoin(CcostMdb, CcostMdb.id == MemoDdb.dep_id)
+            .outerjoin(CurrencyMdb, CurrencyMdb.id == MemoDdb.currency)
+            .all()
+        )
+
+        final = []
+        for x in m:
+            mm = []
+            for y in memo:
+                if x.id == y[0].mcode:
+                    y[0].acc_id = accou_schema.dump(y[1])
+                    y[0].dep_id = ccost_schema.dump(y[2])
+                    y[0].currency = currency_schema.dump(y[3]) if y[3] else None
+                    mm.append(mddb_schema.dump(y[0]))
+
+            final.append(
+                {
+                    "id": x.id,
+                    "code": x.code,
+                    "date": MhdbSchema(only=["date"]).dump(x)["date"],
+                    "desc": x.desc,
+                    "memo": mm,
+                }
+            )
+
+        return response(200, "Berhasil", True, final)
+
+
+@app.route("/v1/api/memorial/<int:id>", methods=["GET", "PUT", "DELETE"])
+@token_required
+def memorial_id(self, id):
+    x = MemoHdb.query.filter(MemoHdb.id == id).first()
+    if request.method == "PUT":
+        try:
+            code = request.json["code"]
+            date = request.json["date"]
+            desc = request.json["desc"]
+            memo = request.json["memo"]
+
+            x.code = code
+            x.date = date
+            x.desc = desc
+
+            db.session.commit()
+
+            old_memo = MemoDdb.query.filter(MemoDdb.mcode == id).all()
+            new_memo = []
+            for y in old_memo:
+                for z in memo:
+                    if z["id"]:
+                        if z["id"] == y.id:
+                            if z["id"] and z["acc_id"] and z["dbcr"] and z["amnt"]:
+                                y.acc_id = z["acc_id"]
+                                y.dep_id = z["dep_id"]
+                                y.currency = z["currency"]
+                                y.dbcr = z["dbcr"]
+                                y.amnt = z["amnt"]
+                                y.amnh = z["amnh"]
+                                y.desc = z["desc"]
+
+                    else:
+
+                        if z["acc_id"] and z["dbcr"] and z["amnt"]:
+                            new_memo.append(
+                                MemoDdb(
+                                    x.id,
+                                    z["acc_id"],
+                                    z["dep_id"],
+                                    z["currency"],
+                                    z["dbcr"],
+                                    z["amnt"],
+                                    z["amnh"],
+                                    z["desc"],
+                                )
+                            )
+
+            if len(new_memo) > 0:
+                db.session.add_all(new_memo)
+
+            db.session.commit()
+
+            result = response(200, "Berhasil", True, mhdb_schema.dump(x))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    elif request.method == "DELETE":
+        old_memo = MemoDdb.query.filter(MemoDdb.mcode == id).all()
+
+        if old_memo:
+            for y in old_memo:
+                db.session.delete(y)
+
+        db.session.delete(x)
+        db.session.commit()
+
+        return response(200, "Berhasil", True, None)
+    else:
+        memo = (
+            db.session.query(MemoDdb, AccouMdb, CcostMdb, CurrencyMdb)
+            .outerjoin(AccouMdb, AccouMdb.id == MemoDdb.acc_id)
+            .outerjoin(CcostMdb, CcostMdb.id == MemoDdb.dep_id)
+            .outerjoin(CurrencyMdb, CurrencyMdb.id == MemoDdb.currency)
+            .all()
+        )
+
+        mm = []
+        for y in memo:
+            if x.id == y[0].mcode:
+                y[0].acc_id = accou_schema.dump(y[1])
+                y[0].dep_id = ccost_schema.dump(y[2])
+                y[0].currency = currency_schema.dump(y[3]) if y[3] else None
+                mm.append(mddb_schema.dump(y[0]))
+
+        final = {
+            "id": x.id,
+            "code": x.code,
+            "date": MhdbSchema(only=["date"]).dump(x)["date"],
+            "desc": x.desc,
+            "memo": mm,
+        }
+
+        return response(200, "Berhasil", True, final)
+
+
+@app.route("/v1/api/mutasi", methods=["GET", "POST"])
+@token_required
+def mutasi(self):
+    if request.method == "POST":
+        try:
+            mtsi_code = request.json["mtsi_code"]
+            mtsi_date = request.json["mtsi_date"]
+            loc_from = request.json["loc_from"]
+            loc_to = request.json["loc_to"]
+            dep_id = request.json["dep_id"]
+            prj_id = request.json["prj_id"]
+            doc = request.json["doc"]
+            doc_date = request.json["doc_date"]
+            mutasi = request.json["mutasi"]
+
+            mt = MtsiHdb(
+                mtsi_code, mtsi_date, loc_from, loc_to, dep_id, prj_id, doc, doc_date
+            )
+
+            db.session.add(mt)
+            db.session.commit()
+
+            new_mutasi = []
+            for x in mutasi:
+                if x["prod_id"] and x["qty"] and x["unit_id"]:
+                    new_mutasi.append(
+                        MtsiDdb(
+                            mt.id,
+                            x["prod_id"],
+                            x["unit_id"],
+                            x["qty"],
+                        )
+                    )
+
+            if len(new_mutasi) > 0:
+                db.session.add_all(new_mutasi)
+                db.session.commit()
+
+            UpdateMutasi(mt.id, False)
+
+            result = response(200, "Berhasil", True, mtsi_schema.dump(mt))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    else:
+        mt = (
+            db.session.query(MtsiHdb, CcostMdb, ProjMdb)
+            .outerjoin(CcostMdb, CcostMdb.id == MtsiHdb.dep_id)
+            .outerjoin(ProjMdb, ProjMdb.id == MtsiHdb.prj_id)
+            .order_by(MtsiHdb.id.desc())
+            .all()
+        )
+
+        mts = (
+            db.session.query(MtsiDdb, ProdMdb, UnitMdb)
+            .outerjoin(ProdMdb, ProdMdb.id == MtsiDdb.prod_id)
+            .outerjoin(UnitMdb, UnitMdb.id == MtsiDdb.unit_id)
+            .all()
+        )
+
+        loc = LocationMdb.query.all()
+
+        final = []
+        for x in mt:
+            mut = []
+            for y in mts:
+                if x[0].id == y[0].mtsi_id:
+                    y[0].prod_id = prod_schema.dump(y[1])
+                    y[0].unit_id = unit_schema.dump(y[2])
+                    mut.append(mtsiddb_schema.dump(y[0]))
+
+            for y in loc:
+                if x[0].loc_from == y.id:
+                    x[0].loc_from = loct_schema.dump(y)
+
+                if x[0].loc_to == y.id:
+                    x[0].loc_to = loct_schema.dump(y)
+
+            final.append(
+                {
+                    "id": x[0].id,
+                    "mtsi_code": x[0].mtsi_code,
+                    "mtsi_date": MtsiSchema(only=["mtsi_date"]).dump(x[0])["mtsi_date"],
+                    "loc_from": x[0].loc_from,
+                    "loc_to": x[0].loc_to,
+                    "dep_id": ccost_schema.dump(x[1]) if x[1] else None,
+                    "prj_id": proj_schema.dump(x[2]) if x[2] else None,
+                    "doc": x[0].doc,
+                    "doc_date": MtsiSchema(only=["doc_date"]).dump(x[0])["doc_date"],
+                    "mutasi": mut,
+                }
+            )
+
+        return response(200, "Berhasil", True, final)
+
+
+@app.route("/v1/api/mutasi/<int:id>", methods=["PUT", "DELETE"])
+@token_required
+def mutasi_id(self, id):
+    x = MtsiHdb.query.filter(MtsiHdb.id == id).first()
+    if request.method == "PUT":
+        try:
+            mtsi_code = request.json["mtsi_code"]
+            mtsi_date = request.json["mtsi_date"]
+            loc_from = request.json["loc_from"]
+            loc_to = request.json["loc_to"]
+            dep_id = request.json["dep_id"]
+            prj_id = request.json["prj_id"]
+            doc = request.json["doc"]
+            doc_date = request.json["doc_date"]
+            mt = request.json["mutasi"]
+
+            x.mtsi_code = mtsi_code
+            x.mtsi_date = mtsi_date
+            x.loc_from = loc_from
+            x.loc_to = loc_to
+            x.dep_id = dep_id
+            x.prj_id = prj_id
+            x.doc = doc
+            x.doc_date = doc_date
+
+            db.session.commit()
+
+            old_mutasi = MtsiDdb.query.filter(MtsiDdb.mtsi_id == id).all()
+            new_mutasi = []
+            for z in mt:
+                if z["id"]:
+                    for y in old_mutasi:
+                        if z["id"] == y.id:
+                            if z["id"] and z["prod_id"] and z["qty"] and z["unit_id"]:
+                                y.prod_id = z["prod_id"]
+                                y.unit_id = z["unit_id"]
+                                y.qty = z["qty"]
+                else:
+                    if x["prod_id"] and x["qty"] and x["unit_id"]:
+                        new_mutasi.append(
+                            MtsiDdb(
+                                x.id,
+                                x["prod_id"],
+                                x["unit_id"],
+                                x["qty"],
+                            )
+                        )
+
+            if len(new_mutasi) > 0:
+                db.session.add_all(new_mutasi)
+
+            db.session.commit()
+
+            UpdateMutasi(x.id, False)
+
+            result = response(200, "Berhasil", True, mtsi_schema.dump(x))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    else:
+        UpdateMutasi(mt.id, True)
+        old_mutasi = MtsiDdb.query.filter(MtsiDdb.mtsi_id == id).all()
+        if old_mutasi:
+            for y in old_mutasi:
+                db.session.delete(y)
+
+        db.session.delete(x)
+        db.session.commit()
+
+        return response(200, "Berhasil", True, None)
+
+
+@app.route("/v1/api/sto/<int:id>", methods=["GET"])
+@token_required
+def sto_loc(self, id):
+    product = ProdMdb.query.all()
+    sto = StCard.query.filter(and_(StCard.trx_dbcr == "d", StCard.loc_id == id)).all()
+
+    final = []
+    for x in product:
+        hrg_pokok = 0
+        total_sto = 0
+        for y in sto:
+            if x.id == y.prod_id:
+                total_sto += y.trx_qty
+                hrg_pokok += y.trx_hpok
+        
+        if total_sto > 0:
+            final.append({
+                'id': x.id,
+                'code': x.code,
+                'name': x.name,
+                'group': x.group,
+                'type': x.type,
+                'codeb': x.codeb,
+                'unit': x.unit,
+                'suplier': x.suplier,
+                'b_price': x.b_price,
+                's_price': x.s_price,
+                'barcode': x.barcode,
+                'metode': x.metode,
+                'max_stock': x.max_stock,
+                'min_stock': x.min_stock,
+                're_stock': x.re_stock,
+                'lt_stock': x.lt_stock,
+                'max_order': x.max_order,
+                'image': x.image,
+                'stock': total_sto,
+                'hpok': hrg_pokok/total_sto
+            })
+
+    return response(200, "Berhasil", True, final)
