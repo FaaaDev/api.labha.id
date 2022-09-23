@@ -7582,3 +7582,52 @@ def sto_loc(self, id):
             )
 
     return response(200, "Berhasil", True, final)
+
+
+@app.route("/v1/api/sto", methods=["GET"])
+@token_required
+def sto(self):
+    product = ProdMdb.query.all()
+    sto = StCard.query.filter(and_(StCard.trx_dbcr == "d")).all()
+
+    loc = LocationMdb.query.all()
+
+    final = []
+    for z in loc:
+        for x in product:
+            hrg_pokok = 0
+            total_sto = 0
+            for y in sto:
+                if z.id == y.loc_id:
+                    if x.id == y.prod_id:
+                        total_sto += y.trx_qty
+                        hrg_pokok += y.trx_hpok
+
+            if total_sto > 0:
+                final.append(
+                    {
+                        "id": x.id,
+                        "code": x.code,
+                        "name": x.name,
+                        "group": x.group,
+                        "type": x.type,
+                        "codeb": x.codeb,
+                        "unit": x.unit,
+                        "suplier": x.suplier,
+                        "b_price": x.b_price,
+                        "s_price": x.s_price,
+                        "barcode": x.barcode,
+                        "metode": x.metode,
+                        "max_stock": x.max_stock,
+                        "min_stock": x.min_stock,
+                        "re_stock": x.re_stock,
+                        "lt_stock": x.lt_stock,
+                        "max_order": x.max_order,
+                        "image": x.image,
+                        "stock": total_sto,
+                        "hpok": hrg_pokok / total_sto,
+                        "loc_id": z.id,
+                    }
+                )
+
+    return response(200, "Berhasil", True, final)
