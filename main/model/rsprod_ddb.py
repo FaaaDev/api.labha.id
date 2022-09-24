@@ -2,9 +2,9 @@ from enum import unique
 from main.shared.shared import db
 
 
-class ReprodDdb(db.Model):
+class RsprodDdb(db.Model):
     __table_args__ = {'schema': 'AP'}
-    __tablename__ = 'REPRODDDB'
+    __tablename__ = 'RSPRODDDB'
 
     id = db.Column(db.Integer, primary_key=True)
     ret_id = db.Column(db.Integer)

@@ -195,7 +195,7 @@ class UpdateAr:
                 None,
                 None,
                 None,
-                None,
+                product[0].location,
                 None,
             )
 

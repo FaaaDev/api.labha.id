@@ -11,6 +11,10 @@ from datetime import datetime
 from flask import Flask, redirect, request, url_for, jsonify, make_response
 import requests
 from main.function.delete_ap_payment import DeleteApPayment
+from main.function.retur_order.retur_id import ReturOrderId
+from main.function.retur_order.retur_order import ReturOrder
+from main.function.retur_sales.retur_id import ReturSaleId
+from main.function.retur_sales.retur_sales import ReturSale
 from main.function.update_ap_giro import UpdateApGiro
 from main.function.update_ap_payment import UpdateApPayment
 from main.function.update_ar import UpdateAr
@@ -97,6 +101,10 @@ from main.model.transddb import TransDdb
 from main.model.po_sup_ddb import PoSupDdb
 from main.model.memo_ddb import MemoDdb
 from main.model.memo_hdb import MemoHdb
+from main.model.neraca_mdb import NeracaMdb
+from main.model.pnl_mdb import PnlMdb
+from main.schema.pnl_mdb import pnl_schema, pnls_schema, PnlSchema
+from main.schema.neraca_mdb import neraca_schema, neracas_schema, NeracaSchema
 from main.schema.apcard_mdb import apcard_schema, apcards_schema, APCardSchema
 from main.schema.arcard_mdb import ARCardSchema
 from main.schema.ccost_mdb import ccost_schema, ccosts_schema, CcostSchema
@@ -480,7 +488,7 @@ def kategory(self):
         name = request.json["name"]
         kode_klasi = request.json["kode_klasi"]
         kode_saldo = request.json["kode_saldo"]
-        kategory = KategMdb(name, kode_klasi, kode_saldo)
+        kategory = KategMdb(name, kode_klasi, kode_saldo, False)
         db.session.add(kategory)
         db.session.commit()
 
@@ -534,6 +542,38 @@ def kategory_id(self, id):
         }
 
         return response(200, "Berhasil", True, data)
+
+
+@app.route("/v1/api/import/kategori", methods=["POST"])
+@token_required
+def kateg_import(self):
+    kateg = request.json["kateg"]
+
+    db.session.query(KategMdb).delete()
+    db.session.commit()
+
+    for x in kateg:
+        id = x["id"]
+        name = x["name"]
+        kode_klasi = x["kode_klasi"]
+        kode_saldo = x["kode_saldo"]
+
+        try:
+
+            a = KategMdb(
+                id,
+                name,
+                kode_klasi,
+                kode_saldo,
+                True
+            )
+            db.session.add(a)
+            db.session.commit()
+
+        except IntegrityError:
+            db.session.rollback()
+
+    return response(200, "Berhasil", True, None)
 
 
 @app.route("/v1/api/account/u/<int:kat_id>", methods=["GET"])
@@ -644,6 +684,172 @@ def account(self):
         ]
 
         return response(200, "Berhasil", True, data)
+
+
+@app.route("/v1/api/import/account", methods=["POST"])
+@token_required
+def account_import(self):
+    umum = request.json["umum"]
+    detail = request.json["detail"]
+
+    # db.session.query(AccouMdb).delete()
+    db.session.execute('TRUNCATE TABLE master. "' + "ACCOUMDB" + '" RESTART IDENTITY')
+    db.session.commit()
+
+    index_umum = 0
+    index_detail = 0
+
+    for x in umum:
+        acc_name = x["acc_name"]
+        umm_code = x["kode_umum"]
+        kat_code = x["kode_kategori"]
+        dou_type = x["du"]
+        sld_type = x["kode_saldo"]
+        connect = x["terhubung"]
+        sld_awal = x["saldo_awal"]
+
+        index_umum += 1
+
+        try:
+            kategory = (
+                db.session.query(KategMdb, KlasiMdb)
+                .outerjoin(KlasiMdb, KategMdb.kode_klasi == KlasiMdb.id)
+                .order_by(KategMdb.id.asc())
+                .filter(KategMdb.id == kat_code)
+                .first()
+            )
+
+            key = str(kategory[1].id) + "." + str(kat_code)
+            last_acc = (
+                AccouMdb.query.filter(
+                    and_(
+                        AccouMdb.acc_code.like("%{}%".format(key)),
+                        AccouMdb.dou_type == "U",
+                    )
+                )
+                .order_by(AccouMdb.acc_code.desc())
+                .first()
+            )
+
+            if last_acc != None:
+                next_code = (
+                    str(kategory[1].id)
+                    + "."
+                    + str(
+                        int(last_acc.acc_code.replace(str(kategory[1].id) + ".", ""))
+                        + 1
+                    )
+                )
+            else:
+                next_code = str(kategory[1].id) + "." + str(kat_code) + "0001"
+
+            a = AccouMdb(
+                next_code,
+                acc_name,
+                umm_code,
+                kat_code,
+                dou_type,
+                sld_type,
+                connect,
+                sld_awal,
+            )
+            db.session.add(a)
+            db.session.commit()
+            # print("UMUM ADDED")
+
+        except IntegrityError:
+            db.session.rollback()
+            print("Err Umum %s" % (index_umum))
+
+    for x in detail:
+        acc_name = x["acc_name"]
+        umm_code = x["kode_umum"]
+        kat_code = x["kode_kategori"]
+        dou_type = x["du"]
+        sld_type = x["kode_saldo"]
+        connect = x["terhubung"]
+        sld_awal = x["saldo_awal"]
+
+        index_detail += 1
+        try:
+            if umm_code:
+                last_acc = (
+                    AccouMdb.query.filter(AccouMdb.umm_code == umm_code)
+                    .order_by(AccouMdb.acc_code.desc())
+                    .first()
+                )
+
+                if last_acc != None:
+                    next_code = (
+                        umm_code
+                        + "."
+                        + str(int(last_acc.acc_code.replace(umm_code + ".", "")) + 1)
+                    )
+                else:
+                    next_code = umm_code + "." + "1"
+            else:
+                kategory = (
+                    db.session.query(KategMdb, KlasiMdb)
+                    .outerjoin(KlasiMdb, KategMdb.kode_klasi == KlasiMdb.id)
+                    .order_by(KategMdb.id.asc())
+                    .filter(KategMdb.id == kat_code)
+                    .first()
+                )
+
+                key = str(kategory[1].id) + "." + str(kat_code)
+                last_acc = (
+                    AccouMdb.query.filter(
+                        or_(
+                            and_(
+                                AccouMdb.acc_code.like("%{}%".format(key)),
+                                AccouMdb.dou_type == "U",
+                            ),
+                            and_(
+                                AccouMdb.acc_code.like("%{}%".format(key)),
+                                AccouMdb.dou_type == "D",
+                                AccouMdb.umm_code == None,
+                            ),
+                        )
+                    )
+                    .order_by(AccouMdb.acc_code.desc())
+                    .first()
+                )
+
+                if last_acc:
+                    next_code = (
+                        str(kategory[1].id)
+                        + "."
+                        + str(
+                            int(
+                                last_acc.acc_code.replace(str(kategory[1].id) + ".", "")
+                            )
+                            + 1
+                        )
+                    )
+                else:
+                    next_code = str(kategory[1].id) + "." + str(kat_code) + "0001"
+
+            a = AccouMdb(
+                next_code,
+                acc_name,
+                umm_code,
+                kat_code,
+                dou_type,
+                sld_type,
+                connect,
+                sld_awal,
+            )
+            db.session.add(a)
+            db.session.commit()
+            # print("Detail ADDED")
+
+        except IntegrityError:
+            db.session.rollback()
+            print("Err Detail %s" % (index_detail))
+            print(next_code)
+            print(x)
+
+    return response(200, "Berhasil", True, None)
 
 
 @app.route("/v1/api/account/umum", methods=["GET"])
@@ -1825,6 +2031,194 @@ def setup_account_id(self, id):
 
         return response(200, "Berhasil", False, None)
 
+
+@app.route("/v1/api/setup/neraca", methods=["POST", "GET"])
+@token_required
+def setup_neraca(self):
+    user = User.query.filter(User.id == self.id).first()
+    if request.method == "POST":
+        try:
+            cp_id = user.company
+            cur = request.json["cur"]
+            fixed = request.json["fixed"]
+            depr = request.json["depr"]
+            ap = request.json["ap"]
+            cap = request.json["cap"]
+
+            print([str(x) for x in cur])
+
+            setup = NeracaMdb(
+                cp_id,
+                ",".join([str(x) for x in cur]) if cur else None,
+                ",".join([str(x) for x in fixed]) if fixed else None,
+                ",".join([str(x) for x in depr]) if depr else None,
+                ",".join([str(x) for x in ap]) if ap else None,
+                ",".join([str(x) for x in cap]) if cap else None,
+                self.id,
+            )
+
+            db.session.add(setup)
+            db.session.commit()
+
+            result = response(200, "Berhasil", True, neraca_schema.dump(setup))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    else:
+        setup = NeracaMdb.query.filter(NeracaMdb.cp_id == user.company).first()
+
+        if setup:
+            setup.cur = (
+                setup.cur.replace("{", "").replace("}", "").split(",")
+                if setup.cur
+                else None
+            )
+            setup.fixed = (
+                setup.fixed.replace("{", "").replace("}", "").split(",")
+                if setup.fixed
+                else None
+            )
+            setup.depr = (
+                setup.depr.replace("{", "").replace("}", "").split(",")
+                if setup.depr
+                else None
+            )
+            setup.ap = (
+                setup.ap.replace("{", "").replace("}", "").split(",")
+                if setup.ap
+                else None
+            )
+            setup.cap = (
+                setup.cap.replace("{", "").replace("}", "").split(",")
+                if setup.cap
+                else None
+            )
+
+            return response(200, "Berhasil", True, neraca_schema.dump(setup))
+
+        return response(200, "Berhasil", False, None)
+
+
+@app.route("/v1/api/setup/neraca/<int:id>", methods=["PUT", "GET", "DELETE"])
+@token_required
+def setup_neraca_id(self, id):
+    setup = NeracaMdb.query.filter(NeracaMdb.id == id).first()
+    if request.method == "PUT":
+        setup.cur = request.json["cur"]
+        setup.fixed = request.json["fixed"]
+        setup.depr = request.json["depr"]
+        setup.ap = request.json["ap"]
+        setup.cap = request.json["cap"]
+
+        db.session.commit()
+
+        return response(200, "Berhasil", True, neraca_schema.dump(setup))
+    elif request.method == "DELETE":
+        db.session.delete(setup)
+        db.session.commit()
+
+        return response(200, "Berhasil", True, None)
+    else:
+        if setup:
+            setup.cur = (
+                setup.cur.replace("{", "").replace("}", "").split(",")
+                if setup.cur
+                else None
+            )
+            setup.fixed = (
+                setup.fixed.replace("{", "").replace("}", "").split(",")
+                if setup.fixed
+                else None
+            )
+            setup.depr = (
+                setup.depr.replace("{", "").replace("}", "").split(",")
+                if setup.depr
+                else None
+            )
+            setup.ap = (
+                setup.ap.replace("{", "").replace("}", "").split(",")
+                if setup.ap
+                else None
+            )
+            setup.cap = (
+                setup.cap.replace("{", "").replace("}", "").split(",")
+                if setup.cap
+                else None
+            )
+
+            return response(200, "Berhasil", True, neraca_schema.dump(setup))
+
+        return response(200, "Berhasil", False, None)
+
+
+@app.route("/v1/api/setup/pnl", methods=["POST", "GET"])
+@token_required
+def setup_pnl(self):
+    user = User.query.filter(User.id == self.id).first()
+    if request.method == "POST":
+        try:
+            cp_id = user.company
+            klasi = request.json["klasi"]
+
+            setup = PnlMdb(
+                cp_id,
+                ",".join([str(x) for x in klasi]) if klasi else None,
+                self.id,
+            )
+
+            db.session.add(setup)
+            db.session.commit()
+
+            result = response(200, "Berhasil", True, pnl_schema.dump(setup))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    else:
+        setup = PnlMdb.query.filter(PnlMdb.cp_id == user.company).first()
+
+        if setup:
+            setup.klasi = (
+                setup.klasi.replace("{", "").replace("}", "").split(",")
+                if setup.klasi
+                else None
+            )
+
+            return response(200, "Berhasil", True, pnl_schema.dump(setup))
+
+        return response(200, "Berhasil", False, None)
+
+
+@app.route("/v1/api/setup/pnl/<int:id>", methods=["PUT", "GET", "DELETE"])
+@token_required
+def setup_pnl_id(self, id):
+    setup = PnlMdb.query.filter(PnlMdb.id == id).first()
+    if request.method == "PUT":
+        setup.klasi = request.json["klasi"]
+
+        db.session.commit()
+
+        return response(200, "Berhasil", True, neraca_schema.dump(setup))
+    elif request.method == "DELETE":
+        db.session.delete(setup)
+        db.session.commit()
+
+        return response(200, "Berhasil", True, None)
+    else:
+        if setup:
+            setup.klasi = (
+                setup.klasi.replace("{", "").replace("}", "").split(",")
+                if setup.klasi
+                else None
+            )
+
+            return response(200, "Berhasil", True, pnl_schema.dump(setup))
+
+        return response(200, "Berhasil", False, None)
+        
 
 @app.route("/v1/api/unit", methods=["POST", "GET"])
 @token_required
@@ -4211,353 +4605,25 @@ def faktur_id(self, id):
 @app.route("/v1/api/retur-order", methods=["POST", "GET"])
 @token_required
 def retur_order(self):
-    if request.method == "POST":
-        try:
-            ret_code = request.json["ret_code"]
-            ret_date = request.json["ret_date"]
-            fk_id = request.json["fk_id"]
-            product = request.json["product"]
-
-            retur = RetordHdb(ret_code, ret_date, fk_id)
-
-            db.session.add(retur)
-            db.session.commit()
-
-            new_prod = []
-            for x in product:
-                if x["prod_id"] and x["unit_id"] and x["retur"] and int(x["retur"]) > 0:
-                    new_prod.append(
-                        ReprodDdb(
-                            retur.id,
-                            x["prod_id"],
-                            x["unit_id"],
-                            x["retur"],
-                            x["price"],
-                            x["disc"],
-                            x["nett_price"],
-                            x["total"],
-                        )
-                    )
-
-            db.session.add_all(new_prod)
-            db.session.commit()
-
-            result = response(200, "success", True, retord_schema.dump(retur))
-        except IntegrityError:
-            db.session.rollback()
-            result = response(400, "Kode sudah digunakan", False, None)
-        finally:
-            return result
-    else:
-        retur = (
-            db.session.query(RetordHdb, FkpbHdb, OrdpbHdb)
-            .outerjoin(FkpbHdb, FkpbHdb.id == RetordHdb.fk_id)
-            .outerjoin(OrdpbHdb, OrdpbHdb.id == FkpbHdb.ord_id)
-            .all()
-        )
-
-        product = (
-            db.session.query(ReprodDdb, ProdMdb, UnitMdb)
-            .outerjoin(ProdMdb, ProdMdb.id == ReprodDdb.prod_id)
-            .outerjoin(UnitMdb, UnitMdb.id == ReprodDdb.unit_id)
-            .all()
-        )
-
-        result = []
-        for x in retur:
-            prod = []
-            for y in product:
-                if x[0].id == y[0].ret_id:
-                    y[0].prod_id = prod_schema.dump(y[1])
-                    y[0].unit_id = unit_schema.dump(y[2])
-                    prod.append(reprod_schema.dump(y[0]))
-
-            if x[1]:
-                x[1].ord_id = dord_schema.dump(x[2])
-            result.append(
-                {
-                    "id": x[0].id,
-                    "ret_code": x[0].ret_code,
-                    "ret_date": RetordSchema(only=["ret_date"]).dump(x[0])["ret_date"]
-                    if x[0].ret_date
-                    else None,
-                    "fk_id": fkpb_schema.dump(x[1]),
-                    "product": prod,
-                }
-            )
-
-        return response(200, "success", True, result)
+    return ReturOrder(self, request)
 
 
 @app.route("/v1/api/retur-order/<int:id>", methods=["PUT", "DELETE", "GET"])
 @token_required
 def retur_order_id(self, id):
-    ret = RetordHdb.query.filter(RetordHdb.id == id).first()
-    if request.method == "PUT":
-        try:
-            ret_code = request.json["ret_code"]
-            ret_date = request.json["ret_date"]
-            fk_id = request.json["fk_id"]
-            product = request.json["product"]
-
-            ret.ret_code = ret_code
-            ret.ret_date = ret_date
-            ret.fk_id = fk_id
-
-            # product = ReprodDdb.query.filter(ReprodDdb.id == ret.id)
-
-            new_prod = []
-            for x in product:
-                for y in product:
-                    if x["id"] == y.id:
-                        y.prod_id = x["prod_id"]
-                        y.unit_id = x["unit_id"]
-                        y.retur = x["retur"]
-                        y.price = x["price"]
-                        y.disc = x["disc"]
-                        y.nett_price = x["nett_price"]
-                        y.total = x["total"]
-                if x["id"] == 0 and x["prod_id"] and x["unit_id"] and x["retur"]:
-                    new_prod.append(
-                        ReprodDdb(
-                            ret.id,
-                            x["prod_id"],
-                            x["unit_id"],
-                            x["retur"],
-                            x["price"],
-                            x["disc"],
-                            x["nett_price"],
-                            x["total"],
-                        )
-                    )
-
-            if len(new_prod) > 0:
-                db.session.add_all(new_prod)
-
-            db.session.commit()
-
-            result = response(200, "Berhasil", True, retord_schema.dump(ret))
-
-        except IntegrityError:
-            db.session.rollback()
-            result = response(400, "Kode sudah digunakan", False, None)
-        finally:
-            return result
-
-    elif request.method == "DELETE":
-        db.session.delete(ret)
-        db.session.commit()
-
-        return response(200, "success", True, None)
-
-    else:
-        x = (
-            db.session.query(RetordHdb, FkpbHdb, OrdpbHdb)
-            .outerjoin(FkpbHdb, FkpbHdb.id == RetordHdb.fk_id)
-            .outerjoin(OrdpbHdb, OrdpbHdb.id == FkpbHdb.ord_id)
-            .filter(RetordHdb.id == id)
-            .first()
-        )
-
-        product = (
-            db.session.query(ReprodDdb, ProdMdb, UnitMdb)
-            .outerjoin(ProdMdb, ProdMdb.id == ReprodDdb.prod_id)
-            .outerjoin(UnitMdb, UnitMdb.id == ReprodDdb.unit_id)
-            .all()
-        )
-
-        product = []
-        for y in product:
-            if y[0].id == x[0].id:
-                y[0].prod_id = prod_schema.dump(y[1])
-                y[0].unit_id = unit_schema.dump(y[2])
-                product.append(reprod_schema.dump(y[0]))
-
-        final = {
-            "id": x[0].id,
-            "ret_code": x[0].ret_code,
-            "ret_date": RetSaleSchema(only=["ret_date"]).dump(x[0])["ret_date"],
-            "fk_id": fkpb_schema.dump(x[2]) if x[2] else None,
-            "product": product,
-        }
-
-        return response(200, "Berhasil", True, final)
+    return ReturOrderId(id, request)
 
 
 @app.route("/v1/api/retur-sales", methods=["POST", "GET"])
 @token_required
 def retur_sales(self):
-    if request.method == "POST":
-        try:
-            ret_code = request.json["ret_code"]
-            ret_date = request.json["ret_date"]
-            sale_id = request.json["sale_id"]
-            product = request.json["product"]
-
-            retur = RetSaleHdb(ret_code, ret_date, sale_id)
-
-            db.session.add(retur)
-            db.session.commit()
-
-            new_prod = []
-            for x in product:
-                if x["prod_id"] and x["unit_id"] and x["retur"] and int(x["retur"]) > 0:
-                    new_prod.append(
-                        ReprodDdb(
-                            retur.id,
-                            x["prod_id"],
-                            x["unit_id"],
-                            x["retur"],
-                            x["price"],
-                            x["disc"],
-                            x["nett_price"],
-                            x["total"],
-                        )
-                    )
-
-            db.session.add_all(new_prod)
-            db.session.commit()
-
-            result = response(200, "success", True, retsale_schema.dump(retur))
-        except IntegrityError:
-            db.session.rollback()
-            result = response(400, "Kode sudah digunakan", False, None)
-        finally:
-            return result
-    else:
-        retur = (
-            db.session.query(RetSaleHdb, OrdpjHdb, SordHdb)
-            .outerjoin(OrdpjHdb, OrdpjHdb.id == RetSaleHdb.sale_id)
-            .outerjoin(SordHdb, SordHdb.id == OrdpjHdb.so_id)
-            .all()
-        )
-
-        product = (
-            db.session.query(ReprodDdb, ProdMdb, UnitMdb)
-            .outerjoin(ProdMdb, ProdMdb.id == ReprodDdb.prod_id)
-            .outerjoin(UnitMdb, UnitMdb.id == ReprodDdb.unit_id)
-            .all()
-        )
-
-        result = []
-        for x in retur:
-            prod = []
-            for y in product:
-                if x[0].id == y[0].ret_id:
-                    y[0].prod_id = prod_schema.dump(y[1])
-                    y[0].unit_id = unit_schema.dump(y[2])
-                    prod.append(reprod_schema.dump(y[0]))
-
-            if x[1]:
-                x[1].so_id = sord_schema.dump(x[2])
-            result.append(
-                {
-                    "id": x[0].id,
-                    "ret_code": x[0].ret_code,
-                    "ret_date": RetSaleSchema(only=["ret_date"]).dump(x[0])["ret_date"]
-                    if x[0].ret_date
-                    else None,
-                    "sale_id": ordpj_schema.dump(x[1]),
-                    "product": prod,
-                }
-            )
-
-        return response(200, "success", True, result)
+    return ReturSale(self, request)
 
 
 @app.route("/v1/api/retur-sales/<int:id>", methods=["PUT", "DELETE", "GET"])
 @token_required
 def retur_sale_id(self, id):
-    ret = RetSaleHdb.query.filter(RetSaleHdb.id == id).first()
-    if request.method == "PUT":
-        try:
-            ret_code = request.json["ret_code"]
-            ret_date = request.json["ret_date"]
-            sale_id = request.json["sale_id"]
-            product = request.json["product"]
-
-            ret.ret_code = ret_code
-            ret.ret_date = ret_date
-            ret.sale_id = sale_id
-
-            # product = ReprodDdb.query.filter(ReprodDdb.id == ret.id)
-
-            new_prod = []
-            for x in product:
-                for y in product:
-                    if x["id"] == y.id:
-                        y.prod_id = x["prod_id"]
-                        y.unit_id = x["unit_id"]
-                        y.retur = x["retur"]
-                        y.price = x["price"]
-                        y.disc = x["disc"]
-                        y.nett_price = x["nett_price"]
-                        y.total = x["total"]
-                if x["id"] == 0 and x["prod_id"] and x["unit_id"] and x["retur"]:
-                    new_prod.append(
-                        ReprodDdb(
-                            ret.id,
-                            x["prod_id"],
-                            x["unit_id"],
-                            x["retur"],
-                            x["price"],
-                            x["disc"],
-                            x["nett_price"],
-                            x["total"],
-                        )
-                    )
-
-            if len(new_prod) > 0:
-                db.session.add_all(new_prod)
-
-            db.session.commit()
-
-            result = response(200, "Berhasil", True, retsale_schema.dump(ret))
-
-        except IntegrityError:
-            db.session.rollback()
-            result = response(400, "Kode sudah digunakan", False, None)
-        finally:
-            return result
-
-    elif request.method == "DELETE":
-        db.session.delete(ret)
-        db.session.commit()
-
-        return response(200, "success", True, None)
-
-    else:
-        x = (
-            db.session.query(RetSaleHdb, OrdpjHdb, SordHdb)
-            .outerjoin(OrdpjHdb, OrdpjHdb.id == RetSaleHdb.sale_id)
-            .outerjoin(SordHdb, SordHdb.id == OrdpjHdb.so_id)
-            .filter(RetSaleHdb.id == id)
-            .first()
-        )
-
-        product = (
-            db.session.query(ReprodDdb, ProdMdb, UnitMdb)
-            .outerjoin(ProdMdb, ProdMdb.id == ReprodDdb.prod_id)
-            .outerjoin(UnitMdb, UnitMdb.id == ReprodDdb.unit_id)
-            .all()
-        )
-
-        product = []
-        for y in product:
-            if y[0].id == x[0].id:
-                y[0].prod_id = prod_schema.dump(y[1])
-                y[0].unit_id = unit_schema.dump(y[2])
-                product.append(reprod_schema.dump(y[0]))
-
-        final = {
-            "id": x[0].id,
-            "ret_code": x[0].ret_code,
-            "ret_date": RetSaleSchema(only=["ret_date"]).dump(x[0])["ret_date"],
-            "sale_id": ordpj_schema.dump(x[2]) if x[2] else None,
-            "product": product,
-        }
-
-        return response(200, "Berhasil", True, final)
+    return ReturSaleId(id, request)
 
 
 # @app.route("/v1/api/faktur/<int:id>", methods=["PUT", "GET", 'DELETE'])
@@ -7135,7 +7201,7 @@ def memorial(self):
             desc = request.json["desc"]
             memo = request.json["memo"]
 
-            m = MemoHdb(code, date, desc)
+            m = MemoHdb(code, date, desc, False, False, self.id)
 
             db.session.add(m)
             db.session.commit()
@@ -7226,6 +7292,8 @@ def memorial(self):
                     "code": x.code,
                     "date": MhdbSchema(only=["date"]).dump(x)["date"],
                     "desc": x.desc,
+                    "imp": x.imp,
+                    "closing": x.closing,
                     "memo": mm,
                 }
             )
@@ -7366,6 +7434,81 @@ def memorial_id(self, id):
         }
 
         return response(200, "Berhasil", True, final)
+
+@app.route("/v1/api/import/memorial", methods=["POST"])
+@token_required
+def memo_import(self):
+    mem = request.json["memo"]
+
+    for x in mem:
+        try:
+            code = x["code"]
+            date = x["date"]
+            desc = x["desc"]
+            memo = x["memo"]
+
+            m = MemoHdb(code, date, desc, True, False, self.id)
+
+            db.session.add(m)
+            db.session.commit()
+
+            print(memo)
+            new_memo = []
+            for x in memo:
+                if x["acc_id"] and x["dbcr"] and x["amnt"]:
+                    new_memo.append(
+                        MemoDdb(
+                            m.id,
+                            x["acc_id"],
+                            x["dep_id"],
+                            x["currency"],
+                            x["dbcr"],
+                            x["amnt"],
+                            x["amnh"],
+                            x["desc"],
+                        )
+                    )
+
+            print(len(new_memo))
+            if len(new_memo) > 0:
+                db.session.add_all(new_memo)
+                db.session.commit()
+
+                old_trans = TransDdb.query.filter(TransDdb.trx_code == m.code).all()
+                if old_trans:
+                    for x in old_trans:
+                        db.session.delete(x)
+                        db.session.commit()
+
+                all_trans = []
+                for x in new_memo:
+                    all_trans.append(
+                        TransDdb(
+                            m.code,
+                            m.date,
+                            x.acc_id,
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                            x.amnt,
+                            "D" if x.dbcr == "d" else "K",
+                            "JURNAL MEMORIAL %s" % (m.code),
+                            None,
+                            None,
+                        )
+                    )
+
+                    if len(all_trans) > 0:
+                        db.session.add_all(all_trans)
+                        db.session.commit()
+
+        except IntegrityError:
+            db.session.rollback()
+
+    return response(200, "Berhasil", True, None)
 
 
 @app.route("/v1/api/mutasi", methods=["GET", "POST"])
@@ -7588,7 +7731,7 @@ def sto_loc(self, id):
 @token_required
 def sto(self):
     product = ProdMdb.query.all()
-    sto = StCard.query.filter(and_(StCard.trx_dbcr == "d")).all()
+    sto = StCard.query.filter(and_(StCard.trx_dbcr == "d", StCard.trx_type == "BL")).all()
 
     loc = LocationMdb.query.all()
 

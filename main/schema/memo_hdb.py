@@ -3,7 +3,7 @@ from main.shared.shared import ma
 class MhdbSchema(ma.Schema):
     class Meta:
         ordered=True
-        fields = ('id', 'code', 'date', 'desc')
+        fields = ('id', 'code', 'date', 'desc', 'imp', 'closing', 'user_id')
 
 
 mhdb_schema = MhdbSchema()

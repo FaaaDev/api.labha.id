@@ -8,9 +8,11 @@ class KategMdb(db.Model):
     name = db.Column(db.String(255))
     kode_klasi = db.Column(db.Integer)
     kode_saldo = db.Column(db.String(10))
+    imp = db.Column(db.Boolean)
     
 
-    def __init__(self, name, kode_klasi, kode_saldo):
+    def __init__(self, name, kode_klasi, kode_saldo, imp):
         self.name = name
         self.kode_klasi = kode_klasi
         self.kode_saldo = kode_saldo
+        self.imp = imp

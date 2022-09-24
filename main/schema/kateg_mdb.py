@@ -3,7 +3,7 @@ from main.shared.shared import ma
 class KategMdb(ma.Schema):
     class Meta:
         ordered=True
-        fields = ('id', 'name', 'kode_klasi', 'kode_saldo')
+        fields = ('id', 'name', 'kode_klasi', 'kode_saldo', 'imp')
 
 
 kateg_schema = KategMdb()
