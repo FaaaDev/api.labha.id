@@ -27,8 +27,14 @@ class UpdatePembelian:
             .first()
         )
 
+
+
+        old_trans = TransDdb.query.filter(TransDdb.trx_code == x[0].fk_code).all()
+
+        old_fk = FkpbHdb.query.filter(FkpbHdb.ord_id == x[1].id).first()
+
         if delete:
-            if x[1]:
+            if x:
                 old_ap = ApCard.query.filter(
                     and_(
                         ApCard.ord_id == x[1].id,
@@ -40,12 +46,19 @@ class UpdatePembelian:
                     db.session.delete(old_ap)
                     db.session.commit()
 
-            old_trans = TransDdb.query.filter(TransDdb.trx_code == x[0].fk_code).all()
 
-            if old_trans:
-                for x in old_trans:
-                    db.session.delete(x)
+                if old_trans:
+                    for x in old_trans:
+                        db.session.delete(x)
+                        db.session.commit()
+
+
+                if old_fk:
+                    db.session.delete(old_fk)
                     db.session.commit()
+
+                    
+
         else:
             dprod = DprodDdb.query.filter(DprodDdb.ord_id == x[1].id).all()
 
@@ -117,6 +130,8 @@ class UpdatePembelian:
                 for x in old_trans:
                     db.session.delete(x)
                     db.session.commit()
+
+
             # insert jurnal ap
             trans_ap = TransDdb(
                 x[0].fk_code,

@@ -4272,6 +4272,11 @@ def ord_id(self, id):
         if po:
             po.status = 0
             db.session.commit()
+        
+        fk = FkpbHdb.query.filter(FkpbHdb.ord_id == do.id).first()
+
+            
+        UpdatePembelian(fk.id, self.id, True)
         UpdateStock(do.id, True)
         product = DprodDdb.query.filter(DprodDdb.ord_id == do.id)
         jasa = DjasaDdb.query.filter(DjasaDdb.ord_id == do.id)
