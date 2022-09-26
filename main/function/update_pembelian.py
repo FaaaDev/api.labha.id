@@ -137,10 +137,20 @@ class UpdatePembelian:
                 )
             ).all()
 
+            ppn = (
+                    db.session.query(OrdpbHdb, SupplierMdb, PajakMdb)
+                    .outerjoin(SupplierMdb, SupplierMdb.id == OrdpbHdb.sup_id)
+                    .outerjoin(PajakMdb, PajakMdb.id == SupplierMdb.sup_ppn)
+                    .first()
+                )
+            
+
             if old_trans:
                 for x in old_trans:
                     db.session.delete(x)
                     db.session.commit()
+
+
 
             # insert jurnal ap
             trans_ap = TransDdb(
@@ -180,7 +190,7 @@ class UpdatePembelian:
                 None,
                 None,
                 None,
-                total_product * 11 / 100,
+                total_product * ppn[2].nilai / 100,
                 "D",
                 "JURNAL PPN KELUARAN %s" % (x[0].fk_code),
                 None,

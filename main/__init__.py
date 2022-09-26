@@ -11,6 +11,8 @@ from datetime import datetime
 from flask import Flask, redirect, request, url_for, jsonify, make_response
 import requests
 from main.function.delete_ap_payment import DeleteApPayment
+from main.function.koreksi_sto.koreksi_sto import KoreksiPersediaan
+from main.function.koreksi_sto.koreksi_sto_id import KorPersediaanId
 from main.function.retur_order.retur_id import ReturOrderId
 from main.function.retur_order.retur_order import ReturOrder
 from main.function.retur_sales.retur_id import ReturSaleId
@@ -19,6 +21,7 @@ from main.function.update_ap_giro import UpdateApGiro
 from main.function.update_ap_payment import UpdateApPayment
 from main.function.update_ar import UpdateAr
 from main.function.update_batch import updateBatch
+from main.model.ovh_ddb import OvhDdb
 from .function.update_mutasi import UpdateMutasi
 from main.function.update_pembelian import UpdatePembelian
 from main.function.update_rpbb import UpdateRpbb
@@ -61,7 +64,7 @@ from main.model.plan_hdb import PlanHdb
 from main.model.plmch_ddb import PlmchDdb
 from main.model.po_mdb import PoMdb
 from main.model.po_sup_ddb import PoSupDdb
-from main.model.ppbb_ddb import PpbbDdb
+from main.model.uph_ddb import UphDdb
 from main.model.pphj_ddb import PphjDdb
 from main.model.pprod_ddb import PprodDdb
 from main.model.preq_mdb import PreqMdb
@@ -179,6 +182,8 @@ from main.schema.batch_mdb import batch_schema, batchs_schema, BatchSchema
 from main.schema.phj_hdb import phj_schema, phjs_schema, PhjSchema
 from main.schema.pbb_hdb import pbb_schema, pbbs_schema, PbbSchema
 from main.schema.pphj_ddb import pphj_schema, pphjs_schema, PphjSchema
+from main.schema.uph_ddb import uph_schema, uphs_schema, UphSchema
+from main.schema.ovh_ddb import ovh_schema, ovhs_schema, OvhSchema
 from main.schema.rphj_ddb import rphj_schema, rphjs_schema, RphjSchema
 from main.schema.mtsi_hdb import mtsi_schema, mtsis_schema, MtsiSchema
 from main.schema.mtsi_ddb import mtsiddb_schema, mtsiddbs_schema, MtsiddbSchema
@@ -6958,13 +6963,43 @@ def pbb(self):
             pbb_date = request.json["pbb_date"]
             batch_id = request.json["batch_id"]
             acc_cred = request.json["acc_cred"]
+            uph = request.json["uph"]
+            ovh = request.json["ovh"]
 
-            pbb = PbbHdb(pbb_code, pbb_name, pbb_date, batch_id, acc_cred)
+            p = PbbHdb(pbb_code, pbb_name, pbb_date, batch_id, acc_cred)
 
-            db.session.add(pbb)
+            db.session.add(p)
             db.session.commit()
 
-            result = response(200, "Berhasil", True, pbb_schema.dump(pbb))
+            new_uph = []
+            for x in uph:
+                if x["acc_id"]:
+                    new_uph.append(
+                        UphDdb(
+                            p.id,
+                            x["acc_id"],
+                        )
+                    )
+
+            new_ovh = []
+            for x in ovh:
+                if x["acc_id"]:
+                    new_ovh.append(
+                        OvhDdb(
+                            p.id,
+                            x["acc_id"],
+                        )
+                    )
+
+            if len(new_uph) > 0:
+                db.session.add_all(new_uph)
+
+            if len(new_ovh) > 0:
+                db.session.add_all(new_ovh)
+
+            db.session.commit()
+
+            result = response(200, "Berhasil", True, pbb_schema.dump(p))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
@@ -6980,9 +7015,34 @@ def pbb(self):
             .all()
         )
 
+        uph = (
+                db.session.query(UphDdb, AccouMdb)
+                .outerjoin(AccouMdb, AccouMdb.id == UphDdb.acc_id)
+                .all()
+            )
+
+        ovh = (
+                db.session.query(OvhDdb, AccouMdb)
+                .outerjoin(AccouMdb, AccouMdb.id == OvhDdb.acc_id)
+                .all()
+            )
+
         final = []
         for x in pbb:
+            uph = []
+            for y in uph:
+                if y[0].pbb_id == x[0].id:
+                    y[0].acc_id = accou_schema.dump(y[1])
+                    uph.append(uph_schema.dump(y[0]))
+
+            ovh = []
+            for z in ovh:
+                if z[0].pbb_id == x[0].id:
+                    z[0].acc_id = accou_schema.dump(z[1])
+                    ovh.append(ovh_schema.dump(z[0]))
+
             x[1].plan_id = plan_schema.dump(x[2])
+                
             final.append(
                 {
                     "id": x[0].id,
@@ -6991,6 +7051,8 @@ def pbb(self):
                     "acc_cred": accou_schema.dump(x[3]),
                     "pbb_date": PbbSchema(only=["pbb_date"]).dump(x[0])["pbb_date"],
                     "batch_id": batch_schema.dump(x[1]),
+                    "uph": uph,
+                    "ovh": ovh,
                 }
             )
 
@@ -7000,31 +7062,80 @@ def pbb(self):
 @app.route("/v1/api/pbb/<int:id>", methods=["GET", "PUT", "DELETE"])
 @token_required
 def pbb_id(self, id):
-    x = PbbHdb.query.filter(PbbHdb.id == id).first()
+    p = PbbHdb.query.filter(PbbHdb.id == id).first()
     if request.method == "PUT":
         try:
             pbb_code = request.json["pbb_code"]
             pbb_date = request.json["pbb_date"]
             acc_cred = request.json["acc_cred"]
             batch_id = request.json["batch_id"]
+            uph = request.json["uph"]
+            ovh = request.json["ovh"]
 
-            x.pbb_code = pbb_code
-            x.pbb_date = pbb_date
-            x.batch_id = batch_id
-            x.acc_cred = acc_cred
+            p.pbb_code = pbb_code
+            p.pbb_date = pbb_date
+            p.batch_id = batch_id
+            p.acc_cred = acc_cred
+
+            upah = UphDdb.query.filter(UphDdb.pbb_id == p.id)
+            overh = OvhDdb.query.filter(OvhDdb.pbb_id == p.id)
+
+            new_uph = []
+            for x in uph:
+                for y in upah:
+                    if x["id"] == y.id:
+                        y.acc_id = x["acc_id"]
+
+                if x["id"] == 0 and x["acc_id"]:
+                    new_uph.append(
+                        UphDdb(
+                            p.id,
+                            x["acc_id"],
+                        )
+                    )
+
+            new_ovh = []
+            for x in ovh:
+                for y in overh:
+                    if x["id"] == y.id:
+                        y.acc_id = x["acc_id"]
+
+                if (
+                    x["id"] == 0
+                    and x["acc_id"]
+                ):
+                    new_ovh.append(
+                        OvhDdb(
+                            p.id,
+                            x["acc_id"],
+                        )
+                    )
+
+            if len(new_uph) > 0:
+                db.session.add_all(new_uph)
+
+            if len(new_ovh) > 0:
+                db.session.add_all(new_ovh)
 
             db.session.commit()
 
-            db.session.commit()
-
-            result = response(200, "Berhasil", True, pbb_schema.dump(x))
+            result = response(200, "Berhasil", True, pbb_schema.dump(p))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
         finally:
             return result
     elif request.method == "DELETE":
-        db.session.delete(x)
+        upah = UphDdb.query.filter(UphDdb.pbb_id == p.id)
+        overh = OvhDdb.query.filter(OvhDdb.pbb_id == p.id)
+
+        for x in upah:
+            db.session.delete(x)
+
+        for x in overh:
+            db.session.delete(x)
+
+        db.session.delete(p)
         db.session.commit()
 
         return response(200, "Berhasil", True, None)
@@ -7038,16 +7149,44 @@ def pbb_id(self, id):
             .all()
         )
 
+        uph = (
+                db.session.query(UphDdb, AccouMdb)
+                .outerjoin(AccouMdb, AccouMdb.id == UphDdb.acc_id)
+                .all()
+            )
+
+        ovh = (
+                db.session.query(OvhDdb, AccouMdb)
+                .outerjoin(AccouMdb, AccouMdb.id == OvhDdb.acc_id)
+                .all()
+            )
+
         final = []
         for x in pbb:
+            uph = []
+            for y in uph:
+                if y[0].pbb_id == x[0].id:
+                    y[0].acc_id = accou_schema.dump(y[1])
+                    uph.append(uph_schema.dump(y[0]))
+
+            ovh = []
+            for z in ovh:
+                if z[0].pbb_id == x[0].id:
+                    z[0].acc_id = accou_schema.dump(z[1])
+                    ovh.append(ovh_schema.dump(z[0]))
+
             x[1].plan_id = plan_schema.dump(x[2])
+                
             final.append(
                 {
                     "id": x[0].id,
                     "pbb_code": x[0].pbb_code,
+                    "pbb_name": x[0].pbb_name,
+                    "acc_cred": accou_schema.dump(x[3]),
                     "pbb_date": PbbSchema(only=["pbb_date"]).dump(x[0])["pbb_date"],
                     "batch_id": batch_schema.dump(x[1]),
-                    "acc_cred": accou_schema.dump(x[3]),
+                    "uph": uph,
+                    "ovh": ovh,
                 }
             )
 
@@ -7693,6 +7832,18 @@ def mutasi_id(self, id):
         db.session.commit()
 
         return response(200, "Berhasil", True, None)
+
+
+@app.route("/v1/api/koreksi-sto", methods=["POST", "GET"])
+@token_required
+def korSto(self):
+    return KoreksiPersediaan(self, request)
+
+
+@app.route("/v1/api/koreksi-sto/<int:id>", methods=["PUT", "GET", "DELETE"])
+@token_required
+def korSto_id(self, id):
+    return KorPersediaanId(id, request)
 
 
 @app.route("/v1/api/sto/<int:id>", methods=["GET"])

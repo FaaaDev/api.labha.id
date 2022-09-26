@@ -6,6 +6,7 @@ from main.model.group_prod_mdb import GroupProMdb
 from main.model.jasa_mdb import JasaMdb
 from main.model.jjasa_ddb import JjasaDdb
 from main.model.jprod_ddb import JprodDdb
+from main.model.pajak_mdb import PajakMdb
 from main.model.prod_mdb import ProdMdb
 from main.model.setup_mdb import SetupMdb
 from main.model.sord_hdb import SordHdb
@@ -31,6 +32,14 @@ class UpdateAr:
         krtar = ArCard.query.filter(ArCard.trx_code == order.ord_code).all()
         transddb = TransDdb.query.filter(TransDdb.trx_code == order.ord_code).all()
         krtst = StCard.query.filter(StCard.trx_code == order.ord_code).all()
+
+        ppn = (
+                db.session.query(OrdpjHdb, CustomerMdb, PajakMdb)
+                .outerjoin(CustomerMdb, CustomerMdb.id == OrdpjHdb.pel_id)
+                .outerjoin(PajakMdb, PajakMdb.id == CustomerMdb.cus_pjk)
+                .first()
+            ) 
+
         if order.so_id:
             so = SordHdb.query.filter(SordHdb.id == order.so_id).first()
             if so:
@@ -164,12 +173,12 @@ class UpdateAr:
                 )
 
             if order.split_inv:
-                self.total = (self.total_product * ((100 + self.ppn) / 100)) + (
+                self.total = (self.total_product * ((100 + ppn[2].nilai) / 100)) + (
                     self.total_jasa * ((100 + 2) / 100)
                 )
             else:
                 self.total = (self.total_product + self.total_jasa) * (
-                    (100 + self.ppn) / 100
+                    (100 + ppn[2].nilai) / 100
                 )
 
             new_ar = ArCard(
@@ -195,14 +204,13 @@ class UpdateAr:
                 None,
                 None,
                 None,
-                product[0].location,
+                product[0][0].location,
                 None,
             )
 
             db.session.add(new_ar)
             db.session.commit()
 
-            self.ppn_total = self.total_product * self.ppn / 100
 
             ar_trans = TransDdb(
                 order.ord_code,
@@ -227,6 +235,9 @@ class UpdateAr:
                 .filter(User.id == user_id)
                 .first()
             )
+
+
+            self.ppn_total = self.total_product * ppn[2].nilai / 100
 
             ppn_trans = TransDdb(
                 order.ord_code,
