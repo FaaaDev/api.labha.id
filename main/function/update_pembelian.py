@@ -1,3 +1,4 @@
+from operator import or_
 from sqlalchemy import and_
 from main.model.apcard_mdb import ApCard
 from main.model.djasa_ddb import DjasaDdb
@@ -27,9 +28,15 @@ class UpdatePembelian:
             .first()
         )
 
-
-
-        old_trans = TransDdb.query.filter(TransDdb.trx_code == x[0].fk_code).all()
+        old_trans = TransDdb.query.filter(
+            and_(
+                TransDdb.trx_code == x[0].fk_code,
+                or_(
+                    TransDdb.trx_desc.like("%JURNAL HUTANG%"),
+                    TransDdb.trx_desc.like("%JURNAL PPN%"),
+                ),
+            )
+        ).all()
 
         old_fk = FkpbHdb.query.filter(FkpbHdb.ord_id == x[1].id).first()
 
@@ -46,18 +53,14 @@ class UpdatePembelian:
                     db.session.delete(old_ap)
                     db.session.commit()
 
-
                 if old_trans:
                     for x in old_trans:
                         db.session.delete(x)
                         db.session.commit()
 
-
                 if old_fk:
                     db.session.delete(old_fk)
                     db.session.commit()
-
-                    
 
         else:
             dprod = DprodDdb.query.filter(DprodDdb.ord_id == x[1].id).all()
@@ -124,13 +127,20 @@ class UpdatePembelian:
             db.session.add(ap_card)
             db.session.commit()
 
-            old_trans = TransDdb.query.filter(TransDdb.trx_code == x[0].fk_code).all()
+            old_trans = TransDdb.query.filter(
+                and_(
+                    TransDdb.trx_code == x[0].fk_code,
+                    or_(
+                        TransDdb.trx_desc.like("%JURNAL HUTANG%"),
+                        TransDdb.trx_desc.like("%JURNAL PPN%"),
+                    ),
+                )
+            ).all()
 
             if old_trans:
                 for x in old_trans:
                     db.session.delete(x)
                     db.session.commit()
-
 
             # insert jurnal ap
             trans_ap = TransDdb(
