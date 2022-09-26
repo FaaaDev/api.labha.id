@@ -90,10 +90,11 @@ class UpdateStock:
                 if old_krtst:
                     db.session.delete(old_krtst)
                     db.session.commit()
+
                 old_trans = TransDdb.query.filter(
                     and_(
                         TransDdb.trx_code == order.ord_code,
-                        TransDdb.trx_desc.like("%JURNAL STOCK PRODUCT%"),
+                        TransDdb.trx_desc.like("%JURNAL STOCK%"),
                     )
                 ).first()
                 print(old_trans)
@@ -115,10 +116,11 @@ class UpdateStock:
                 sup = HrgBlMdb(order.id, order.sup_id, x[0].prod_id, x[0].price)
                 db.session.add(sup)
                 db.session.commit()
+
                 old_trans = TransDdb.query.filter(
                     and_(
                         TransDdb.trx_code == order.ord_code,
-                        TransDdb.trx_desc.like("%JURNAL STOCK PRODUCT%"),
+                        TransDdb.trx_desc.like("%JURNAL STOCK%"),
                     )
                 ).first()
                 if old_trans:
