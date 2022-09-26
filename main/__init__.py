@@ -202,15 +202,33 @@ from sshtunnel import SSHTunnelForwarder
 
 app = Flask(__name__)
 
-server = SSHTunnelForwarder(
-    ("103.179.56.92", 22),
-    ssh_username="andynoer",
-    ssh_password="Kulonuwun450",
-    remote_bind_address=("127.0.0.1", 5432),
-)
+def db_server():
+    server = SSHTunnelForwarder(
+        ("103.179.56.92", 22),
+        ssh_username="andynoer",
+        ssh_password="Kulonuwun450",
+        remote_bind_address=("127.0.0.1", 5432),
+    )
+    server.start()
+        
+    while True :
+        if(server.is_active):
+            print("alive... " + (time.ctime()))
+        else:
+            print("reconnecting... " + time.ctime())
+            server.stop()
+            server = SSHTunnelForwarder(
+                ("103.179.56.92", 22),
+                ssh_username="andynoer",
+                ssh_password="Kulonuwun450",
+                remote_bind_address=("127.0.0.1", 5432),
+            )
+            server.start()
+        time.sleep(60)
 
-server.start()
-local_port = str(server.local_bind_port)
+        return server.local_bind_port
+
+local_port = str(db_server())
 
 app.config["SQLALCHEMY_DATABASE_URI"] = (
     "postgresql://postgres:12345678@127.0.0.1:" + local_port + "/acc_dev"
