@@ -4950,6 +4950,11 @@ def sls_id(self, id):
             return result
 
     elif request.method == "DELETE":
+        so = SordHdb.query.filter(SordHdb.id == sls.so_id).first()
+        if so:
+            so.status = 0
+            db.session.commit()
+
         UpdateAr(True, sls.id, self.id)
         product = JprodDdb.query.filter(JprodDdb.pj_id == sls.id)
         jasa = JprodDdb.query.filter(JprodDdb.pj_id == sls.id)

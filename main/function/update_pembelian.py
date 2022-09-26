@@ -155,7 +155,7 @@ class UpdatePembelian:
                 None,
                 trx_amnh,
                 "K",
-                "JURNAL HUTANG",
+                "JURNAL HUTANG %s" % (x[0].fk_code),
                 None,
                 None,
             )
