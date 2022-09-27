@@ -5,6 +5,7 @@ from math import prod
 from pickle import TRUE
 import re
 from sys import prefix
+from threading import Thread
 import time
 from unicodedata import name
 from datetime import datetime
@@ -201,38 +202,51 @@ import bcrypt
 from sshtunnel import SSHTunnelForwarder
 
 app = Flask(__name__)
+server = SSHTunnelForwarder(
+    ("103.179.56.92", 22),
+    ssh_username="andynoer",
+    ssh_password="Kulonuwun450",
+    remote_bind_address=("127.0.0.1", 5432),
+)
+
+server.start()
+
+print(str(server.local_bind_port))
 
 def db_server():
-    server = SSHTunnelForwarder(
-        ("103.179.56.92", 22),
-        ssh_username="andynoer",
-        ssh_password="Kulonuwun450",
-        remote_bind_address=("127.0.0.1", 5432),
-    )
-    server.start()
-        
-    while True :
-        if(server.is_active):
+    servers = server
+    while True:
+        if servers.is_active:
             print("alive... " + (time.ctime()))
         else:
             print("reconnecting... " + time.ctime())
-            server.stop()
-            server = SSHTunnelForwarder(
+            servers.stop()
+            servers = SSHTunnelForwarder(
                 ("103.179.56.92", 22),
                 ssh_username="andynoer",
                 ssh_password="Kulonuwun450",
                 remote_bind_address=("127.0.0.1", 5432),
             )
-            server.start()
+            servers.start()
+
+            app.config["SQLALCHEMY_DATABASE_URI"] = (
+                "postgresql://postgres:12345678@127.0.0.1:"
+                + str(servers.local_bind_port)
+                + "/acc_dev"
+            )
+
         time.sleep(60)
 
-        return server.local_bind_port
 
-local_port = str(db_server())
+Thread(target=db_server, daemon=True).start()
+
 
 app.config["SQLALCHEMY_DATABASE_URI"] = (
-    "postgresql://postgres:12345678@127.0.0.1:" + local_port + "/acc_dev"
+    "postgresql://postgres:12345678@127.0.0.1:"
+    + str(server.local_bind_port)
+    + "/acc_dev"
 )
+
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["SQLALCHEMY_POOL_SIZE"] = 10
 app.config["SQLALCHEMY_MAX_OVERFLOW"] = 20
@@ -288,6 +302,7 @@ def token_required(f):
             data = jwt.decode(token, app.config["SECRET_KEY"])
             user = User.query.filter(User.id == data["id"]).first()
         except Exception as e:
+            print(e)
             return response(401, "Invalid or expired token !!", False, None)
         # returns the current logged in users contex to the routes
         return f(user, *args, **kwargs)
@@ -583,13 +598,7 @@ def kateg_import(self):
 
         try:
 
-            a = KategMdb(
-                id,
-                name,
-                kode_klasi,
-                kode_saldo,
-                True
-            )
+            a = KategMdb(id, name, kode_klasi, kode_saldo, True)
             db.session.add(a)
             db.session.commit()
 
@@ -2241,7 +2250,7 @@ def setup_pnl_id(self, id):
             return response(200, "Berhasil", True, pnl_schema.dump(setup))
 
         return response(200, "Berhasil", False, None)
-        
+
 
 @app.route("/v1/api/unit", methods=["POST", "GET"])
 @token_required
@@ -4295,14 +4304,14 @@ def ord_id(self, id):
         if po:
             po.status = 0
             db.session.commit()
-        
+
         fk = FkpbHdb.query.filter(FkpbHdb.ord_id == do.id).first()
 
-        if fk: 
+        if fk:
             UpdatePembelian(fk.id, self.id, True)
 
         UpdateStock(do.id, True)
-        
+
         product = DprodDdb.query.filter(DprodDdb.ord_id == do.id)
         jasa = DjasaDdb.query.filter(DjasaDdb.ord_id == do.id)
 
@@ -7034,16 +7043,16 @@ def pbb(self):
         )
 
         uph = (
-                db.session.query(UphDdb, AccouMdb)
-                .outerjoin(AccouMdb, AccouMdb.id == UphDdb.acc_id)
-                .all()
-            )
+            db.session.query(UphDdb, AccouMdb)
+            .outerjoin(AccouMdb, AccouMdb.id == UphDdb.acc_id)
+            .all()
+        )
 
         ovh = (
-                db.session.query(OvhDdb, AccouMdb)
-                .outerjoin(AccouMdb, AccouMdb.id == OvhDdb.acc_id)
-                .all()
-            )
+            db.session.query(OvhDdb, AccouMdb)
+            .outerjoin(AccouMdb, AccouMdb.id == OvhDdb.acc_id)
+            .all()
+        )
 
         final = []
         for x in pbb:
@@ -7060,7 +7069,7 @@ def pbb(self):
                     ovh.append(ovh_schema.dump(z[0]))
 
             x[1].plan_id = plan_schema.dump(x[2])
-                
+
             final.append(
                 {
                     "id": x[0].id,
@@ -7118,10 +7127,7 @@ def pbb_id(self, id):
                     if x["id"] == y.id:
                         y.acc_id = x["acc_id"]
 
-                if (
-                    x["id"] == 0
-                    and x["acc_id"]
-                ):
+                if x["id"] == 0 and x["acc_id"]:
                     new_ovh.append(
                         OvhDdb(
                             p.id,
@@ -7168,16 +7174,16 @@ def pbb_id(self, id):
         )
 
         uph = (
-                db.session.query(UphDdb, AccouMdb)
-                .outerjoin(AccouMdb, AccouMdb.id == UphDdb.acc_id)
-                .all()
-            )
+            db.session.query(UphDdb, AccouMdb)
+            .outerjoin(AccouMdb, AccouMdb.id == UphDdb.acc_id)
+            .all()
+        )
 
         ovh = (
-                db.session.query(OvhDdb, AccouMdb)
-                .outerjoin(AccouMdb, AccouMdb.id == OvhDdb.acc_id)
-                .all()
-            )
+            db.session.query(OvhDdb, AccouMdb)
+            .outerjoin(AccouMdb, AccouMdb.id == OvhDdb.acc_id)
+            .all()
+        )
 
         final = []
         for x in pbb:
@@ -7194,7 +7200,7 @@ def pbb_id(self, id):
                     ovh.append(ovh_schema.dump(z[0]))
 
             x[1].plan_id = plan_schema.dump(x[2])
-                
+
             final.append(
                 {
                     "id": x[0].id,
@@ -7604,6 +7610,7 @@ def memorial_id(self, id):
 
         return response(200, "Berhasil", True, final)
 
+
 @app.route("/v1/api/import/memorial", methods=["POST"])
 @token_required
 def memo_import(self):
@@ -7912,7 +7919,9 @@ def sto_loc(self, id):
 @token_required
 def sto(self):
     product = ProdMdb.query.all()
-    sto = StCard.query.filter(and_(StCard.trx_dbcr == "d", StCard.trx_type == "BL")).all()
+    sto = StCard.query.filter(
+        and_(StCard.trx_dbcr == "d", StCard.trx_type == "BL")
+    ).all()
 
     loc = LocationMdb.query.all()
 
