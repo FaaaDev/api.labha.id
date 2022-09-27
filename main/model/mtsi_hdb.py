@@ -3,7 +3,7 @@ from main.shared.shared import db
 
 
 class MtsiHdb(db.Model):
-    __table_args__ = {"schema": "inventory"}
+    __table_args__ = {"schema": "INV"}
     __tablename__ = "MTSIHDB"
 
     id = db.Column(db.Integer, primary_key=True)
