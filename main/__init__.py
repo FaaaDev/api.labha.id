@@ -1,15 +1,6 @@
-import code
-from crypt import methods
-from fileinput import filename
-from math import prod
-from pickle import TRUE
-import re
-from sys import prefix
-from threading import Thread
 import time
-from unicodedata import name
 from datetime import datetime
-from flask import Flask, redirect, request, url_for, jsonify, make_response
+from flask import Flask, redirect, request, jsonify
 import requests
 from main.function.delete_ap_payment import DeleteApPayment
 from main.function.koreksi_sto.koreksi_sto import KoreksiPersediaan
@@ -114,21 +105,19 @@ from main.schema.arcard_mdb import ARCardSchema
 from main.schema.ccost_mdb import ccost_schema, ccosts_schema, CcostSchema
 from main.schema.proj_mdb import proj_schema, projs_schema, ProjSchema
 from main.schema.rpbb_mdb import rpbb_schema
-from main.shared.shared import db, ma
+from main.shared.shared import db
 from main.model.user import User
 from main.schema.user import user_schema, users_schema
-from main.schema.bank_mdb import banks_schema, bank_schema
+from main.schema.bank_mdb import bank_schema
 from main.schema.unit_mdb import unit_schema, units_schema, UnitSchema
-from main.schema.prod_mdb import prod_schema, prods_schema, ProdSchema
-from main.schema.po_sup_ddb import poSup_schema, poSups_schema, PoSupSchema
-from main.schema.fprdc_hdb import fprdc_schema, fprdcs_schema, FprdcSchema
-from main.schema.fprod_ddb import fprod_schema, fprods_schema, FprodSchema
-from main.schema.fmtrl_ddb import fmtrl_schema, fmtrls_schema, FmtrlSchema
-from main.schema.memo_ddb import mddb_schema, mddbs_schema, MddbSchema
-from main.schema.memo_hdb import mhdb_schema, mhdbs_schema, MhdbSchema
+from main.schema.prod_mdb import prod_schema
+from main.schema.po_sup_ddb import poSup_schema
+from main.schema.fprdc_hdb import fprdc_schema,  FprdcSchema
+from main.schema.fprod_ddb import fprod_schema
+from main.schema.fmtrl_ddb import fmtrl_schema
+from main.schema.memo_ddb import mddb_schema
+from main.schema.memo_hdb import mhdb_schema,  MhdbSchema
 from main.schema.adm_user_menu import (
-    adm_user_menu_schema,
-    adm_user_menus_schema,
     AdmUserMenuSchema,
 )
 from main.schema.klasi_mdb import klasi_schema, klasies_schema, KlasiMdb as KlasiSchema
@@ -191,80 +180,16 @@ from main.schema.mtsi_ddb import mtsiddb_schema, mtsiddbs_schema, MtsiddbSchema
 from main.schema.setup_mdb import *
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import and_, extract, func, or_
-from flask_cors import CORS
+
 import jwt
 from datetime import datetime, timedelta
 from functools import wraps
 import os
-from os.path import join, dirname, realpath
 from werkzeug.utils import secure_filename
 import bcrypt
-from sshtunnel import SSHTunnelForwarder
+
 
 app = Flask(__name__)
-server = SSHTunnelForwarder(
-    ("103.179.56.92", 22),
-    ssh_username="andynoer",
-    ssh_password="Kulonuwun450",
-    remote_bind_address=("127.0.0.1", 5432),
-)
-
-server.start()
-
-print(str(server.local_bind_port))
-
-def db_server():
-    servers = server
-    while True:
-        if servers.is_active:
-            print("alive... " + (time.ctime()))
-        else:
-            print("reconnecting... " + time.ctime())
-            servers.stop()
-            servers = SSHTunnelForwarder(
-                ("103.179.56.92", 22),
-                ssh_username="andynoer",
-                ssh_password="Kulonuwun450",
-                remote_bind_address=("127.0.0.1", 5432),
-            )
-            servers.start()
-
-            app.config["SQLALCHEMY_DATABASE_URI"] = (
-                "postgresql://postgres:12345678@127.0.0.1:"
-                + str(servers.local_bind_port)
-                + "/acc_dev"
-            )
-
-        time.sleep(60)
-
-
-Thread(target=db_server, daemon=True).start()
-
-
-app.config["SQLALCHEMY_DATABASE_URI"] = (
-    "postgresql://postgres:12345678@127.0.0.1:"
-    + str(server.local_bind_port)
-    + "/acc_dev"
-)
-
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-app.config["SQLALCHEMY_POOL_SIZE"] = 10
-app.config["SQLALCHEMY_MAX_OVERFLOW"] = 20
-app.config["SQLALCHEMY_POOL_RECYCLE"] = 1800
-app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"pool_pre_ping": True}
-app.config["JSON_SORT_KEYS"] = False
-app.config["UPLOAD_FOLDER"] = join(dirname(realpath(__file__)), "static/upload")
-app.config[
-    "SECRET_KEY"
-] = "IKIKUNCIrahasiasu,rasahkeposia.pokonaulahHayangNYAhosiah.pateniraimu"
-app.secret_key = "IKIKUNCIrahasiasu,rasahkeposia.pokonaulahHayangNYAhosiah.pateniraimu"
-CORS(app)
-
-
-db.init_app(app)
-ma.init_app(app)
-with app.app_context():
-    db.create_all()
 
 
 def target_url():
