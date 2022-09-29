@@ -33,14 +33,15 @@ class UpdateArGiro():
                 .first()
             )
 
-            penjualan = ArCard.query.filter(and_(ArCard.bkt_id == sl.id, ArCard.trx_type == "JL", ArCard.pay_type == "P1")).first()
+            penjualan = ArCard.query.filter(and_(ArCard.bkt_id == sl[0].id, ArCard.trx_type == "JL", ArCard.pay_type == "P1")).first()
             old_ar = ArCard.query.filter(and_(ArCard.acq_id == x.id, ArCard.pay_type == "J4")).first()
             if old_ar:
                 db.session.delete(old_ar)
                 db.session.commit()
 
             ar_card = ArCard(penjualan.cus_id, inc.inc_code, penjualan.trx_date, penjualan.trx_due,
-                            x.id, inc.inc_date, penjualan.bkt_id, inc.inc_date, None, "D", penjualan.trx_type, "J4", penjualan.trx_amnh, None, x.payment, None, None, None, None, inc.giro_num, inc.giro_date, None, None, None )
+                            x.id, inc.inc_date, penjualan.bkt_id, inc.inc_date, None, "D", penjualan.trx_type,
+                            "J4", penjualan.trx_amnh, None, x.payment, None, None, None, None, inc.giro_num, inc.giro_date, None, None, None )
 
             db.session.add(ar_card)
             db.session.commit()

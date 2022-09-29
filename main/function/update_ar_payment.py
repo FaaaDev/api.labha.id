@@ -1,4 +1,6 @@
 from sqlalchemy import and_
+from main.model.bank_mdb import BankMdb
+from main.model.custom_mdb import CustomerMdb
 from main.model.iacq_ddb import IAcqDdb
 from main.model.arcard_mdb import ArCard
 from main.model.dprod_ddb import DprodDdb
@@ -54,3 +56,71 @@ class UpdateArPayment():
 
                     db.session.add(ar_card)
                     db.session.commit()
+
+
+        if delete:
+            old_trans_cus = TransDdb.query.filter(and_(TransDdb.trx_code == inc.inc_code, TransDdb.trx_dbcr == "D", TransDdb.trx_desc == "JURNAL PELUNASAN PENJUALAN %s"%(inc.inc_code))).first()
+            old_trans_inc = TransDdb.query.filter(and_(TransDdb.trx_code == inc.inc_code, TransDdb.trx_dbcr == "K", TransDdb.trx_desc == "JURNAL PELUNASAN PENJUALAN %s"%(inc.inc_code))).first()
+            if old_trans_cus:
+                db.session.delete(old_trans_cus)
+            if old_trans_cus:
+                db.session.delete(old_trans_inc)
+
+        else:
+            if inc.inc_type == 1:
+                old_trans_cus = TransDdb.query.filter(and_(TransDdb.trx_code == inc.inc_code, TransDdb.trx_dbcr == "D", TransDdb.trx_desc == "JURNAL PELUNASAN PENJUALAN %s"%(inc.inc_code))).first()
+                old_trans_inc = TransDdb.query.filter(and_(TransDdb.trx_code == inc.inc_code, TransDdb.trx_dbcr == "K", TransDdb.trx_desc == "JURNAL PELUNASAN PENJUALAN %s"%(inc.inc_code))).first()
+                if old_trans_cus:
+                    db.session.delete(old_trans_cus)
+                if old_trans_cus:
+                    db.session.delete(old_trans_inc)
+                
+                db.session.commit()
+
+                if inc.bank_id:
+                    bank = BankMdb.query.filter(BankMdb.id == inc.bank_id).first()
+                    
+                cus = (
+                        db.session.query(CustomerMdb, PajakMdb)
+                        .outerjoin(PajakMdb, PajakMdb.id == CustomerMdb.cus_pjk)
+                        .filter(CustomerMdb.id == inc.acq_cus)
+                        .first()
+                    )
+                # insert jurnal ap
+                trans_cus = TransDdb(inc.inc_code, inc.inc_date, cus[0].cus_gl, None, None,
+                                    None, None, None, None, total, "D", "JURNAL PELUNASAN PENJUALAN %s"%(inc.inc_code), None, None)
+
+                trans_inc = TransDdb(inc.inc_code, inc.inc_date, inc.acc_kas if inc.acq_pay == 1 else bank.acc_id, None, None,
+                                    None, None, None, None, total, "K", "JURNAL PELUNASAN PENJUALAN %s"%(inc.inc_code), None, None)
+
+                db.session.add(trans_cus)
+                db.session.add(trans_inc)
+                db.session.commit()
+            else:
+                old_trans_cus = TransDdb.query.filter(and_(TransDdb.trx_code == inc.inc_code, TransDdb.trx_dbcr == "D", TransDdb.trx_desc == "JURNAL PEMASUKAN %s"%(inc.inc_code))).first()
+                old_trans_inc = TransDdb.query.filter(and_(TransDdb.trx_code == inc.inc_code, TransDdb.trx_dbcr == "K", TransDdb.trx_desc == "JURNAL PEMASUKAN %s"%(inc.inc_code))).all()
+                if old_trans_cus:
+                    db.session.delete(old_trans_cus)
+                if old_trans_cus:
+                    for x in old_trans_cus:
+                        db.session.delete(x)
+                
+                db.session.commit()
+
+
+                total = 0;
+                trans_inc = []
+                for x in incs:
+                    total += x.value
+                    trans_inc.append(TransDdb(inc.inc_code, inc.inc_date, x.acc_code, None, None,
+                                    None, None, None, None, x.value, "D", "JURNAL PEMASUKAN %s"%(inc.inc_code), None, None))
+                    
+                # insert jurnal ap
+                trans_cus = TransDdb(inc.inc_code, inc.inc_date, inc.inc_acc, None, None,
+                                    None, None, None, None, total, "K", "JURNAL PEMASUKAN %s"%(inc.inc_code), None, None)
+
+                
+
+                db.session.add(trans_cus)
+                db.session.add_all(trans_inc)
+                db.session.commit()
