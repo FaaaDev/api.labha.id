@@ -16,13 +16,10 @@ from main.function.update_ap_giro import UpdateApGiro
 from main.function.update_ap_payment import UpdateApPayment
 from main.function.update_ar import UpdateAr
 from main.function.update_batch import updateBatch
-<<<<<<< HEAD
 from main.model.dep_mdb import DepMdb
-=======
 from main.model.giro_inc_hdb import GiroIncHdb
 from main.model.iacq_ddb import IAcqDdb
 from main.model.inc_hdb import IncHdb
->>>>>>> bef24cef34363e0fae997f4c6b13a4452e5c1c92
 from main.model.ovh_ddb import OvhDdb
 from main.schema.inc_hdb import inc_schema
 from .function.update_mutasi import UpdateMutasi
