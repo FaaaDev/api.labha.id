@@ -4,6 +4,8 @@ from unicodedata import name
 from flask import Flask, redirect, request, jsonify
 import requests
 from main.function.delete_ap_payment import DeleteApPayment
+from main.function.income.income import Income
+from main.function.income.income_id import IncomeId
 from main.function.koreksi_sto.koreksi_sto import KoreksiPersediaan
 from main.function.koreksi_sto.koreksi_sto_id import KorPersediaanId
 from main.function.retur_order.retur_id import ReturOrderId
@@ -14,8 +16,15 @@ from main.function.update_ap_giro import UpdateApGiro
 from main.function.update_ap_payment import UpdateApPayment
 from main.function.update_ar import UpdateAr
 from main.function.update_batch import updateBatch
+<<<<<<< HEAD
 from main.model.dep_mdb import DepMdb
+=======
+from main.model.giro_inc_hdb import GiroIncHdb
+from main.model.iacq_ddb import IAcqDdb
+from main.model.inc_hdb import IncHdb
+>>>>>>> bef24cef34363e0fae997f4c6b13a4452e5c1c92
 from main.model.ovh_ddb import OvhDdb
+from main.schema.inc_hdb import inc_schema
 from .function.update_mutasi import UpdateMutasi
 from main.function.update_pembelian import UpdatePembelian
 from main.function.update_rpbb import UpdateRpbb
@@ -162,8 +171,10 @@ from main.schema.jjasa_ddb import jjasa_schema, jjasas_schema, JjasaSchema
 from main.schema.exp_hdb import exp_schema, exps_schema, ExpSchema
 from main.schema.dexp_ddb import dexp_schema, dexps_schema, DexpSchema
 from main.schema.dacq_ddb import dacq_schema, dacqs_schema, DacqSchema
+from main.schema.iacq_ddb import iacq_schema, iacqs_schema, IacqSchema
 from main.schema.acq_ddb import acq_schema, acqs_schema, AcqSchema
 from main.schema.giro_hdb import giro_schema, giros_schema, GiroSchema
+from main.schema.giro_inc_hdb import grinc_schema, grincs_schema, GiroIncSchema
 from main.schema.apcard_mdb import apcard_schema, apcards_schema, APCardSchema
 from main.schema.retsale_hdb import retsale_schema, retsales_schema, RetSaleSchema
 from main.schema.transddb import trans_schema, transs_schema, TransDDB
@@ -240,7 +251,8 @@ def token_required(f):
 
 @app.route("/")
 def index():
-    return redirect(target_url())
+    # return redirect(target_url())
+    return "Test"
 
 
 @app.route("/v1/api/login", methods=["POST"])
@@ -5535,6 +5547,18 @@ def expense_id(self, id):
         return response(200, "Berhasil", True, final)
 
 
+@app.route("/v1/api/income", methods=["POST", "GET"])
+@token_required
+def income(self):
+    return Income(self, request)
+
+
+@app.route("/v1/api/income/<int:id>", methods=["PUT", "GET", "DELETE"])
+@token_required
+def income_id(self, id):
+    return IncomeId(id, request)
+
+
 @app.route("/v1/api/apcard", methods=["GET"])
 @token_required
 def apcard(self):
@@ -5588,12 +5612,12 @@ def apcard(self):
 @token_required
 def arcard(self):
     ar = (
-        db.session.query(ArCard, AcqDdb, OrdpjHdb, CustomerMdb, LocationMdb, GiroHdb)
-        .outerjoin(AcqDdb, AcqDdb.id == ArCard.acq_id)
+        db.session.query(ArCard, IAcqDdb, OrdpjHdb, CustomerMdb, LocationMdb, GiroIncHdb)
+        .outerjoin(IAcqDdb, IAcqDdb.id == ArCard.acq_id)
         .outerjoin(OrdpjHdb, OrdpjHdb.id == ArCard.bkt_id)
         .outerjoin(CustomerMdb, CustomerMdb.id == ArCard.cus_id)
         .outerjoin(LocationMdb, LocationMdb.id == ArCard.loc_id)
-        .outerjoin(GiroHdb, GiroHdb.id == ArCard.giro_id)
+        .outerjoin(GiroIncHdb, GiroIncHdb.id == ArCard.giro_id)
         .all()
     )
 
@@ -5610,12 +5634,12 @@ def arcard(self):
                 "trx_due": ARCardSchema(only=["trx_date"]).dump(x[0])["trx_date"]
                 if x[0]
                 else None,
-                "acq_id": acq_schema.dump(x[1]) if x[1] else None,
-                "acq_date": AcqSchema(only=["acq_date"]).dump(x[1])["acq_date"]
-                if x[1]
+                "acq_id": iacq_schema.dump(x[1]) if x[1] else None,
+                "acq_date": ARCardSchema(only=["acq_date"]).dump(x[0])["acq_date"]
+                if x[0]
                 else None,
                 "bkt_id": ordpj_schema.dump(x[2]) if x[2] else None,
-                "bkt_date": OrdpjSchema(only=["trx_date"]).dump(x[2])["trx_date"]
+                "bkt_date": OrdpjSchema(only=["ord_date"]).dump(x[2])["ord_date"]
                 if x[2]
                 else None,
                 "cur_conv": x[0].cur_conv,
@@ -5624,16 +5648,16 @@ def arcard(self):
                 "pay_type": x[0].pay_type,
                 "trx_amnh": x[0].trx_amnh,
                 "trx_amnv": x[0].trx_amnv,
-                "acq_amnh": acq_schema.dump(x[1]) if x[1] else None,
-                "acq_amnv": acq_schema.dump(x[1]) if x[1] else None,
-                "bkt_amnv": ordpj_schema.dump(x[2]) if x[2] else None,
-                "bkt_amnh": ordpj_schema.dump(x[2]) if x[2] else None,
+                "acq_amnh": x[0].acq_amnh,
+                "acq_amnv": x[0].acq_amnv,
+                "bkt_amnv": x[0].bkt_amnv,
+                "bkt_amnh": x[0].bkt_amnh,
                 "trx_desc": x[0].trx_desc,
                 "pos_flag": x[0].pos_flag,
                 "loc_id": loct_schema.dump(x[4]) if x[4] else None,
                 "trx_pymnt": x[0].trx_pymnt,
-                "giro_id": giro_schema.dump(x[5]) if x[5] else None,
-                "giro_date": GiroSchema(only=["giro_date"]).dump(x[5])["giro_date"]
+                "giro_id": grinc_schema.dump(x[5]) if x[5] else None,
+                "giro_date": GiroIncSchema(only=["giro_date"]).dump(x[5])["giro_date"]
                 if x[5]
                 else None,
             }
@@ -5877,6 +5901,41 @@ def giro_id(self, id):
         }
 
         return response(200, "Berhasil", True, data)
+
+
+@app.route("/v1/api/giro-inc", methods=["GET"])
+@token_required
+def giro_inc(self):
+    giro = (
+        db.session.query(GiroIncHdb, BankMdb, CustomerMdb, IncHdb)
+        .outerjoin(BankMdb, BankMdb.id == GiroIncHdb.bank_id)
+        .outerjoin(CustomerMdb, CustomerMdb.id == GiroIncHdb.cus_id)
+        .outerjoin(IncHdb, IncHdb.id == GiroIncHdb.pay_code)
+        .all()
+    )
+
+    final = []
+    for x in giro:
+        final.append(
+            {
+                "id": x[0].id,
+                "giro_date": GiroIncSchema(only=["giro_date"]).dump(x[0])["giro_date"]
+                if x[0]
+                else None,
+                "giro_num": x[0].giro_num,
+                "bank_id": bank_schema.dump(x[1]) if x[1] else None,
+                "pay_code": inc_schema.dump(x[3]) if x[3] else None,
+                "pay_date": GiroIncSchema(only=["pay_date"]).dump(x[0])["pay_date"]
+                if x[0]
+                else None,
+                "cus_id": customer_schema.dump(x[2]) if x[2] else None,
+                "value": x[0].value,
+                "status": x[0].status,
+            }
+        )
+
+    return response(200, "Berhasil", True, final)
+
 
 
 @app.route("/v1/api/approval", methods=["GET"])
@@ -7198,7 +7257,8 @@ def pbb(self):
                     z[0].acc_id = accou_schema.dump(z[1])
                     ovh.append(ovh_schema.dump(z[0]))
 
-            x[1].plan_id = plan_schema.dump(x[2])
+            if x[1]:
+                x[1].plan_id = plan_schema.dump(x[2])
 
             final.append(
                 {
