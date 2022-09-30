@@ -46,10 +46,10 @@ class UpdateApGiro():
             db.session.add(ap_card)
             db.session.commit()
 
-        trans_giro = TransDdb(giro.giro_num, datetime.now(), exp.bank_acc, None, None,
+        trans_giro = TransDdb(giro.giro_num, datetime.now(), exp.bank_id, None, None,
                             None, None, None, None, giro.value, "D", "JURNAL PENCAIRAN GIRO %s"%(giro.giro_num), None, None)
 
-        trans_ap = TransDdb(giro.giro_num, datetime.now(), exp.bank_acc, None, None,
+        trans_ap = TransDdb(giro.giro_num, datetime.now(), exp.bank_id, None, None,
                             None, None, None, None, giro.value, "K", "JURNAL PENCAIRAN GIRO %s"%(giro.giro_num), None, None)
 
         db.session.add(trans_ap)

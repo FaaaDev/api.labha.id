@@ -111,6 +111,7 @@ class Income:
                         inc_date,
                         acq_cus,
                         value,
+                        None,
                         0,
                     )
                     db.session.add(giro)

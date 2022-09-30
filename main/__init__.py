@@ -5293,6 +5293,10 @@ def expense(self):
 
             db.session.commit()
 
+            if acq_pay and acq_pay != 3:
+                UpdateApPayment(exps.id, False)
+
+
             if company and not company[1].appr_payment:
                 print("HEHEH")
                 if acq_pay and acq_pay == 3:
@@ -5304,14 +5308,14 @@ def expense(self):
                         exp_date,
                         acq_sup,
                         value,
+                        None,
                         0,
                     )
                     db.session.add(giro)
                     db.session.commit()
                     UpdateApGiro(giro.id)
 
-                    # if acq_pay and acq_pay != 3:
-                    UpdateApPayment(exps.id, False)
+            
 
             result = response(200, "Berhasil", True, exp_schema.dump(exps))
         except IntegrityError:
@@ -5554,6 +5558,7 @@ def income(self):
 @token_required
 def income_id(self, id):
     return IncomeId(id, request)
+
 
 
 @app.route("/v1/api/apcard", methods=["GET"])
@@ -5863,7 +5868,7 @@ def giro_id(self, id):
             giro.pay_date = pay_date
             giro.sup_id = sup_id
             giro.value = value
-            giro.status = status
+            giro.status = 1
 
             db.session.commit()
 
@@ -5875,11 +5880,11 @@ def giro_id(self, id):
         finally:
             return result
 
-    elif request.method == "DELETE":
-        db.session.delete(giro)
-        db.session.commit()
+    # elif request.method == "DELETE":
+    #     db.session.delete(giro)
+    #     db.session.commit()
 
-        return response(200, "Berhasil", True, None)
+    #     return response(200, "Berhasil", True, None)
     else:
         result = (
             db.session.query(GiroHdb, BankMdb, SupplierMdb, ExpHdb)
@@ -5927,11 +5932,80 @@ def giro_inc(self):
                 else None,
                 "cus_id": customer_schema.dump(x[2]) if x[2] else None,
                 "value": x[0].value,
+                "accp_date": GiroIncSchema(only=["giro_date"]).dump(x[0])["giro_date"]
+                if x[0]
+                else None,
                 "status": x[0].status,
             }
         )
 
     return response(200, "Berhasil", True, final)
+
+
+@app.route("/v1/api/giro-inc/<int:id>", methods=["PUT", "GET"])
+@token_required
+def giro_inc_id(self, id):
+    gr = GiroIncHdb.query.filter(GiroIncHdb.id == id).first()
+    if request.method == "PUT":
+        try:
+            gr.giro_date = request.json["giro_date"]
+            gr.giro_num = request.json["giro_num"]
+            gr.bank_id = request.json["bank_id"]
+            gr.pay_code = request.json["pay_code"]
+            gr.pay_date = request.json["pay_date"]
+            gr.cus_id = request.json["cus_id"]
+            gr.value = request.json["value"]
+            gr.status = 1
+
+            db.session.commit()
+
+            result = response(200, "Berhasil", True, grinc_schema.dump(gr))
+
+        # except IntegrityError:
+        #     db.session.rollback()
+        #     result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+
+    else:
+        gir = (
+                db.session.query(GiroIncHdb, BankMdb, CustomerMdb, IncHdb)
+                .outerjoin(BankMdb, BankMdb.id == GiroIncHdb.bank_id)
+                .outerjoin(CustomerMdb, CustomerMdb.id == GiroIncHdb.cus_id)
+                .outerjoin(IncHdb, IncHdb.id == GiroIncHdb.pay_code)
+                .all()
+            )
+
+
+        final = []
+        for x in gir:
+
+            if x[0].pay_code:
+                if x[3].id == x[0].pay_code:
+                    x[0].pay_code = inc_schema.dump(x[3])
+
+            final.append(
+                {
+                    "id": x[0].id,
+                    "giro_date": GiroIncSchema(only=["giro_date"]).dump(x[0])["giro_date"]
+                    if x[0]
+                    else None,
+                    "giro_num": x[0].giro_num,
+                    "bank_id": bank_schema.dump(x[1]) if x[1] else None,
+                    "pay_code": inc_schema.dump(x[3]) if x[3] else None,
+                    "pay_date": GiroIncSchema(only=["pay_date"]).dump(x[0])["pay_date"]
+                    if x[0]
+                    else None,
+                    "cus_id": customer_schema.dump(x[2]) if x[2] else None,
+                    "value": x[0].value,
+                    # "accp_date": GiroIncSchema(only=["giro_date"]).dump(x[0])["giro_date"]
+                    # if x[0]
+                    # else None,
+                    "status": x[0].status,
+                }
+            )
+
+        return response(200, "Berhasil", True, final)
 
 
 
