@@ -1558,7 +1558,7 @@ def company(self):
 
         if result[1]:
             result[1].cp_logo = (
-                server_name+ "/upload/" + result[1].cp_logo
+                server_name+ "/v1/api/upload/" + result[1].cp_logo
                 if result[1].cp_logo != ""
                 else ""
             )
