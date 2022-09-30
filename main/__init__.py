@@ -1,7 +1,7 @@
 import time
 from datetime import datetime
 from unicodedata import name
-from flask import Flask, redirect, request, jsonify
+from flask import Flask, redirect, request, jsonify, send_from_directory
 import requests
 from main.function.delete_ap_payment import DeleteApPayment
 from main.function.income.income import Income
@@ -191,6 +191,7 @@ from main.schema.mtsi_ddb import mtsiddb_schema, mtsiddbs_schema, MtsiddbSchema
 from main.schema.setup_mdb import *
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import and_, extract, func, or_
+from main.shared.shared import server_name
 
 import jwt
 from datetime import datetime, timedelta
@@ -1488,6 +1489,9 @@ def upload(self):
 
     return response(200, "Berhasil mengupload gambar", True, file_name)
 
+@app.route("/v1/api/upload/<string:filename>", methods=["GET"])
+def get_upload(filename):
+    return send_from_directory('static/upload', filename)
 
 @app.route("/v1/api/company", methods=["POST", "GET"])
 @token_required
@@ -1554,7 +1558,7 @@ def company(self):
 
         if result[1]:
             result[1].cp_logo = (
-                request.host_url + "static/upload/" + result[1].cp_logo
+                server_name+ "/upload/" + result[1].cp_logo
                 if result[1].cp_logo != ""
                 else ""
             )
