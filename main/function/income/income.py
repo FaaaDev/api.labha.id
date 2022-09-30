@@ -98,6 +98,10 @@ class Income:
                 db.session.commit()
 
 
+                if acq_pay and acq_pay != 3:
+                    UpdateArPayment(incs.id, False)
+
+                    
                 if acq_pay and acq_pay == 3:
                     giro = GiroIncHdb(
                         giro_date,
@@ -113,8 +117,6 @@ class Income:
                     db.session.commit()
                     UpdateArGiro(giro.id)
 
-                    # if acq_pay and acq_pay != 3:
-                UpdateArPayment(incs.id, False)
 
                     
 
