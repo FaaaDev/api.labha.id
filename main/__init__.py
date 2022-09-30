@@ -1,7 +1,7 @@
 import time
 from datetime import datetime
 from unicodedata import name
-from flask import Flask, redirect, request, jsonify
+from flask import Flask, redirect, request, jsonify, send_from_directory
 import requests
 from main.function.delete_ap_payment import DeleteApPayment
 from main.function.income.income import Income
@@ -16,7 +16,6 @@ from main.function.update_ap_giro import UpdateApGiro
 from main.function.update_ap_payment import UpdateApPayment
 from main.function.update_ar import UpdateAr
 from main.function.update_batch import updateBatch
-from main.model.dep_mdb import DepMdb
 from main.model.giro_inc_hdb import GiroIncHdb
 from main.model.iacq_ddb import IAcqDdb
 from main.model.inc_hdb import IncHdb
@@ -107,7 +106,6 @@ from main.model.memo_hdb import MemoHdb
 from main.model.neraca_mdb import NeracaMdb
 from main.model.pnl_mdb import PnlMdb
 from main.schema.pnl_mdb import pnl_schema, pnls_schema, PnlSchema
-from main.schema.dep_mdb import dep_schema, deps_schema, DepSchema
 from main.schema.neraca_mdb import neraca_schema, neracas_schema, NeracaSchema
 from main.schema.apcard_mdb import apcard_schema, apcards_schema, APCardSchema
 from main.schema.arcard_mdb import ARCardSchema
@@ -121,11 +119,11 @@ from main.schema.bank_mdb import bank_schema
 from main.schema.unit_mdb import unit_schema, units_schema, UnitSchema
 from main.schema.prod_mdb import prod_schema
 from main.schema.po_sup_ddb import poSup_schema
-from main.schema.fprdc_hdb import fprdc_schema,  FprdcSchema
+from main.schema.fprdc_hdb import fprdc_schema, FprdcSchema
 from main.schema.fprod_ddb import fprod_schema
 from main.schema.fmtrl_ddb import fmtrl_schema
 from main.schema.memo_ddb import mddb_schema
-from main.schema.memo_hdb import mhdb_schema,  MhdbSchema
+from main.schema.memo_hdb import mhdb_schema, MhdbSchema
 from main.schema.adm_user_menu import (
     AdmUserMenuSchema,
 )
@@ -191,6 +189,7 @@ from main.schema.mtsi_ddb import mtsiddb_schema, mtsiddbs_schema, MtsiddbSchema
 from main.schema.setup_mdb import *
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import and_, extract, func, or_
+from main.shared.shared import server_name
 
 import jwt
 from datetime import datetime, timedelta
@@ -248,8 +247,7 @@ def token_required(f):
 
 @app.route("/")
 def index():
-    # return redirect(target_url())
-    return "Test"
+    return redirect(target_url())
 
 
 @app.route("/v1/api/login", methods=["POST"])
@@ -433,27 +431,6 @@ def bank_id(self, id):
         return response(200, "Berhasil", True, data)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 @app.route("/v1/api/klasifikasi", methods=["POST", "GET"])
 @token_required
 def klasifikasi(self):
@@ -475,29 +452,6 @@ def klasifikasi_id(self, id):
     db.session.commit()
 
     return response(200, "Berhasil", True, klasi_schema.dump(klasi))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 @app.route("/v1/api/kategory", methods=["POST", "GET"])
@@ -928,18 +882,6 @@ def account_id(self, id):
         return response(200, "Berhasil", True, data)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 @app.route("/v1/api/cost-center", methods=["POST", "GET"])
 @token_required
 def ccost(self):
@@ -987,22 +929,6 @@ def ccost_id(self, id):
         return response(200, "Berhasil", True, None)
     else:
         return response(200, "Berhasil", True, ccost_schema.dump(cost))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 @app.route("/v1/api/project", methods=["POST", "GET"])
@@ -1489,6 +1415,9 @@ def upload(self):
 
     return response(200, "Berhasil mengupload gambar", True, file_name)
 
+@app.route("/v1/api/upload/<string:filename>", methods=["GET"])
+def get_upload(filename):
+    return send_from_directory('static/upload', filename)
 
 @app.route("/v1/api/company", methods=["POST", "GET"])
 @token_required
@@ -1555,7 +1484,7 @@ def company(self):
 
         if result[1]:
             result[1].cp_logo = (
-                request.host_url + "static/upload/" + result[1].cp_logo
+                server_name+ "/v1/api/upload/" + result[1].cp_logo
                 if result[1].cp_logo != ""
                 else ""
             )
@@ -2194,21 +2123,6 @@ def setup_neraca_id(self, id):
         return response(200, "Berhasil", False, None)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 @app.route("/v1/api/setup/pnl", methods=["POST", "GET"])
 @token_required
 def setup_pnl(self):
@@ -2274,121 +2188,6 @@ def setup_pnl_id(self, id):
             return response(200, "Berhasil", True, pnl_schema.dump(setup))
 
         return response(200, "Berhasil", False, None)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-@app.route("/v1/api/setup/dep", methods=["POST", "GET"])
-@token_required
-def setup_dep(self):
-    user = User.query.filter(User.id == self.id).first()
-    if request.method == "POST":
-        try:
-            cp_id = user.company
-            name = request.json["name"]
-
-            setup = DepMdb(
-                cp_id,
-                ",".join([str(x) for x in name]) if name else None,
-                self.id,
-            )
-
-            db.session.add(setup)
-            db.session.commit()
-
-            result = response(200, "Berhasil", True, dep_schema.dump(setup))
-        except IntegrityError:
-            db.session.rollback()
-            result = response(400, "Kode sudah digunakan", False, None)
-        finally:
-            return result
-    else:
-        setup = DepMdb.query.filter(DepMdb.cp_id == user.company).first()
-
-        if setup:
-            setup.name = (
-                setup.name.replace("{", "").replace("}", "").split(",")
-                if setup.name
-                else None
-            )
-
-            return response(200, "Berhasil", True, dep_schema.dump(setup))
-
-        return response(200, "Berhasil", False, None)
-
-
-@app.route("/v1/api/setup/dep/<int:id>", methods=["PUT", "GET", "DELETE"])
-@token_required
-def setup_dep_id(self, id):
-    setup = DepMdb.query.filter(DepMdb.id == id).first()
-    if request.method == "PUT":
-        setup.name = request.json["name"]
-
-        db.session.commit()
-
-        return response(200, "Berhasil", True, dep_schema.dump(setup))
-    elif request.method == "DELETE":
-        db.session.delete(setup)
-        db.session.commit()
-
-        return response(200, "Berhasil", True, None)
-    else:
-        if setup:
-            setup.name = (
-                setup.name.replace("{", "").replace("}", "").split(",")
-                if setup.name
-                else None
-            )
-
-            return response(200, "Berhasil", True, dep_schema.dump(setup))
-
-        return response(200, "Berhasil", False, None)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 @app.route("/v1/api/unit", methods=["POST", "GET"])
@@ -5614,7 +5413,9 @@ def apcard(self):
 @token_required
 def arcard(self):
     ar = (
-        db.session.query(ArCard, IAcqDdb, OrdpjHdb, CustomerMdb, LocationMdb, GiroIncHdb)
+        db.session.query(
+            ArCard, IAcqDdb, OrdpjHdb, CustomerMdb, LocationMdb, GiroIncHdb
+        )
         .outerjoin(IAcqDdb, IAcqDdb.id == ArCard.acq_id)
         .outerjoin(OrdpjHdb, OrdpjHdb.id == ArCard.bkt_id)
         .outerjoin(CustomerMdb, CustomerMdb.id == ArCard.cus_id)
