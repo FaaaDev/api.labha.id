@@ -248,8 +248,7 @@ def token_required(f):
 
 @app.route("/")
 def index():
-    # return redirect(target_url())
-    return "Test"
+    return redirect(target_url())
 
 
 @app.route("/v1/api/login", methods=["POST"])
