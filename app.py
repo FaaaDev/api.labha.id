@@ -22,7 +22,7 @@ def db_server():
         if servers.is_active:
             minutes=(uptime/(60))%60
             hours=(uptime/(60*60))%24
-            days=(uptime/(60*60*24))%1
+            days=(uptime/(60*60*24))
             print("Uptime: %d days %d hours %d minutes" %(int(days), int(hours), int(minutes)))
         else:
             print("reconnecting... " + time.ctime())
