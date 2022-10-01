@@ -1,3 +1,4 @@
+from datetime import datetime
 from main.function.update_ar_giro import UpdateArGiro
 from main.function.update_ar_payment import UpdateArPayment
 from main.model.iacq_ddb import IAcqDdb
@@ -9,6 +10,7 @@ from main.model.fkpb_hdb import FkpbHdb
 from main.model.giro_inc_hdb import GiroIncHdb
 from main.model.custom_mdb import CustomerMdb
 from main.model.ordpj_hdb import OrdpjHdb
+from main.model.transddb import TransDdb
 from main.model.user import User
 from main.model.accou_mdb import AccouMdb
 from main.shared.shared import db
@@ -73,6 +75,10 @@ class Income:
                 db.session.add(incs)
                 db.session.commit()
 
+                if giro_bnk:
+                    bank = BankMdb.query.filter(BankMdb.id == giro_bnk).first()
+
+
                 new_inc = []
                 for x in inc:
                     if x["acc_code"] and x["value"]:
@@ -116,10 +122,15 @@ class Income:
                     )
                     db.session.add(giro)
                     db.session.commit()
-                    UpdateArGiro(giro.id)
-
-
                     
+                    trans_giro = TransDdb(giro.giro_num, datetime.now(), bank.acc_id, None, None, None, None, None, None,
+                                        giro.value, "D", "JURNAL PELUNASAN DENGAN GIRO %s"%(giro.giro_num), None, None)
+
+                    db.session.add(trans_giro)
+                    db.session.commit()
+
+
+                # UpdateArPayment(incs.id, False)                    
 
                 result = response(200, "Berhasil", True, inc_schema.dump(incs))
             except IntegrityError:

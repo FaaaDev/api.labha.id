@@ -8,7 +8,7 @@ class IncDdb(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     inc_id = db.Column(db.Integer)
     acc_code = db.Column(db.Integer)
-    dbcr = db.Column(db.Boolean)
+    dbcr = db.Column(db.String(2))
     value = db.Column(db.Integer)
     desc = db.Column(db.Text)
 

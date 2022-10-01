@@ -3175,6 +3175,7 @@ def po(self):
                             x["prod_id"],
                             x["unit_id"],
                             x["order"],
+                            x["remain"],
                             x["price"],
                             x["disc"],
                             x["nett_price"],
@@ -3406,6 +3407,7 @@ def po_id(self, id):
                                     z.prod_id = x["prod_id"]
                                     z.unit_id = x["unit_id"]
                                     z.order = x["order"]
+                                    z.remain = x["remain"]
                                     z.price = x["price"]
                                     z.nett_price = x["nett_price"]
                                     z.disc = x["disc"]
@@ -3427,6 +3429,7 @@ def po_id(self, id):
                                 x["prod_id"],
                                 x["unit_id"],
                                 x["order"],
+                                x["remain"],
                                 x["price"],
                                 x["disc"],
                                 x["nett_price"],
@@ -4006,12 +4009,27 @@ def order(self):
             db.session.add(do)
             db.session.commit()
 
+            pprod = PprodDdb.query.filter(PprodDdb.po_id == po_id).all()
+            pjasa = PjasaDdb.query.filter(PjasaDdb.po_id == po_id).all()
+
             new_product = []
             for x in dprod:
-                if x["prod_id"] and x["unit_id"] and x["order"]:
+                for y in pprod:
+                    if x["id"] == y.id:
+                        y.remain = y.remain - int(x["order"])
+                
+                if (
+                    x["prod_id"]
+                    and x["unit_id"]
+                    and x["order"]
+                    and int(x["order"]) > 0
+                ):
+
                     new_product.append(
                         DprodDdb(
                             do.id,
+                            po_id,
+                            x["id"] if x["id"] != 0 else None,
                             x["prod_id"],
                             x["unit_id"],
                             x["order"],
@@ -4047,10 +4065,26 @@ def order(self):
 
             db.session.commit()
 
+
+            remain = 0
+            for x in pprod:
+                remain += x.remain
+            # for x in pjasa:
+            #     remain += x.remain
+            if remain == 0:
+                po.status = 2
+            else:
+                po.status = 1
+
+            db.session.commit()
+
+
             if po_id:
                 po = PoMdb.query.filter(PoMdb.id == po_id).first()
                 po.status = 1
                 db.session.commit()
+
+            
 
             if faktur:
                 faktur = FkpbHdb(ord_code, ord_date, do.id, None, None, None)
@@ -5746,7 +5780,7 @@ def giro_inc(self):
                 else None,
                 "cus_id": customer_schema.dump(x[2]) if x[2] else None,
                 "value": x[0].value,
-                "accp_date": GiroIncSchema(only=["giro_date"]).dump(x[0])["giro_date"]
+                "accp_date": GiroIncSchema(only=["accp_date"]).dump(x[0])["accp_date"]
                 if x[0]
                 else None,
                 "status": x[0].status,
@@ -5816,9 +5850,9 @@ def giro_inc_id(self, id):
                     else None,
                     "cus_id": customer_schema.dump(x[2]) if x[2] else None,
                     "value": x[0].value,
-                    # "accp_date": GiroIncSchema(only=["giro_date"]).dump(x[0])["giro_date"]
-                    # if x[0]
-                    # else None,
+                    "accp_date": GiroIncSchema(only=["accp_date"]).dump(x[0])["accp_date"]
+                    if x[0]
+                    else None,
                     "status": x[0].status,
                 }
             )

@@ -1,5 +1,6 @@
 from datetime import datetime
 from sqlalchemy import and_
+from main.model.bank_mdb import BankMdb
 from main.model.iacq_ddb import IAcqDdb
 from main.model.arcard_mdb import ArCard
 from main.model.dprod_ddb import DprodDdb
@@ -25,6 +26,10 @@ class UpdateArGiro():
 
         acq = IAcqDdb.query.filter(IAcqDdb.inc_id == inc.id).all()
 
+
+        if giro.bank_id:
+                bank = BankMdb.query.filter(BankMdb.id == giro.bank_id).first()
+
         for x in acq:
             sl = (
                 db.session.query(OrdpjHdb, SordHdb)
@@ -40,18 +45,18 @@ class UpdateArGiro():
                 db.session.commit()
 
             ar_card = ArCard(penjualan.cus_id, inc.inc_code, penjualan.trx_date, penjualan.trx_due,
-                            x.id, inc.inc_date, penjualan.bkt_id, inc.inc_date, None, "D", penjualan.trx_type,
-                            "J4", penjualan.trx_amnh, None, x.payment, None, None, None, None, inc.giro_num, inc.giro_date, None, None, None )
+                            x.id, inc.inc_date, penjualan.bkt_id, inc.inc_date, None, "K", penjualan.trx_type,
+                            "J4", penjualan.trx_amnh, None, x.payment, None, None, None, None, giro.id, inc.giro_date, None, None, None )
 
             db.session.add(ar_card)
             db.session.commit()
 
-        trans_giro = TransDdb(giro.giro_num, datetime.now(), inc.giro_bnk, None, None,
-                            None, None, None, None, giro.value, "D", "JURNAL PENCAIRAN GIRO %s"%(giro.giro_num), None, None)
+        # trans_giro = TransDdb(giro.giro_num, datetime.now(), inc.giro_bnk, None, None, None, None, None, None,
+        #                     giro.value, "D", "JURNAL PELUNASAN DENGAN GIRO %s"%(giro.giro_num), None, None)
 
-        trans_ar = TransDdb(giro.giro_num, datetime.now(), inc.giro_bnk, None, None,
-                            None, None, None, None, giro.value, "K", "JURNAL PENCAIRAN GIRO %s"%(giro.giro_num), None, None)
+        trans_ar = TransDdb(giro.giro_num, datetime.now(), bank.acc_id, None, None, None, None, None, None,
+                            giro.value, "K", "JURNAL PENCAIRAN GIRO %s"%(giro.giro_num), None, None)
 
         db.session.add(trans_ar)
-        db.session.add(trans_giro)
+        # db.session.add(trans_giro)
         db.session.commit()

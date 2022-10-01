@@ -51,7 +51,7 @@ class UpdateArPayment():
                         db.session.commit()
 
                     ar_card = ArCard(penjualan.cus_id, inc.inc_code, penjualan.trx_date, penjualan.trx_due,
-                                    x.id, inc.inc_date, penjualan.bkt_id, inc.inc_date, None, "D", penjualan.trx_type, "J4",
+                                    x.id, inc.inc_date, penjualan.bkt_id, inc.inc_date, None, "K", penjualan.trx_type, "J4",
                                     penjualan.trx_amnh, None, x.payment, None, None, None, None, inc.giro_num, inc.giro_date, None, None, None )
 
                     db.session.add(ar_card)
