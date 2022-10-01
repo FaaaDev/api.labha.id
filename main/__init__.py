@@ -15,6 +15,7 @@ from main.function.retur_sales.retur_sales import ReturSale
 from main.function.update_ap_giro import UpdateApGiro
 from main.function.update_ap_payment import UpdateApPayment
 from main.function.update_ar import UpdateAr
+from main.function.update_ar_giro import UpdateArGiro
 from main.function.update_batch import updateBatch
 from main.model.giro_inc_hdb import GiroIncHdb
 from main.model.iacq_ddb import IAcqDdb
@@ -5092,8 +5093,8 @@ def expense(self):
 
             db.session.commit()
 
-            if acq_pay and acq_pay != 3:
-                UpdateApPayment(exps.id, False)
+            # if acq_pay and acq_pay != 3:
+            #     UpdateApPayment(exps.id, False)
 
 
             if company and not company[1].appr_payment:
@@ -5114,7 +5115,7 @@ def expense(self):
                     db.session.commit()
                     UpdateApGiro(giro.id)
 
-            
+            UpdateApPayment(exps.id, False)         
 
             result = response(200, "Berhasil", True, exp_schema.dump(exps))
         except IntegrityError:
@@ -5759,6 +5760,9 @@ def giro_inc_id(self, id):
             gr.status = 1
 
             db.session.commit()
+
+
+            UpdateArGiro(gr.id)
 
             result = response(200, "Berhasil", True, grinc_schema.dump(gr))
 
