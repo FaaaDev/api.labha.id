@@ -1411,13 +1411,19 @@ def lokasi_id(self, id):
 def upload(self):
     file = request.files["image"]
     file_name = secure_filename(file.filename)
-    file.save(os.path.join(os.path.abspath(os.path.dirname(__file__)),'static/upload', file_name))
+    file.save(
+        os.path.join(
+            os.path.abspath(os.path.dirname(__file__)), "static/upload", file_name
+        )
+    )
 
     return response(200, "Berhasil mengupload gambar", True, file_name)
 
+
 @app.route("/v1/api/upload/<string:filename>", methods=["GET"])
 def get_upload(filename):
-    return send_from_directory('static/upload', filename)
+    return send_from_directory("static/upload", filename)
+
 
 @app.route("/v1/api/company", methods=["POST", "GET"])
 @token_required
@@ -1484,7 +1490,7 @@ def company(self):
 
         if result[1]:
             result[1].cp_logo = (
-                server_name+ "/v1/api/upload/" + result[1].cp_logo
+                server_name + "/v1/api/upload/" + result[1].cp_logo
                 if result[1].cp_logo != ""
                 else ""
             )
@@ -1507,9 +1513,9 @@ def company_id(self, id):
             company.cp_npwp = request.json["cp_npwp"]
             company.cp_coper = request.json["cp_coper"]
 
-            if request.host_url + "static/upload/" in request.json["cp_logo"]:
+            if server_name + "/v1/api/upload/" in request.json["cp_logo"]:
                 cp_logo = request.json["cp_logo"].replace(
-                    request.host_url + "static/upload/", ""
+                    server_name + "/v1/api/upload/", ""
                 )
             else:
                 cp_logo = request.json["cp_logo"]
@@ -1517,10 +1523,18 @@ def company_id(self, id):
             if company.cp_logo != cp_logo:
                 if company.cp_logo != "" and company.cp_logo is not None:
                     if os.path.exists(
-                        os.path.join(app.config["UPLOAD_FOLDER"], company.cp_logo)
+                        os.path.join(
+                            os.path.abspath(os.path.dirname(__file__)),
+                            "static/upload",
+                            company.cp_logo,
+                        )
                     ):
                         os.remove(
-                            os.path.join(app.config["UPLOAD_FOLDER"], company.cp_logo)
+                            os.path.join(
+                                os.path.abspath(os.path.dirname(__file__)),
+                                "static/upload",
+                                company.cp_logo,
+                            )
                         )
 
             company.cp_logo = cp_logo
@@ -5095,7 +5109,6 @@ def expense(self):
             if acq_pay and acq_pay != 3:
                 UpdateApPayment(exps.id, False)
 
-
             if company and not company[1].appr_payment:
                 print("HEHEH")
                 if acq_pay and acq_pay == 3:
@@ -5113,8 +5126,6 @@ def expense(self):
                     db.session.add(giro)
                     db.session.commit()
                     UpdateApGiro(giro.id)
-
-            
 
             result = response(200, "Berhasil", True, exp_schema.dump(exps))
         except IntegrityError:
@@ -5357,7 +5368,6 @@ def income(self):
 @token_required
 def income_id(self, id):
     return IncomeId(id, request)
-
 
 
 @app.route("/v1/api/apcard", methods=["GET"])
@@ -5770,13 +5780,12 @@ def giro_inc_id(self, id):
 
     else:
         gir = (
-                db.session.query(GiroIncHdb, BankMdb, CustomerMdb, IncHdb)
-                .outerjoin(BankMdb, BankMdb.id == GiroIncHdb.bank_id)
-                .outerjoin(CustomerMdb, CustomerMdb.id == GiroIncHdb.cus_id)
-                .outerjoin(IncHdb, IncHdb.id == GiroIncHdb.pay_code)
-                .all()
-            )
-
+            db.session.query(GiroIncHdb, BankMdb, CustomerMdb, IncHdb)
+            .outerjoin(BankMdb, BankMdb.id == GiroIncHdb.bank_id)
+            .outerjoin(CustomerMdb, CustomerMdb.id == GiroIncHdb.cus_id)
+            .outerjoin(IncHdb, IncHdb.id == GiroIncHdb.pay_code)
+            .all()
+        )
 
         final = []
         for x in gir:
@@ -5788,7 +5797,9 @@ def giro_inc_id(self, id):
             final.append(
                 {
                     "id": x[0].id,
-                    "giro_date": GiroIncSchema(only=["giro_date"]).dump(x[0])["giro_date"]
+                    "giro_date": GiroIncSchema(only=["giro_date"]).dump(x[0])[
+                        "giro_date"
+                    ]
                     if x[0]
                     else None,
                     "giro_num": x[0].giro_num,
@@ -5807,7 +5818,6 @@ def giro_inc_id(self, id):
             )
 
         return response(200, "Berhasil", True, final)
-
 
 
 @app.route("/v1/api/approval", methods=["GET"])
