@@ -1411,7 +1411,7 @@ def lokasi_id(self, id):
 def upload(self):
     file = request.files["image"]
     file_name = secure_filename(file.filename)
-    file.save(os.path.join(app.config["UPLOAD_FOLDER"], file_name))
+    file.save(os.path.join(os.path.abspath(os.path.dirname(__file__)),'static/upload', file_name))
 
     return response(200, "Berhasil mengupload gambar", True, file_name)
 
