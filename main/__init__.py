@@ -3595,6 +3595,154 @@ def po_id(self, id):
         return response(200, "Berhasil", True, final)
 
 
+@app.route("/v1/api/po-close/<int:id>", methods=["PUT"])
+@token_required
+def po_close_id(self, id):
+    po = PoMdb.query.filter(PoMdb.id == id).first()
+    if request.method == "PUT":
+        if po.print == 0 and po.status != 2:
+            try:
+                po_code = request.json["po_code"]
+                po_date = request.json["po_date"]
+                preq_id = request.json["preq_id"]
+                sup_id = request.json["sup_id"]
+                ref_sup = request.json["ref_sup"]
+                ppn_type = request.json["ppn_type"]
+                top = request.json["top"]
+                due_date = request.json["due_date"]
+                split_inv = request.json["split_inv"]
+                prod_disc = request.json["prod_disc"]
+                jasa_disc = request.json["jasa_disc"]
+                total_disc = request.json["total_disc"]
+                pprod = request.json["pprod"]
+                pjasa = request.json["pjasa"]
+
+                po.po_code = po_code
+                po.po_date = po_date
+                po.preq_id = preq_id
+                po.sup_id = sup_id
+                po.ref_sup = ref_sup
+                po.ppn_type = ppn_type
+                po.top = top
+                po.due_date = due_date
+                po.split_inv = split_inv
+                po.prod_disc = prod_disc
+                po.jasa_disc = jasa_disc
+                po.total_disc = total_disc
+                po.status = 2
+
+                preq = PreqMdb.query.filter(PreqMdb.id == preq_id).first()
+
+                product = RprodMdb.query.filter(RprodMdb.preq_id == po.preq_id).all()
+                jasa = RjasaMdb.query.filter(RjasaMdb.preq_id == po.preq_id).all()
+                old_prod = PprodDdb.query.filter(PprodDdb.preq_id == po.preq_id).all()
+                old_jasa = PjasaDdb.query.filter(PjasaDdb.preq_id == po.preq_id).all()
+
+                new_prod = []
+                for x in pprod:
+                    for y in product:
+                        if x["rprod_id"] == y.id:
+                            for z in old_prod:
+                                if x["id"] == z.id:
+                                    y.remain = z.order - int(x["order"]) + y.remain
+                                    z.prod_id = x["prod_id"]
+                                    z.unit_id = x["unit_id"]
+                                    z.order = x["order"]
+                                    z.remain = x["remain"]
+                                    z.price = x["price"]
+                                    z.nett_price = x["nett_price"]
+                                    z.disc = x["disc"]
+                                    z.total = x["total"]
+                    if (
+                        x["id"] == 0
+                        and x["prod_id"]
+                        and x["unit_id"]
+                        and x["order"]
+                        and int(x["order"]) > 0
+                        and x["price"]
+                        and int(x["price"]) > 0
+                    ):
+                        new_prod.append(
+                            PprodDdb(
+                                po.id,
+                                preq_id,
+                                None if x["id"] != 0 else None,
+                                x["prod_id"],
+                                x["unit_id"],
+                                x["order"],
+                                x["remain"],
+                                x["price"],
+                                x["disc"],
+                                x["nett_price"],
+                                x["total"],
+                            )
+                        )
+
+                new_jasa = []
+                for x in pjasa:
+                    for y in jasa:
+                        if x["rjasa_id"] == y.id:
+                            for z in old_jasa:
+                                if x["id"] == z.id:
+                                    y.remain = z.order - int(x["order"]) + y.remain
+                                    z.sup_id = x["sup_id"]
+                                    z.jasa_id = x["prod_id"]
+                                    z.unit_id = x["unit_id"]
+                                    z.order = x["order"]
+                                    z.price = x["price"]
+                                    z.disc = x["disc"]
+                                    z.total = x["total"]
+                    if (
+                        x["id"] == 0
+                        and x["sup_id"]
+                        and x["jasa_id"]
+                        and x["unit_id"]
+                        and x["order"]
+                        and int(x["order"]) > 0
+                        and x["price"]
+                        and int(x["price"]) > 0
+                    ):
+                        new_jasa.append(
+                            PjasaDdb(
+                                po.id,
+                                preq_id,
+                                None if x["id"] != 0 else None,
+                                x["sup_id"],
+                                x["jasa_id"],
+                                x["unit_id"],
+                                x["order"],
+                                x["price"],
+                                x["disc"],
+                                x["total"],
+                            )
+                        )
+
+                if len(new_prod) > 0:
+                    db.session.add_all(new_prod)
+
+                if len(new_jasa) > 0:
+                    db.session.add_all(new_jasa)
+
+                db.session.commit()
+
+                remain = 0
+                for x in product:
+                    remain += x.remain
+                for x in jasa:
+                    remain += x.remain
+                if remain == 0:
+                    preq.status = 2
+                else:
+                    preq.status = 1
+
+                db.session.commit()
+
+                result = response(200, "Berhasil", True, po_schema.dump(po))
+
+            finally:
+                return result
+
+
 @app.route("/v1/api/so", methods=["POST", "GET"])
 @token_required
 def so(self):
@@ -4009,6 +4157,8 @@ def order(self):
             db.session.add(do)
             db.session.commit()
 
+
+            po = PoMdb.query.filter(PoMdb.id == po_id).first()
             pprod = PprodDdb.query.filter(PprodDdb.po_id == po_id).all()
             pjasa = PjasaDdb.query.filter(PjasaDdb.po_id == po_id).all()
 
@@ -4016,20 +4166,19 @@ def order(self):
             for x in dprod:
                 for y in pprod:
                     if x["id"] == y.id:
-                        y.remain = y.remain - int(x["order"])
-                
+                            y.remain = y.remain - int(x["order"])
                 if (
                     x["prod_id"]
                     and x["unit_id"]
                     and x["order"]
                     and int(x["order"]) > 0
+                    and x["price"]
+                    and int(x["price"]) > 0
                 ):
 
                     new_product.append(
                         DprodDdb(
                             do.id,
-                            po_id,
-                            x["id"] if x["id"] != 0 else None,
                             x["prod_id"],
                             x["unit_id"],
                             x["order"],
@@ -4066,22 +4215,18 @@ def order(self):
             db.session.commit()
 
 
-            remain = 0
-            for x in pprod:
-                remain += x.remain
-            # for x in pjasa:
-            #     remain += x.remain
-            if remain == 0:
-                po.status = 2
-            else:
-                po.status = 1
-
-            db.session.commit()
-
 
             if po_id:
-                po = PoMdb.query.filter(PoMdb.id == po_id).first()
-                po.status = 1
+                remain = 0
+                for x in pprod:
+                    remain += x.remain
+                # for x in pjasa:
+                #     remain += x.remain
+                if remain == 0:
+                    po.status = 2
+                else:
+                    po.status = 1
+
                 db.session.commit()
 
             
