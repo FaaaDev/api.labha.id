@@ -8,6 +8,7 @@ class DprodDdb(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     ord_id = db.Column(db.Integer)
+    pprod_id = db.Column(db.Integer)
     prod_id = db.Column(db.Integer)
     unit_id = db.Column(db.Integer)
     order = db.Column(db.Integer)
@@ -19,6 +20,7 @@ class DprodDdb(db.Model):
 
     def __init__(self,
                  ord_id,
+                 pprod_id,
                  prod_id,
                  unit_id,
                  order,
@@ -28,6 +30,7 @@ class DprodDdb(db.Model):
                  nett_price,
                  total):
         self.ord_id = ord_id
+        self.pprod_id = pprod_id
         self.prod_id = prod_id
         self.unit_id = unit_id
         self.order = order

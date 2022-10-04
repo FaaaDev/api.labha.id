@@ -46,9 +46,7 @@ class UpdateAr:
                 if delete:
                     so.status = 0
                     db.session.commit()
-                else:
-                    so.status = 1
-                    db.session.commit()
+              
 
         if delete:
             if krtar:
