@@ -8,6 +8,8 @@ from main.function.income.income import Income
 from main.function.income.income_id import IncomeId
 from main.function.koreksi_sto.koreksi_sto import KoreksiPersediaan
 from main.function.koreksi_sto.koreksi_sto_id import KorPersediaanId
+from main.function.menu.menu import Menu
+from main.function.menu.menu_id import MenuId
 from main.function.retur_order.retur_id import ReturOrderId
 from main.function.retur_order.retur_order import ReturOrder
 from main.function.retur_sales.retur_id import ReturSaleId
@@ -28,7 +30,6 @@ from main.function.update_rpbb import UpdateRpbb
 from main.function.update_stock import UpdateStock
 from main.model.accou_mdb import AccouMdb
 from main.model.acq_ddb import AcqDdb
-from main.model.adm_menu import AdmMenu
 from main.model.adm_user_menu import AdmUserMenu
 from main.model.apcard_mdb import ApCard
 from main.model.arcard_mdb import ArCard
@@ -337,9 +338,8 @@ def user_id(self, id):
 @token_required
 def profil(self):
     user = (
-        db.session.query(User, AdmUserMenu, AdmMenu)
+        db.session.query(User, AdmUserMenu)
         .outerjoin(AdmUserMenu, AdmUserMenu.id_adm_user == User.id)
-        .outerjoin(AdmMenu, AdmMenu.id == AdmUserMenu.id_adm_menu)
         .filter(User.id == self.id)
         .all()
     )
@@ -349,21 +349,30 @@ def profil(self):
         "email": user[0][0].email,
         "username": user[0][0].username,
         "name": user[0][0].name,
-        "menu": [
-            {
-                "name": x[2].name,
-                "sequence_no": x[2].sequence_no,
-                "page_name": x[2].page_name,
-                "route_name": x[2].route_name,
-                "icon_file": x[2].icon_file,
-                "akses": AdmUserMenuSchema(only=["view", "edit", "delete"]).dump(x[1]),
-            }
-            for x in user
-        ],
+        # "menu": [
+        #     {
+        #         "name": x[2].name,
+        #         "sequence_no": x[2].sequence_no,
+        #         "page_name": x[2].page_name,
+        #         "route_name": x[2].route_name,
+        #         "icon_file": x[2].icon_file,
+            
+        #     }
+        #     for x in user
+        # ],
     }
 
     return response(200, "Berhasil", True, menu)
 
+@app.route("/v1/api/menu", methods=["POST", "GET"])
+@token_required
+def menu(self):
+    return Menu(request)
+
+@app.route("/v1/api/menu/<int:id>", methods=["PUT", "GET", "DELETE"])
+@token_required
+def menu_id(self, id):
+    return MenuId(request, id)
 
 @app.route("/v1/api/bank", methods=["POST", "GET"])
 @token_required
