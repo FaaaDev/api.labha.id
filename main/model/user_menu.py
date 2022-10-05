@@ -2,7 +2,7 @@ from main.shared.shared import db
 
 class UserMenu(db.Model):
     __table_args__ = {'schema': 'public'}
-    __tablename__ = 'main_menu'
+    __tablename__ = 'user_menu'
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer)
