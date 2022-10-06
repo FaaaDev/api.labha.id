@@ -3369,7 +3369,7 @@ def po(self):
 def po_id(self, id):
     po = PoMdb.query.filter(PoMdb.id == id).first()
     if request.method == "PUT":
-        if po.print == 0 and po.status == 0:
+        if po.print == 0 and po.status != 2:
             try:
                 po_code = request.json["po_code"]
                 po_date = request.json["po_date"]
@@ -3640,110 +3640,6 @@ def po_close_id(self, id):
                 po.total_disc = total_disc
                 po.status = 2
 
-                preq = PreqMdb.query.filter(PreqMdb.id == preq_id).first()
-
-                product = RprodMdb.query.filter(RprodMdb.preq_id == po.preq_id).all()
-                jasa = RjasaMdb.query.filter(RjasaMdb.preq_id == po.preq_id).all()
-                old_prod = PprodDdb.query.filter(PprodDdb.preq_id == po.preq_id).all()
-                old_jasa = PjasaDdb.query.filter(PjasaDdb.preq_id == po.preq_id).all()
-
-                new_prod = []
-                for x in pprod:
-                    for y in product:
-                        if x["rprod_id"] == y.id:
-                            for z in old_prod:
-                                if x["id"] == z.id:
-                                    y.remain = z.order - int(x["order"]) + y.remain
-                                    z.prod_id = x["prod_id"]
-                                    z.unit_id = x["unit_id"]
-                                    z.order = x["order"]
-                                    z.remain = x["remain"]
-                                    z.price = x["price"]
-                                    z.nett_price = x["nett_price"]
-                                    z.disc = x["disc"]
-                                    z.total = x["total"]
-                    if (
-                        x["id"] == 0
-                        and x["prod_id"]
-                        and x["unit_id"]
-                        and x["order"]
-                        and int(x["order"]) > 0
-                        and x["price"]
-                        and int(x["price"]) > 0
-                    ):
-                        new_prod.append(
-                            PprodDdb(
-                                po.id,
-                                preq_id,
-                                None if x["id"] != 0 else None,
-                                x["prod_id"],
-                                x["unit_id"],
-                                x["order"],
-                                x["remain"],
-                                x["price"],
-                                x["disc"],
-                                x["nett_price"],
-                                x["total"],
-                            )
-                        )
-
-                new_jasa = []
-                for x in pjasa:
-                    for y in jasa:
-                        if x["rjasa_id"] == y.id:
-                            for z in old_jasa:
-                                if x["id"] == z.id:
-                                    y.remain = z.order - int(x["order"]) + y.remain
-                                    z.sup_id = x["sup_id"]
-                                    z.jasa_id = x["prod_id"]
-                                    z.unit_id = x["unit_id"]
-                                    z.order = x["order"]
-                                    z.price = x["price"]
-                                    z.disc = x["disc"]
-                                    z.total = x["total"]
-                    if (
-                        x["id"] == 0
-                        and x["sup_id"]
-                        and x["jasa_id"]
-                        and x["unit_id"]
-                        and x["order"]
-                        and int(x["order"]) > 0
-                        and x["price"]
-                        and int(x["price"]) > 0
-                    ):
-                        new_jasa.append(
-                            PjasaDdb(
-                                po.id,
-                                preq_id,
-                                None if x["id"] != 0 else None,
-                                x["sup_id"],
-                                x["jasa_id"],
-                                x["unit_id"],
-                                x["order"],
-                                x["price"],
-                                x["disc"],
-                                x["total"],
-                            )
-                        )
-
-                if len(new_prod) > 0:
-                    db.session.add_all(new_prod)
-
-                if len(new_jasa) > 0:
-                    db.session.add_all(new_jasa)
-
-                db.session.commit()
-
-                remain = 0
-                for x in product:
-                    remain += x.remain
-                for x in jasa:
-                    remain += x.remain
-                if remain == 0:
-                    preq.status = 2
-                else:
-                    preq.status = 1
-
                 db.session.commit()
 
                 result = response(200, "Berhasil", True, po_schema.dump(po))
@@ -3806,7 +3702,7 @@ def so(self):
                             x["location"],
                             x["request"],
                             x["order"],
-                            None,
+                            x["order"],
                             x["price"],
                             x["disc"],
                             x["nett_price"],
@@ -3849,7 +3745,7 @@ def so(self):
         so = (
             db.session.query(SordHdb, RulesPayMdb)
             .outerjoin(RulesPayMdb, RulesPayMdb.id == SordHdb.top)
-            .order_by(SordHdb.id.asc())
+            .order_by(SordHdb.id.desc())
             .all()
         )
 
@@ -4122,6 +4018,57 @@ def so_id(self, id):
         return response(200, "Berhasil", True, final)
 
 
+@app.route("/v1/api/so-close/<int:id>", methods=["PUT"])
+@token_required
+def so_close_id(self, id):
+    so = SordHdb.query.filter(SordHdb.id == id).first()
+    if request.method == "PUT":
+        if so.print == 0 and so.status != 2:
+            try:
+                so_code = request.json["so_code"]
+                so_date = request.json["so_date"]
+                pel_id = request.json["pel_id"]
+                ppn_type = request.json["ppn_type"]
+                sub_addr = request.json["sub_addr"]
+                sub_id = request.json["sub_id"]
+                req_date = request.json["req_date"]
+                top = request.json["top"]
+                due_date = request.json["due_date"]
+                split_inv = request.json["split_inv"]
+                prod_disc = request.json["prod_disc"]
+                jasa_disc = request.json["jasa_disc"]
+                total_disc = request.json["total_disc"]
+                status = request.json["status"]
+                sprod = request.json["sprod"]
+                sjasa = request.json["sjasa"]
+               
+
+                so.so_code = so_code
+                so.so_date = so_date
+                so.pel_id = pel_id
+                so.ppn_type = ppn_type
+                so.sub_addr = sub_addr
+                so.sub_id = sub_id
+                so.req_date = req_date
+                so.top = top
+                so.due_date = due_date
+                so.split_inv = split_inv
+                so.prod_disc = prod_disc
+                so.jasa_disc = jasa_disc
+                so.total_disc = total_disc
+                so.status = 2
+
+
+                db.session.commit()
+
+                result = response(200, "Berhasil", True, sord_schema.dump(so))
+
+            finally:
+                return result
+
+        
+
+
 @app.route("/v1/api/order", methods=["POST", "GET"])
 @token_required
 def order(self):
@@ -4188,6 +4135,7 @@ def order(self):
                     new_product.append(
                         DprodDdb(
                             do.id,
+                            x["id"] if x["id"] != 0 else None,
                             x["prod_id"],
                             x["unit_id"],
                             x["order"],
@@ -4338,6 +4286,7 @@ def ord_id(self, id):
             no_doc = request.json["no_doc"]
             doc_date = request.json["doc_date"]
             faktur = request.json["faktur"]
+            po_id = request.json["po_id"]
             dep_id = request.json["dep_id"]
             sup_id = request.json["sup_id"]
             top = request.json["top"]
@@ -4354,6 +4303,7 @@ def ord_id(self, id):
             do.no_doc = no_doc
             do.doc_date = doc_date
             do.faktur = faktur
+            do.po_id = po_id
             do.dep_id = dep_id
             do.sup_id = sup_id
             do.top = top
@@ -4363,25 +4313,34 @@ def ord_id(self, id):
             do.jasa_disc = jasa_disc
             do.total_disc = total_disc
 
+
+            po = PoMdb.query.filter(PoMdb.id == do.po_id).first()
             product = DprodDdb.query.filter(DprodDdb.ord_id == do.id)
             jasa = DjasaDdb.query.filter(DjasaDdb.ord_id == do.id)
+            pprod = PprodDdb.query.filter(PprodDdb.po_id == po.id).all()
 
             new_prod = []
             for x in dprod:
-                for y in product:
-                    if x["id"] == y.id:
-                        y.prod_id = x["prod_id"]
-                        y.unit_id = x["unit_id"]
-                        y.order = x["order"]
-                        y.price = x["price"]
-                        y.disc = x["disc"]
-                        y.nett_price = x["nett_price"]
-                        y.total = x["total"]
-                        y.location = x["location"]
-                if x["id"] == 0 and x["prod_id"] and x["unit_id"] and x["order"]:
+                for y in pprod:
+                    if x["pprod_id"] == y.id:
+                        for z in product:
+                            if x["id"] == z.id:
+                                y.remain = z.order - int(x["order"]) + y.remain
+                                z.prod_id = x["prod_id"]
+                                z.unit_id = x["unit_id"]
+                                z.order = x["order"]
+                                z.price = x["price"]
+                                z.disc = x["disc"]
+                                z.nett_price = x["nett_price"]
+                                z.total = x["total"]
+                                z.location = x["location"]
+
+
+                if x["id"] == 0 and x["prod_id"] and x["unit_id"] and x["order"] and int(x["order"]) > 0:
                     new_prod.append(
                         DprodDdb(
                             do.id,
+                            None if x["id"] != 0 else None,
                             x["prod_id"],
                             x["unit_id"],
                             x["order"],
@@ -4429,8 +4388,20 @@ def ord_id(self, id):
 
             if len(new_jasa) > 0:
                 db.session.add_all(new_jasa)
-
+                
             db.session.commit()
+
+            if po_id:
+                remain = 0
+                for x in pprod:
+                    remain += x.remain
+            
+                if remain == 0:
+                    po.status = 2
+                else:
+                    po.status = 1
+
+                db.session.commit()
 
             result = response(200, "Berhasil", True, dord_schema.dump(do))
 
@@ -4441,22 +4412,33 @@ def ord_id(self, id):
             return result
 
     elif request.method == "DELETE":
+        UpdateStock(do.id, True)
         po = PoMdb.query.filter(PoMdb.id == do.po_id).first()
         if po:
             po.status = 0
-            db.session.commit()
+
+            pprod = PprodDdb.query.filter(PprodDdb.po_id == do.po_id).all()
+            # pjasa = PjasaDdb.query.filter(PjasaDdb.po_id == po.id).all()
+            prod = DprodDdb.query.filter(DprodDdb.ord_id == do.id).all()
+            # jasa = RjasaMdb.query.filter(RjasaMdb.preq_id == po.preq_id).all()
+
+            for y in pprod:
+                for z in prod:
+                    if z.pprod_id == y.id:
+                        y.remain += z.order
+                    db.session.delete(z)
+
+            db.session.commit() 
 
         fk = FkpbHdb.query.filter(FkpbHdb.ord_id == do.id).first()
 
         if fk:
             UpdatePembelian(fk.id, self.id, True)
 
-        UpdateStock(do.id, True)
-
-        product = DprodDdb.query.filter(DprodDdb.ord_id == do.id)
+        # product = DprodDdb.query.filter(DprodDdb.ord_id == do.id)
         jasa = DjasaDdb.query.filter(DjasaDdb.ord_id == do.id)
 
-        for x in product:
+        for x in prod:
             db.session.delete(x)
 
         for x in jasa:
@@ -4869,12 +4851,20 @@ def sls(self):
             db.session.add(sls)
             db.session.commit()
 
+            so = SordHdb.query.filter(SordHdb.id == so_id).first()
+            sprod = SprodDdb.query.filter(SprodDdb.so_id == so_id).all()
+
             new_product = []
             for x in jprod:
-                if x["prod_id"] and x["unit_id"] and x["order"]:
+                for y in sprod:
+                    if x["id"] == y.id:
+                        y.remain = y.remain - int(x["order"])
+
+                if x["prod_id"] and x["unit_id"] and x["order"] and int(x["order"]) > 0:
                     new_product.append(
                         JprodDdb(
                             sls.id,
+                            x["id"] if x["id"] != 0 else None,
                             x["prod_id"],
                             x["unit_id"],
                             x["location"],
@@ -4910,6 +4900,20 @@ def sls(self):
 
             db.session.commit()
 
+            
+            if so_id:
+                remain = 0
+                for x in sprod:
+                    if x.so_id == so.id:
+                        remain += x.remain
+            
+                if remain == 0:
+                    so.status = 2
+                else:
+                    so.status = 1
+                print(remain)
+                db.session.commit()
+
             UpdateAr(False, sls.id, self.id)
 
             result = response(200, "Berhasil", True, ordpj_schema.dump(sls))
@@ -4924,6 +4928,7 @@ def sls(self):
             .outerjoin(RulesPayMdb, RulesPayMdb.id == OrdpjHdb.top)
             .outerjoin(SordHdb, SordHdb.id == OrdpjHdb.so_id)
             .outerjoin(SalesMdb, SalesMdb.id == OrdpjHdb.slsm_id)
+            .order_by(OrdpjHdb.id.desc())
             .all()
         )
 
@@ -5048,22 +5053,30 @@ def sls_id(self, id):
             product = JprodDdb.query.filter(JprodDdb.pj_id == sls.id)
             jasa = JjasaDdb.query.filter(JjasaDdb.pj_id == sls.id)
 
+            so = SordHdb.query.filter(SordHdb.id == so_id).first()
+            sprod = SprodDdb.query.filter(SprodDdb.so_id == so_id).all()
+
             new_prod = []
             for x in jprod:
-                for y in product:
-                    if x["id"] == y.id:
-                        y.prod_id = x["prod_id"]
-                        y.unit_id = x["unit_id"]
-                        y.order = x["order"]
-                        y.location = x["location"]
-                        y.price = x["price"]
-                        y.disc = x["disc"]
-                        y.nett_price = x["nett_price"]
-                        y.total = x["total"]
-                if x["id"] == 0 and x["prod_id"] and x["unit_id"] and x["order"]:
+                for y in sprod:
+                    if x["sprod_id"] == y.id:
+                       for z in product: 
+                            if x["id"] == y.id:
+                                y.remain = z.order - int(x["order"]) + y.remain
+                                z.prod_id = x["prod_id"]
+                                z.unit_id = x["unit_id"]
+                                z.order = x["order"]
+                                z.location = x["location"]
+                                z.price = x["price"]
+                                z.disc = x["disc"]
+                                z.nett_price = x["nett_price"]
+                                z.total = x["total"]
+
+                if x["id"] == 0 and x["prod_id"] and x["unit_id"] and x["order"] and int(x["order"]) > 0:
                     new_prod.append(
                         JprodDdb(
                             sls.id,
+                            None if x["id"] != 0 else None,
                             x["prod_id"],
                             x["unit_id"],
                             x["location"],
@@ -5114,6 +5127,18 @@ def sls_id(self, id):
 
             db.session.commit()
 
+            if so_id:
+                remain = 0
+                for x in sprod:
+                    remain += x.remain
+            
+                if remain == 0:
+                    so.status = 2
+                else:
+                    so.status = 1
+
+                db.session.commit()
+
             result = response(200, "Berhasil", True, ordpj_schema.dump(sls))
 
         except IntegrityError:
@@ -5124,11 +5149,23 @@ def sls_id(self, id):
 
     elif request.method == "DELETE":
         so = SordHdb.query.filter(SordHdb.id == sls.so_id).first()
+
         if so:
             so.status = 0
-            db.session.commit()
+
+            sprod = SprodDdb.query.filter(SprodDdb.so_id == sls.so_id).all()
+            prod = JprodDdb.query.filter(JprodDdb.pj_id == sls.id).all()
+
+            for y in sprod:
+                for z in prod:
+                    if z.sprod_id == y.id:
+                        y.remain += z.order
+                    db.session.delete(z)
+
+            db.session.commit() 
 
         UpdateAr(True, sls.id, self.id)
+
         product = JprodDdb.query.filter(JprodDdb.pj_id == sls.id)
         jasa = JprodDdb.query.filter(JprodDdb.pj_id == sls.id)
 
