@@ -4,4 +4,4 @@ from flask_marshmallow import Marshmallow
 
 db =  SQLAlchemy()
 ma = Marshmallow()
-server_name = "https://javaapi.itungin.id"
+server_name = "http://acc.itungin.id"

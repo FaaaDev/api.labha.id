@@ -22,7 +22,9 @@ from main.function.update_batch import updateBatch
 from main.model.giro_inc_hdb import GiroIncHdb
 from main.model.iacq_ddb import IAcqDdb
 from main.model.inc_hdb import IncHdb
+from main.model.main_menu import MainMenu
 from main.model.ovh_ddb import OvhDdb
+from main.model.user_menu import UserMenu
 from main.schema.inc_hdb import inc_schema
 from .function.update_mutasi import UpdateMutasi
 from main.function.update_pembelian import UpdatePembelian
@@ -338,41 +340,86 @@ def user_id(self, id):
 @token_required
 def profil(self):
     user = (
-        db.session.query(User, AdmUserMenu)
-        .outerjoin(AdmUserMenu, AdmUserMenu.id_adm_user == User.id)
+        db.session.query(User, UserMenu, MainMenu)
+        .outerjoin(UserMenu, UserMenu.user_id == User.id)
+        .outerjoin(MainMenu, MainMenu.id == UserMenu.menu_id)
         .filter(User.id == self.id)
         .all()
     )
+
+    menu = []
+    for x in user:
+        sub_menu = []
+        for y in user:
+            last_menu = []
+            for z in user:
+                if z[2].parent_id == y[2].id:
+                    last_menu.append(
+                        {
+                            "id": z[2].id,
+                            "name": z[2].name,
+                            "route_name": z[2].route_name,
+                            "icon_file": z[2].icon_file,
+                            "parent_id": z[2].parent_id,
+                            "visible": z[2].visible,
+                            "category": z[2].category,
+                            "view": z[1].view,
+                            "edit": z[1].edit,
+                            "delete": z[1].delete,
+                        }
+                    )
+            if y[2].parent_id == x[2].id:
+                sub_menu.append(
+                    {
+                        "id": y[2].id,
+                        "name": y[2].name,
+                        "route_name": y[2].route_name,
+                        "icon_file": y[2].icon_file,
+                        "visible": y[2].visible,
+                        "parent_id": y[2].parent_id,
+                        "category": y[2].category,
+                        "view": z[1].view,
+                        "edit": z[1].edit,
+                        "delete": z[1].delete,
+                        "lastmenu": last_menu,
+                    }
+                )
+        if not x[2].parent_id:
+            menu.append(
+                {
+                    "id": x[2].id,
+                    "name": x[2].name,
+                    "route_name": x[2].route_name,
+                    "icon_file": x[2].icon_file,
+                    "visible": x[2].visible,
+                    "parent_id": x[2].parent_id,
+                    "category": x[2].category,
+                    "submenu": sub_menu,
+                }
+            )
 
     menu = {
         "id": user[0][0].id,
         "email": user[0][0].email,
         "username": user[0][0].username,
         "name": user[0][0].name,
-        # "menu": [
-        #     {
-        #         "name": x[2].name,
-        #         "sequence_no": x[2].sequence_no,
-        #         "page_name": x[2].page_name,
-        #         "route_name": x[2].route_name,
-        #         "icon_file": x[2].icon_file,
-            
-        #     }
-        #     for x in user
-        # ],
+        "menu": menu,
     }
 
     return response(200, "Berhasil", True, menu)
+
 
 @app.route("/v1/api/menu", methods=["POST", "GET"])
 @token_required
 def menu(self):
     return Menu(request)
 
+
 @app.route("/v1/api/menu/<int:id>", methods=["PUT", "GET", "DELETE"])
 @token_required
 def menu_id(self, id):
     return MenuId(request, id)
+
 
 @app.route("/v1/api/bank", methods=["POST", "GET"])
 @token_required
@@ -4041,7 +4088,6 @@ def so_close_id(self, id):
                 status = request.json["status"]
                 sprod = request.json["sprod"]
                 sjasa = request.json["sjasa"]
-               
 
                 so.so_code = so_code
                 so.so_date = so_date
@@ -4058,15 +4104,12 @@ def so_close_id(self, id):
                 so.total_disc = total_disc
                 so.status = 2
 
-
                 db.session.commit()
 
                 result = response(200, "Berhasil", True, sord_schema.dump(so))
 
             finally:
                 return result
-
-        
 
 
 @app.route("/v1/api/order", methods=["POST", "GET"])
@@ -4113,7 +4156,6 @@ def order(self):
             db.session.add(do)
             db.session.commit()
 
-
             po = PoMdb.query.filter(PoMdb.id == po_id).first()
             pprod = PprodDdb.query.filter(PprodDdb.po_id == po_id).all()
             pjasa = PjasaDdb.query.filter(PjasaDdb.po_id == po_id).all()
@@ -4122,7 +4164,7 @@ def order(self):
             for x in dprod:
                 for y in pprod:
                     if x["id"] == y.id:
-                            y.remain = y.remain - int(x["order"])
+                        y.remain = y.remain - int(x["order"])
                 if (
                     x["prod_id"]
                     and x["unit_id"]
@@ -4171,8 +4213,6 @@ def order(self):
 
             db.session.commit()
 
-
-
             if po_id:
                 remain = 0
                 for x in pprod:
@@ -4185,8 +4225,6 @@ def order(self):
                     po.status = 1
 
                 db.session.commit()
-
-            
 
             if faktur:
                 faktur = FkpbHdb(ord_code, ord_date, do.id, None, None, None)
@@ -4313,7 +4351,6 @@ def ord_id(self, id):
             do.jasa_disc = jasa_disc
             do.total_disc = total_disc
 
-
             po = PoMdb.query.filter(PoMdb.id == do.po_id).first()
             product = DprodDdb.query.filter(DprodDdb.ord_id == do.id)
             jasa = DjasaDdb.query.filter(DjasaDdb.ord_id == do.id)
@@ -4335,8 +4372,13 @@ def ord_id(self, id):
                                 z.total = x["total"]
                                 z.location = x["location"]
 
-
-                if x["id"] == 0 and x["prod_id"] and x["unit_id"] and x["order"] and int(x["order"]) > 0:
+                if (
+                    x["id"] == 0
+                    and x["prod_id"]
+                    and x["unit_id"]
+                    and x["order"]
+                    and int(x["order"]) > 0
+                ):
                     new_prod.append(
                         DprodDdb(
                             do.id,
@@ -4388,14 +4430,14 @@ def ord_id(self, id):
 
             if len(new_jasa) > 0:
                 db.session.add_all(new_jasa)
-                
+
             db.session.commit()
 
             if po_id:
                 remain = 0
                 for x in pprod:
                     remain += x.remain
-            
+
                 if remain == 0:
                     po.status = 2
                 else:
@@ -4428,7 +4470,7 @@ def ord_id(self, id):
                         y.remain += z.order
                     db.session.delete(z)
 
-            db.session.commit() 
+            db.session.commit()
 
         fk = FkpbHdb.query.filter(FkpbHdb.ord_id == do.id).first()
 
@@ -4900,13 +4942,12 @@ def sls(self):
 
             db.session.commit()
 
-            
             if so_id:
                 remain = 0
                 for x in sprod:
                     if x.so_id == so.id:
                         remain += x.remain
-            
+
                 if remain == 0:
                     so.status = 2
                 else:
@@ -5060,7 +5101,7 @@ def sls_id(self, id):
             for x in jprod:
                 for y in sprod:
                     if x["sprod_id"] == y.id:
-                       for z in product: 
+                        for z in product:
                             if x["id"] == y.id:
                                 y.remain = z.order - int(x["order"]) + y.remain
                                 z.prod_id = x["prod_id"]
@@ -5072,7 +5113,13 @@ def sls_id(self, id):
                                 z.nett_price = x["nett_price"]
                                 z.total = x["total"]
 
-                if x["id"] == 0 and x["prod_id"] and x["unit_id"] and x["order"] and int(x["order"]) > 0:
+                if (
+                    x["id"] == 0
+                    and x["prod_id"]
+                    and x["unit_id"]
+                    and x["order"]
+                    and int(x["order"]) > 0
+                ):
                     new_prod.append(
                         JprodDdb(
                             sls.id,
@@ -5131,7 +5178,7 @@ def sls_id(self, id):
                 remain = 0
                 for x in sprod:
                     remain += x.remain
-            
+
                 if remain == 0:
                     so.status = 2
                 else:
@@ -5162,7 +5209,7 @@ def sls_id(self, id):
                         y.remain += z.order
                     db.session.delete(z)
 
-            db.session.commit() 
+            db.session.commit()
 
         UpdateAr(True, sls.id, self.id)
 
@@ -5353,7 +5400,7 @@ def expense(self):
                     db.session.commit()
                     UpdateApGiro(giro.id)
 
-            UpdateApPayment(exps.id, False)         
+            UpdateApPayment(exps.id, False)
 
             result = response(200, "Berhasil", True, exp_schema.dump(exps))
         except IntegrityError:
@@ -5998,7 +6045,6 @@ def giro_inc_id(self, id):
 
             db.session.commit()
 
-
             UpdateArGiro(gr.id)
 
             result = response(200, "Berhasil", True, grinc_schema.dump(gr))
@@ -6041,7 +6087,9 @@ def giro_inc_id(self, id):
                     else None,
                     "cus_id": customer_schema.dump(x[2]) if x[2] else None,
                     "value": x[0].value,
-                    "accp_date": GiroIncSchema(only=["accp_date"]).dump(x[0])["accp_date"]
+                    "accp_date": GiroIncSchema(only=["accp_date"]).dump(x[0])[
+                        "accp_date"
+                    ]
                     if x[0]
                     else None,
                     "status": x[0].status,
