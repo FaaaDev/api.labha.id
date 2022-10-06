@@ -343,7 +343,8 @@ def profil(self):
         db.session.query(User, UserMenu, MainMenu)
         .outerjoin(UserMenu, UserMenu.user_id == User.id)
         .outerjoin(MainMenu, MainMenu.id == UserMenu.menu_id)
-        .filter(User.id == self.id)
+        .filter(and_(User.id == self.id, MainMenu.visible == True))
+        .order_by(MainMenu.category.asc(), MainMenu.id.asc())
         .all()
     )
 
@@ -378,9 +379,9 @@ def profil(self):
                         "visible": y[2].visible,
                         "parent_id": y[2].parent_id,
                         "category": y[2].category,
-                        "view": z[1].view,
-                        "edit": z[1].edit,
-                        "delete": z[1].delete,
+                        "view": y[1].view,
+                        "edit": y[1].edit,
+                        "delete": y[1].delete,
                         "lastmenu": last_menu,
                     }
                 )
@@ -394,6 +395,9 @@ def profil(self):
                     "visible": x[2].visible,
                     "parent_id": x[2].parent_id,
                     "category": x[2].category,
+                    "view": x[1].view,
+                    "edit": x[1].edit,
+                    "delete": x[1].delete,
                     "submenu": sub_menu,
                 }
             )
