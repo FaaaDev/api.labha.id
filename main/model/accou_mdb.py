@@ -14,9 +14,10 @@ class AccouMdb(db.Model):
     sld_type = db.Column(db.String(10))
     connect = db.Column(db.Boolean)
     sld_awal = db.Column(db.Integer)
+    level = db.Column(db.Integer)
     
 
-    def __init__(self, acc_code, acc_name, umm_code, kat_code, dou_type, sld_type, connect, sld_awal):
+    def __init__(self, acc_code, acc_name, umm_code, kat_code, dou_type, sld_type, connect, sld_awal, level):
         self.acc_code = acc_code
         self.acc_name = acc_name
         self.umm_code = umm_code
@@ -25,3 +26,4 @@ class AccouMdb(db.Model):
         self.sld_type = sld_type
         self.connect = connect
         self.sld_awal = sld_awal
+        self.level = level

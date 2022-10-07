@@ -637,6 +637,28 @@ def account_umum(self, kat_id):
     return response(200, "Berhasil", True, next_code)
 
 
+@app.route("/v1/api/account/su/<string:umm_code>", methods=["GET"])
+@token_required
+def account_sub_umum(self, umm_code):
+
+    last_acc = (
+        AccouMdb.query.filter(
+            and_(AccouMdb.umm_code == umm_code, AccouMdb.dou_type == "U")
+        )
+        .order_by(AccouMdb.acc_code.desc())
+        .first()
+    )
+
+    if last_acc != None:
+        next_code = (
+            umm_code + "0" + str(int(last_acc.acc_code.replace(umm_code, "")) + 1)
+        )
+    else:
+        next_code = umm_code + "0" + "1"
+
+    return response(200, "Berhasil", True, next_code)
+
+
 @app.route("/v1/api/account/d/<string:umm_code>", methods=["GET"])
 @token_required
 def account_detail(self, umm_code):
@@ -669,6 +691,7 @@ def account(self):
             sld_type = request.json["kode_saldo"]
             connect = request.json["terhubung"]
             sld_awal = request.json["saldo_awal"]
+            level = request.json["level"]
             try:
                 account = AccouMdb(
                     acc_code,
@@ -679,6 +702,7 @@ def account(self):
                     sld_type,
                     connect,
                     sld_awal,
+                    level,
                 )
                 db.session.add(account)
                 db.session.commit()
@@ -735,6 +759,7 @@ def account_import(self):
         sld_type = x["kode_saldo"]
         connect = x["terhubung"]
         sld_awal = x["saldo_awal"]
+        level = x["level"]
 
         index_umum += 1
 
@@ -780,6 +805,7 @@ def account_import(self):
                 sld_type,
                 connect,
                 sld_awal,
+                level,
             )
             db.session.add(a)
             db.session.commit()
@@ -866,6 +892,7 @@ def account_import(self):
                 sld_type,
                 connect,
                 sld_awal,
+                level,
             )
             db.session.add(a)
             db.session.commit()
@@ -916,6 +943,7 @@ def account_id(self, id):
         account.sld_type = request.json["kode_saldo"]
         account.connect = request.json["terhubung"]
         account.sld_awal = request.json["saldo_awal"]
+        account.level = request.json["level"]
         db.session.commit()
 
         return response(200, "Berhasil", True, accou_schema.dump(account))
