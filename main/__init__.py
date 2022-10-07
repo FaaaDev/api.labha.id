@@ -660,7 +660,7 @@ def account_detail(self, umm_code):
 @token_required
 def account(self):
     if request.method == "POST":
-        if "acc_code" in request.json:
+        if "kode_acc" in request.json:
             acc_code = request.json["kode_acc"]
             acc_name = request.json["acc_name"]
             umm_code = request.json["kode_umum"]
