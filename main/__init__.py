@@ -619,7 +619,7 @@ def account_umum(self, kat_id):
     key = str(kategory[1].id) + "." + str(kat_id)
     last_acc = (
         AccouMdb.query.filter(
-            and_(AccouMdb.acc_code.like("%{}%".format(key)), AccouMdb.dou_type == "U")
+            and_(AccouMdb.acc_code.like("%{}%".format(key)), AccouMdb.dou_type == "U", AccouMdb.umm_code == None)
         )
         .order_by(AccouMdb.acc_code.desc())
         .first()
