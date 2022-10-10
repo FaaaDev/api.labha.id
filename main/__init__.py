@@ -23,6 +23,8 @@ from main.model.giro_inc_hdb import GiroIncHdb
 from main.model.iacq_ddb import IAcqDdb
 from main.model.inc_hdb import IncHdb
 from main.model.main_menu import MainMenu
+from main.model.neraca_ddb import NeracaDdb
+from main.model.neraca_hdb import NeracaHdb
 from main.model.ovh_ddb import OvhDdb
 from main.model.user_menu import UserMenu
 from main.schema.inc_hdb import inc_schema
@@ -2114,64 +2116,52 @@ def setup_neraca(self):
     if request.method == "POST":
         try:
             cp_id = user.company
-            cur = request.json["cur"]
-            fixed = request.json["fixed"]
-            depr = request.json["depr"]
-            ap = request.json["ap"]
-            cap = request.json["cap"]
+            tittle = request.json["tittle"]
+            type = request.json["type"]
+            accounts = request.json["accounts"]
 
-            print([str(x) for x in cur])
+            hdb = NeracaHdb(cp_id, tittle, type, self.id)
 
-            setup = NeracaMdb(
-                cp_id,
-                ",".join([str(x) for x in cur]) if cur else None,
-                ",".join([str(x) for x in fixed]) if fixed else None,
-                ",".join([str(x) for x in depr]) if depr else None,
-                ",".join([str(x) for x in ap]) if ap else None,
-                ",".join([str(x) for x in cap]) if cap else None,
-                self.id,
-            )
-
-            db.session.add(setup)
+            db.session.add(hdb)
             db.session.commit()
 
-            result = response(200, "Berhasil", True, neraca_schema.dump(setup))
+            ddb = NeracaDdb(hdb.id, ",".join([str(x) for x in accounts]) if accounts else None, self.id)
+
+            db.session.add(ddb)
+            db.session.commit()
+
+            result = response(200, "Berhasil", True, None)
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
         finally:
             return result
     else:
-        setup = NeracaMdb.query.filter(NeracaMdb.cp_id == user.company).first()
+        hdb = NeracaHdb.query.filter(NeracaHdb.cp_id == user.company).all()
+        ddb = NeracaDdb.query.all()
 
-        if setup:
-            setup.cur = (
-                setup.cur.replace("{", "").replace("}", "").split(",")
-                if setup.cur
-                else None
-            )
-            setup.fixed = (
-                setup.fixed.replace("{", "").replace("}", "").split(",")
-                if setup.fixed
-                else None
-            )
-            setup.depr = (
-                setup.depr.replace("{", "").replace("}", "").split(",")
-                if setup.depr
-                else None
-            )
-            setup.ap = (
-                setup.ap.replace("{", "").replace("}", "").split(",")
-                if setup.ap
-                else None
-            )
-            setup.cap = (
-                setup.cap.replace("{", "").replace("}", "").split(",")
-                if setup.cap
-                else None
-            )
-
-            return response(200, "Berhasil", True, neraca_schema.dump(setup))
+        data = {
+            "aktiva": [],
+            "pasiva": []
+        }
+        if hdb:
+            for x in hdb:
+                for y in ddb:
+                    if x.id == y.tittle_id:
+                        if x.type == 1:
+                            data["aktiva"].append({
+                                "id": x.id,
+                                "name": x.tittle,
+                                "category": y.accounts.replace("{", "").replace("}", "").split(",") if y.accounts else [None]
+                            })
+                        else:
+                            data["pasiva"].append({
+                                "id": x.id,
+                                "name": x.tittle,
+                                "category": y.accounts.replace("{", "").replace("}", "").split(",") if y.accounts else [None]
+                            })
+            
+            return response(200, "Berhasil", True, data)
 
         return response(200, "Berhasil", False, None)
 
@@ -2180,16 +2170,17 @@ def setup_neraca(self):
 @token_required
 def setup_neraca_id(self, id):
     setup = NeracaMdb.query.filter(NeracaMdb.id == id).first()
+    hdb = NeracaHdb.query.filter(NeracaHdb.id == id).first()
     if request.method == "PUT":
-        setup.cur = request.json["cur"]
-        setup.fixed = request.json["fixed"]
-        setup.depr = request.json["depr"]
-        setup.ap = request.json["ap"]
-        setup.cap = request.json["cap"]
+        ddb = NeracaDdb.query.filter(NeracaDdb.tittle_id == id).first()
+        hdb.tittle = request.json["tittle"]
+        if "accounts" in request.json:
+            ddb.accounts = ",".join([str(x) for x in request.json["accounts"]])
+        
 
         db.session.commit()
 
-        return response(200, "Berhasil", True, neraca_schema.dump(setup))
+        return response(200, "Berhasil", True, None)
     elif request.method == "DELETE":
         db.session.delete(setup)
         db.session.commit()

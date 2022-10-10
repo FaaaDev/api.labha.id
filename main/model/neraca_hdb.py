@@ -1,0 +1,19 @@
+from enum import unique
+from main.shared.shared import db
+
+class NeracaHdb(db.Model):
+    __table_args__ = {'schema': 'master'}
+    __tablename__ = 'NERACAHDB'
+
+    id = db.Column(db.Integer, primary_key=True)
+    cp_id = db.Column(db.Integer)
+    tittle = db.Column(db.String(255))
+    type = db.Column(db.Integer)
+    user_id = db.Column(db.Integer)
+    
+
+    def __init__(self, cp_id, tittle, type, user_id):
+        self.cp_id = cp_id
+        self.tittle = tittle
+        self.type = type
+        self.user_id = user_id
