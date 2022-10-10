@@ -531,7 +531,7 @@ def kategory(self):
         result = (
             db.session.query(KategMdb, KlasiMdb)
             .outerjoin(KlasiMdb, KategMdb.kode_klasi == KlasiMdb.id)
-            .order_by(KategMdb.kode_klasi.asc())
+            # .order_by(KategMdb.kode_klasi.asc())
             .order_by(KategMdb.id.asc())
             .all()
         )
@@ -665,7 +665,7 @@ def account_detail(self, umm_code):
 
     last_acc = (
         AccouMdb.query.filter(AccouMdb.umm_code == umm_code)
-        .order_by(AccouMdb.acc_code.desc())
+        .order_by(AccouMdb.id.desc(), AccouMdb.acc_code.desc())
         .first()
     )
 
@@ -673,6 +673,8 @@ def account_detail(self, umm_code):
         next_code = (
             umm_code + "." + str(int(last_acc.acc_code.replace(umm_code + ".", "")) + 1)
         )
+        print(last_acc.acc_code)
+        print(int(last_acc.acc_code.replace(umm_code + ".", "")))
     else:
         next_code = umm_code + "." + "1"
     return response(200, "Berhasil", True, next_code)
@@ -721,9 +723,9 @@ def account(self):
             db.session.query(AccouMdb, KategMdb, KlasiMdb)
             .join(AccouMdb, KategMdb.id == AccouMdb.kat_code)
             .outerjoin(KlasiMdb, KategMdb.kode_klasi == KlasiMdb.id)
-            .order_by(KlasiMdb.id.asc())
+            # .order_by(KlasiMdb.id.asc())
             .order_by(KategMdb.id.asc())
-            .order_by(AccouMdb.acc_code.asc())
+            .order_by(AccouMdb.id.asc(), AccouMdb.acc_code.asc())
             .all()
         )
         data = [
