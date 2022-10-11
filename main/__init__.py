@@ -758,7 +758,7 @@ def account(self):
             .outerjoin(KlasiMdb, KategMdb.kode_klasi == KlasiMdb.id)
             # .order_by(KlasiMdb.id.asc())
             .order_by(KategMdb.id.asc())
-            .order_by(AccouMdb.acc_code.asc(),AccouMdb.id.asc())
+            .order_by(int(AccouMdb.acc_code.replace(".", "")).asc(),AccouMdb.id.asc())
             .all()
         )
         data = [
