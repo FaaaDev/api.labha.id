@@ -194,7 +194,7 @@ from main.schema.mtsi_hdb import mtsi_schema, mtsis_schema, MtsiSchema
 from main.schema.mtsi_ddb import mtsiddb_schema, mtsiddbs_schema, MtsiddbSchema
 from main.schema.setup_mdb import *
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy import and_, extract, func, or_
+from sqlalchemy import and_, extract, func, or_, cast
 from main.shared.shared import server_name
 
 import jwt
@@ -758,7 +758,7 @@ def account(self):
             .outerjoin(KlasiMdb, KategMdb.kode_klasi == KlasiMdb.id)
             # .order_by(KlasiMdb.id.asc())
             .order_by(KategMdb.id.asc())
-            .order_by(int(AccouMdb.acc_code.replace(".", "")).asc(),AccouMdb.id.asc())
+            .order_by(cast(func.replace(AccouMdb.acc_code, ".", ""), db.Integer).asc(), AccouMdb.id.asc())
             .all()
         )
         data = [
