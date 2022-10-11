@@ -312,7 +312,34 @@ def user(self):
             return result
     else:
         user = User.query.all()
-        return response(200, "Berhasil", True, users_schema.dump(user))
+
+        menus = UserMenu.query.all()
+
+        users = []
+
+        for x in user:
+            menu = []
+            for y in menus:
+                if x.id == y.user_id:
+                    menu.append(
+                        {
+                            "menu_id": y.menu_id,
+                            "view": y.view,
+                            "edit": y.edit,
+                            "delete": y.delete,
+                        }
+                    )
+            users.append(
+                {
+                    "id": x.id,
+                    "email": x.email,
+                    "username": x.username,
+                    "active": x.active,
+                    "menu": menu,
+                }
+            )
+
+        return response(200, "Berhasil", True, users)
 
 
 @app.route("/v1/api/user/<int:id>", methods=["PUT", "GET", "DELETE"])
@@ -621,7 +648,11 @@ def account_umum(self, kat_id):
     key = str(kategory[1].id) + "." + str(kat_id)
     last_acc = (
         AccouMdb.query.filter(
-            and_(AccouMdb.acc_code.like("%{}%".format(key)), AccouMdb.dou_type == "U", AccouMdb.umm_code == None)
+            and_(
+                AccouMdb.acc_code.like("%{}%".format(key)),
+                AccouMdb.dou_type == "U",
+                AccouMdb.umm_code == None,
+            )
         )
         .order_by(AccouMdb.acc_code.desc())
         .first()
@@ -727,7 +758,7 @@ def account(self):
             .outerjoin(KlasiMdb, KategMdb.kode_klasi == KlasiMdb.id)
             # .order_by(KlasiMdb.id.asc())
             .order_by(KategMdb.id.asc())
-            .order_by(AccouMdb.id.asc(), AccouMdb.acc_code.asc())
+            .order_by(AccouMdb.acc_code.asc(),AccouMdb.id.asc())
             .all()
         )
         data = [
@@ -1582,11 +1613,7 @@ def company(self):
         )
 
         if result[1]:
-            result[1].cp_logo = (
-                result[1].cp_logo
-                if result[1].cp_logo != ""
-                else ""
-            )
+            result[1].cp_logo = result[1].cp_logo if result[1].cp_logo != "" else ""
 
         return response(200, "Berhasil", True, comp_shcema.dump(result[1]))
 
@@ -2125,7 +2152,11 @@ def setup_neraca(self):
             db.session.add(hdb)
             db.session.commit()
 
-            ddb = NeracaDdb(hdb.id, ",".join([str(x) for x in accounts]) if accounts else None, self.id)
+            ddb = NeracaDdb(
+                hdb.id,
+                ",".join([str(x) for x in accounts]) if accounts else None,
+                self.id,
+            )
 
             db.session.add(ddb)
             db.session.commit()
@@ -2140,27 +2171,36 @@ def setup_neraca(self):
         hdb = NeracaHdb.query.filter(NeracaHdb.cp_id == user.company).all()
         ddb = NeracaDdb.query.all()
 
-        data = {
-            "aktiva": [],
-            "pasiva": []
-        }
+        data = {"aktiva": [], "pasiva": []}
         if hdb:
             for x in hdb:
                 for y in ddb:
                     if x.id == y.tittle_id:
                         if x.type == 1:
-                            data["aktiva"].append({
-                                "id": x.id,
-                                "name": x.tittle,
-                                "category": y.accounts.replace("{", "").replace("}", "").split(",") if y.accounts else [None]
-                            })
+                            data["aktiva"].append(
+                                {
+                                    "id": x.id,
+                                    "name": x.tittle,
+                                    "category": y.accounts.replace("{", "")
+                                    .replace("}", "")
+                                    .split(",")
+                                    if y.accounts
+                                    else [None],
+                                }
+                            )
                         else:
-                            data["pasiva"].append({
-                                "id": x.id,
-                                "name": x.tittle,
-                                "category": y.accounts.replace("{", "").replace("}", "").split(",") if y.accounts else [None]
-                            })
-            
+                            data["pasiva"].append(
+                                {
+                                    "id": x.id,
+                                    "name": x.tittle,
+                                    "category": y.accounts.replace("{", "")
+                                    .replace("}", "")
+                                    .split(",")
+                                    if y.accounts
+                                    else [None],
+                                }
+                            )
+
             return response(200, "Berhasil", True, data)
 
         return response(200, "Berhasil", False, None)
@@ -2176,7 +2216,6 @@ def setup_neraca_id(self, id):
         hdb.tittle = request.json["tittle"]
         if "accounts" in request.json:
             ddb.accounts = ",".join([str(x) for x in request.json["accounts"]])
-        
 
         db.session.commit()
 
