@@ -11,7 +11,8 @@ class KategMdb(db.Model):
     imp = db.Column(db.Boolean)
     
 
-    def __init__(self, name, kode_klasi, kode_saldo, imp):
+    def __init__(self,id,  name, kode_klasi, kode_saldo, imp):
+        self.id = id
         self.name = name
         self.kode_klasi = kode_klasi
         self.kode_saldo = kode_saldo
