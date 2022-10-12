@@ -24,6 +24,7 @@ from main.model.iacq_ddb import IAcqDdb
 from main.model.inc_hdb import IncHdb
 from main.model.main_menu import MainMenu
 from main.model.neraca_ddb import NeracaDdb
+from main.model.neraca_exept_ddb import NeracaEceptionDdb
 from main.model.neraca_hdb import NeracaHdb
 from main.model.ovh_ddb import OvhDdb
 from main.model.user_menu import UserMenu
@@ -2254,6 +2255,54 @@ def setup_neraca_id(self, id):
             )
 
             return response(200, "Berhasil", True, neraca_schema.dump(setup))
+
+        return response(200, "Berhasil", False, None)
+
+
+@app.route("/v1/api/setup/neraca-exep", methods=["POST", "GET"])
+@token_required
+def neraca_exep(self):
+    user = User.query.filter(User.id == self.id).first()
+    if request.method == "POST":
+        try:
+            accounts = request.json["accounts"]
+
+            ddb = NeracaEceptionDdb(
+                hdb.id,
+                ",".join([str(x) for x in accounts]) if accounts else None,
+                self.id,
+            )
+
+            db.session.add(ddb)
+            db.session.commit()
+
+            result = response(200, "Berhasil", True, None)
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    else:
+        hdb = NeracaHdb.query.filter(NeracaHdb.cp_id == user.company).all()
+        ddb = NeracaEceptionDdb.query.all()
+
+        final = []
+        if ddb:
+            for x in hdb:
+                for y in ddb:
+                    final.append(
+                        {
+                            "id": x.id,
+                            "title_id": x.tittle,
+                            "accounts": y.accounts.replace("{", "")
+                            .replace("}", "")
+                            .split(",")
+                            if y.accounts
+                            else [None],
+                        }
+                    )
+
+            return response(200, "Berhasil", True, final)
 
         return response(200, "Berhasil", False, None)
 
