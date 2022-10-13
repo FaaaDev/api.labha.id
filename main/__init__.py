@@ -28,6 +28,7 @@ from main.model.neraca_exept_ddb import NeracaEceptionDdb
 from main.model.neraca_hdb import NeracaHdb
 from main.model.ovh_ddb import OvhDdb
 from main.model.user_menu import UserMenu
+from main.model.user_model import UserModel
 from main.schema.inc_hdb import inc_schema
 from .function.update_mutasi import UpdateMutasi
 from main.function.update_pembelian import UpdatePembelian
@@ -242,7 +243,15 @@ def token_required(f):
         try:
             # decoding the payload to fetch the stored details
             data = jwt.decode(token, app.config["SECRET_KEY"])
-            user = User.query.filter(User.id == data["id"]).first()
+            # user = User.query.filter(User.id == data["id"]).first()
+
+            header = {"Authorization": "Bearer {}".format(token)}
+            result = requests.get(url='http://192.168.0.150:8888/v1/auth/user/'+str(data["id"]), headers=header).json()
+
+            if result["code"] == 200:
+                user = UserModel(result["data"])
+            elif result["code"] == 401:
+                return response(401, "Invalid or expired token !!", False, None)
         except Exception as e:
             print(e)
             return response(401, "Invalid or expired token !!", False, None)
@@ -259,33 +268,9 @@ def index():
 
 @app.route("/v1/api/login", methods=["POST"])
 def login():
-    username = request.json["username"]
-    password = request.json["password"]
-    if "remember" in request.json:
-        remember = request.json["remember"]
-    else:
-        remember = False
-
-    user = User.query.filter(User.username == username).first()
-
-    if user is None:
-        return response(403, "Akun tidak ditemukan", False, None)
-    else:
-        if bcrypt.checkpw(password.encode(), user.password.encode()):
-            if remember:
-                token = jwt.encode(
-                    {"id": user.id, "exp": datetime.utcnow() + timedelta(weeks=2)},
-                    app.config["SECRET_KEY"],
-                )
-            else:
-                token = jwt.encode(
-                    {"id": user.id, "exp": datetime.utcnow() + timedelta(hours=5)},
-                    app.config["SECRET_KEY"],
-                )
-            data = {"user": user_schema.dump(user), "token": token.decode("utf-8")}
-            return response(200, "Berhasil", True, data)
-        else:
-            return response(403, "Password yang anda masukkan salah", False, None)
+    result = requests.post(url='http://192.168.0.150:8888/v1/auth/login', json=request.json).json()
+    
+    return result
 
 
 @app.route("/v1/api/user", methods=["POST", "GET"])
@@ -344,8 +329,7 @@ def user(self):
 
 
 @app.route("/v1/api/user/<int:id>", methods=["PUT", "GET", "DELETE"])
-@token_required
-def user_id(self, id):
+def user_id(id):
     user = User.query.filter(User.id == id).first()
     if request.method == "PUT":
         username = request.json["username"]
