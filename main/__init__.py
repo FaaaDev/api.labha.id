@@ -243,15 +243,15 @@ def token_required(f):
         try:
             # decoding the payload to fetch the stored details
             data = jwt.decode(token, app.config["SECRET_KEY"])
-            # user = User.query.filter(User.id == data["id"]).first()
+            user = User.query.filter(User.id == data["id"]).first()
 
-            header = {"Authorization": "Bearer {}".format(token)}
-            result = requests.get(url='http://192.168.0.150:8888/v1/auth/user/'+str(data["id"]), headers=header).json()
+            # header = {"Authorization": "Bearer {}".format(token)}
+            # result = requests.get(url='http://192.168.0.150:8888/v1/auth/user/'+str(data["id"]), headers=header).json()
 
-            if result["code"] == 200:
-                user = UserModel(result["data"])
-            elif result["code"] == 401:
-                return response(401, "Invalid or expired token !!", False, None)
+            # if result["code"] == 200:
+            #     user = UserModel(result["data"])
+            # elif result["code"] == 401:
+            #     return response(401, "Invalid or expired token !!", False, None)
         except Exception as e:
             print(e)
             return response(401, "Invalid or expired token !!", False, None)
@@ -268,9 +268,36 @@ def index():
 
 @app.route("/v1/api/login", methods=["POST"])
 def login():
-    result = requests.post(url='http://192.168.0.150:8888/v1/auth/login', json=request.json).json()
+    # result = requests.post(url='http://192.168.0.150:8888/v1/auth/login', json=request.json).json()
     
-    return result
+    # return result
+    username = request.json["username"]
+    password = request.json["password"]
+    if "remember" in request.json:
+        remember = request.json["remember"]
+    else:
+        remember = False
+
+    user = User.query.filter(User.username == username).first()
+
+    if user is None:
+        return response(403, "Akun tidak ditemukan", False, None)
+    else:
+        if bcrypt.checkpw(password.encode(), user.password.encode()):
+            if remember:
+                token = jwt.encode(
+                    {"id": user.id, "exp": datetime.utcnow() + timedelta(weeks=2)},
+                    app.config["SECRET_KEY"],
+                )
+            else:
+                token = jwt.encode(
+                    {"id": user.id, "exp": datetime.utcnow() + timedelta(hours=5)},
+                    app.config["SECRET_KEY"],
+                )
+            data = {"user": user_schema.dump(user), "token": token.decode("utf-8")}
+            return response(200, "Berhasil", True, data)
+        else:
+            return response(403, "Password yang anda masukkan salah", False, None)
 
 
 @app.route("/v1/api/user", methods=["POST", "GET"])
