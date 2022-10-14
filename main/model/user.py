@@ -14,7 +14,7 @@ class User(db.Model):
     id = db.Column(db.Integer, USER_ID_SEQ, unique=True,
                    server_default=USER_ID_SEQ.next_value())
     username = db.Column(db.String(30), primary_key=True)
-    password = db.Column(db.String(100))
+    password = db.Column(db.Text)
     name = db.Column(db.String(100))
     email = db.Column(db.String(30))
     active = db.Column(db.Boolean, default=True)
@@ -26,7 +26,7 @@ class User(db.Model):
     updated_at = db.Column(db.TIMESTAMP(timezone=False), default=datetime.datetime.utcnow(), onupdate=datetime.datetime.utcnow())
     company = db.Column(db.Integer, default=None)
 
-    def __init__(self, username, name, email, password, confirmation_code, remember_token, password_confirmation):
+    def __init__(self, username, name, email, password, confirmation_code, remember_token, password_confirmation, active):
         self.username = username
         self.name = name
         self.email = email
@@ -34,3 +34,5 @@ class User(db.Model):
         self.confirmation_code = confirmation_code
         self.remember_token = remember_token
         self.password_confirmation = password_confirmation
+        self.active = active
+        

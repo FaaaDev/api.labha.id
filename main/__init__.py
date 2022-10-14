@@ -1,3 +1,4 @@
+from lib2to3.pgen2 import token
 import time
 from datetime import datetime
 from unicodedata import name
@@ -306,15 +307,42 @@ def user(self):
     if request.method == "POST":
         try:
             username = request.json["username"]
-            name = request.json["name"]
+            # name = request.json["name"]
             email = request.json["email"]
             password = request.json["password"]
+            if "remember" in request.json:
+                remember = request.json["remember"]
+            else:
+                remember = False
+
+            active = request.json["active"]
+            menu = request.json["menu"]
 
             hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
 
-            user = User(username, name, email, hashed.decode(), None, None, None)
+            user = User(username, None, email, hashed.decode("utf-8"), None, None, None, active)
             db.session.add(user)
             db.session.commit()
+
+            new_menu = []
+            for x in menu:
+                    if x["menu_id"]:
+                        new_menu.append(
+                            UserMenu(
+                                user.id,
+                                x["menu_id"],
+                                x["view"],
+                                x["edit"],
+                                x["delete"],
+                               
+                            )
+                        )
+
+            if len(new_menu) > 0:
+
+                    db.session.add_all(new_menu)
+                    db.session.commit()
+
             result = response(
                 200, "Berhasil menambahkan user", True, user_schema.dump(user)
             )
@@ -324,6 +352,7 @@ def user(self):
         finally:
             return result
     else:
+        
         user = User.query.all()
 
         menus = UserMenu.query.all()
