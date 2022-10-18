@@ -16,7 +16,9 @@ class UserModel:
         self.username = data['username']
         self.name = data['name']
         self.email = data['email']
+        self.active = data['active']
         self.confirmation_code = data['confirmation_code']
         self.remember_token = data['remember_token']
+        self.company = data['company']
 
         

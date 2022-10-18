@@ -223,6 +223,10 @@ def cityUrl():
     return "https://api.rajaongkir.com/starter/city"
 
 
+def authHelper():
+    return "http://192.168.0.150:8888/v1/auth"
+
+
 def response(code, message, status, data):
     return (
         jsonify({"code": code, "status": status, "message": message, "data": data}),
@@ -244,15 +248,15 @@ def token_required(f):
         try:
             # decoding the payload to fetch the stored details
             data = jwt.decode(token, app.config["SECRET_KEY"])
-            user = User.query.filter(User.id == data["id"]).first()
+            # user = User.query.filter(User.id == data["id"]).first()
 
-            # header = {"Authorization": "Bearer {}".format(token)}
-            # result = requests.get(url='http://192.168.0.150:8888/v1/auth/user/'+str(data["id"]), headers=header).json()
+            header = {"Authorization": "Bearer {}".format(token)}
+            result = requests.get(url='http://192.168.0.150:8888/v1/auth/user/'+str(data["id"]), headers=header).json()
 
-            # if result["code"] == 200:
-            #     user = UserModel(result["data"])
-            # elif result["code"] == 401:
-            #     return response(401, "Invalid or expired token !!", False, None)
+            if result["code"] == 200:
+                user = UserModel(result["data"])
+            elif result["code"] == 401:
+                return response(401, "Invalid or expired token !!", False, None)
         except Exception as e:
             print(e)
             return response(401, "Invalid or expired token !!", False, None)
@@ -269,63 +273,56 @@ def index():
 
 @app.route("/v1/api/login", methods=["POST"])
 def login():
-    # result = requests.post(url='http://192.168.0.150:8888/v1/auth/login', json=request.json).json()
-    
-    # return result
-    username = request.json["username"]
-    password = request.json["password"]
-    if "remember" in request.json:
-        remember = request.json["remember"]
-    else:
-        remember = False
+    result = requests.post(url='http://192.168.0.150:8888/v1/auth/login', json=request.json).json()
 
-    user = User.query.filter(User.username == username).first()
+    return response(result["code"], result["message"], result["status"], result["data"])
+    # username = request.json["username"]
+    # password = request.json["password"]
+    # if "remember" in request.json:
+    #     remember = request.json["remember"]
+    # else:
+    #     remember = False
 
-    if user is None:
-        return response(403, "Akun tidak ditemukan", False, None)
-    else:
-        if bcrypt.checkpw(password.encode(), user.password.encode()):
-            if remember:
-                token = jwt.encode(
-                    {"id": user.id, "exp": datetime.utcnow() + timedelta(weeks=2)},
-                    app.config["SECRET_KEY"],
-                )
-            else:
-                token = jwt.encode(
-                    {"id": user.id, "exp": datetime.utcnow() + timedelta(hours=5)},
-                    app.config["SECRET_KEY"],
-                )
-            data = {"user": user_schema.dump(user), "token": token.decode("utf-8")}
-            return response(200, "Berhasil", True, data)
-        else:
-            return response(403, "Password yang anda masukkan salah", False, None)
+    # user = User.query.filter(User.username == username).first()
+
+    # if user is None:
+    #     return response(403, "Akun tidak ditemukan", False, None)
+    # else:
+    #     if bcrypt.checkpw(password.encode(), user.password.encode()):
+    #         if remember:
+    #             token = jwt.encode(
+    #                 {"id": user.id, "exp": datetime.utcnow() + timedelta(weeks=2)},
+    #                 app.config["SECRET_KEY"],
+    #             )
+    #         else:
+    #             token = jwt.encode(
+    #                 {"id": user.id, "exp": datetime.utcnow() + timedelta(hours=5)},
+    #                 app.config["SECRET_KEY"],
+    #             )
+    #         data = {"user": user_schema.dump(user), "token": token.decode("utf-8")}
+    #         return response(200, "Berhasil", True, data)
+    #     else:
+    #         return response(403, "Password yang anda masukkan salah", False, None)
 
 
 @app.route("/v1/api/user", methods=["POST", "GET"])
 @token_required
 def user(self):
     if request.method == "POST":
-        try:
-            username = request.json["username"]
-            # name = request.json["name"]
-            email = request.json["email"]
-            password = request.json["password"]
-            if "remember" in request.json:
-                remember = request.json["remember"]
-            else:
-                remember = False
+        header = request.headers
+        result = requests.post(
+            url="%s/user" % (authHelper()),
+            headers=header,
+            json=request.json,
+        ).json()
 
-            active = request.json["active"]
-            menu = request.json["menu"]
+        if result["code"] == 200:
+            user = UserModel(result["data"])
+            try:
+                menu = request.json["menu"]
 
-            hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
-
-            user = User(username, None, email, hashed.decode("utf-8"), None, None, None, active)
-            db.session.add(user)
-            db.session.commit()
-
-            new_menu = []
-            for x in menu:
+                new_menu = []
+                for x in menu:
                     if x["menu_id"]:
                         new_menu.append(
                             UserMenu(
@@ -334,25 +331,25 @@ def user(self):
                                 x["view"],
                                 x["edit"],
                                 x["delete"],
-                               
                             )
                         )
 
-            if len(new_menu) > 0:
+                if len(new_menu) > 0:
 
                     db.session.add_all(new_menu)
                     db.session.commit()
-
-            result = response(
-                200, "Berhasil menambahkan user", True, user_schema.dump(user)
-            )
-        except IntegrityError:
-            db.session.rollback()
-            result = response(400, "Email sudah digunakan", False, None)
-        finally:
-            return result
+                results = response(
+                    200, "Berhasil menambahkan user", True, result["data"]
+                )
+            except IntegrityError:
+                db.session.rollback()
+                results = response(400, "Gagal", False, None)
+            finally:
+                return results
+        else:
+            return response(result["code"], result["message"], result["status"], result["data"])
     else:
-        
+
         user = User.query.all()
 
         menus = UserMenu.query.all()
@@ -410,10 +407,9 @@ def user_id(id):
 @token_required
 def profil(self):
     user = (
-        db.session.query(User, UserMenu, MainMenu)
-        .outerjoin(UserMenu, UserMenu.user_id == User.id)
+        db.session.query( UserMenu, MainMenu)
         .outerjoin(MainMenu, MainMenu.id == UserMenu.menu_id)
-        .filter(and_(User.id == self.id, MainMenu.visible == True))
+        .filter(and_(UserMenu.user_id == self.id, MainMenu.visible == True))
         .order_by(MainMenu.category.asc(), MainMenu.id.asc())
         .all()
     )
@@ -424,59 +420,59 @@ def profil(self):
         for y in user:
             last_menu = []
             for z in user:
-                if z[2].parent_id == y[2].id:
+                if z[1].parent_id == y[1].id:
                     last_menu.append(
                         {
-                            "id": z[2].id,
-                            "name": z[2].name,
-                            "route_name": z[2].route_name,
-                            "icon_file": z[2].icon_file,
-                            "parent_id": z[2].parent_id,
-                            "visible": z[2].visible,
-                            "category": z[2].category,
-                            "view": z[1].view,
-                            "edit": z[1].edit,
-                            "delete": z[1].delete,
+                            "id": z[1].id,
+                            "name": z[1].name,
+                            "route_name": z[1].route_name,
+                            "icon_file": z[1].icon_file,
+                            "parent_id": z[1].parent_id,
+                            "visible": z[1].visible,
+                            "category": z[1].category,
+                            "view": z[0].view,
+                            "edit": z[0].edit,
+                            "delete": z[0].delete,
                         }
                     )
-            if y[2].parent_id == x[2].id:
+            if y[1].parent_id == x[1].id:
                 sub_menu.append(
                     {
-                        "id": y[2].id,
-                        "name": y[2].name,
-                        "route_name": y[2].route_name,
-                        "icon_file": y[2].icon_file,
-                        "visible": y[2].visible,
-                        "parent_id": y[2].parent_id,
-                        "category": y[2].category,
-                        "view": y[1].view,
-                        "edit": y[1].edit,
-                        "delete": y[1].delete,
+                        "id": y[1].id,
+                        "name": y[1].name,
+                        "route_name": y[1].route_name,
+                        "icon_file": y[1].icon_file,
+                        "visible": y[1].visible,
+                        "parent_id": y[1].parent_id,
+                        "category": y[1].category,
+                        "view": y[0].view,
+                        "edit": y[0].edit,
+                        "delete": y[0].delete,
                         "lastmenu": last_menu,
                     }
                 )
-        if not x[2].parent_id:
+        if not x[1].parent_id:
             menu.append(
                 {
-                    "id": x[2].id,
-                    "name": x[2].name,
-                    "route_name": x[2].route_name,
-                    "icon_file": x[2].icon_file,
-                    "visible": x[2].visible,
-                    "parent_id": x[2].parent_id,
-                    "category": x[2].category,
-                    "view": x[1].view,
-                    "edit": x[1].edit,
-                    "delete": x[1].delete,
+                    "id": x[1].id,
+                    "name": x[1].name,
+                    "route_name": x[1].route_name,
+                    "icon_file": x[1].icon_file,
+                    "visible": x[1].visible,
+                    "parent_id": x[1].parent_id,
+                    "category": x[1].category,
+                    "view": x[0].view,
+                    "edit": x[0].edit,
+                    "delete": x[0].delete,
                     "submenu": sub_menu,
                 }
             )
 
     menu = {
-        "id": user[0][0].id,
-        "email": user[0][0].email,
-        "username": user[0][0].username,
-        "name": user[0][0].name,
+        "id": self.id,
+        "email": self.email,
+        "username": self.username,
+        "name": self.name,
         "menu": menu,
     }
 
@@ -799,7 +795,10 @@ def account(self):
             .outerjoin(KlasiMdb, KategMdb.kode_klasi == KlasiMdb.id)
             # .order_by(KlasiMdb.id.asc())
             .order_by(KategMdb.id.asc())
-            .order_by(AccouMdb.id.asc(), cast(func.replace(AccouMdb.acc_code, ".", ""), db.Integer).asc())
+            .order_by(
+                AccouMdb.id.asc(),
+                cast(func.replace(AccouMdb.acc_code, ".", ""), db.Integer).asc(),
+            )
             .all()
         )
         data = [
@@ -1646,17 +1645,12 @@ def company(self):
         finally:
             return result
     else:
-        result = (
-            db.session.query(User, CompMdb)
-            .outerjoin(CompMdb, User.company == CompMdb.id)
-            .filter(User.id == self.id)
-            .first()
-        )
+        result = CompMdb.query.filter(CompMdb.id == self.company).first()
 
-        if result[1]:
-            result[1].cp_logo = result[1].cp_logo if result[1].cp_logo != "" else ""
+        if result:
+            result.cp_logo = result.cp_logo if result.cp_logo != "" else ""
 
-        return response(200, "Berhasil", True, comp_shcema.dump(result[1]))
+        return response(200, "Berhasil", True, comp_shcema.dump(result))
 
 
 @app.route("/v1/api/company/<int:id>", methods=["PUT", "GET", "DELETE"])
