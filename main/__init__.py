@@ -224,7 +224,7 @@ def cityUrl():
 
 
 def authHelper():
-    return "http://192.168.0.150:8888/v1/auth"
+    return "http://116.193.191.236:8889/v1/auth"
 
 
 def response(code, message, status, data):
@@ -251,7 +251,7 @@ def token_required(f):
             # user = User.query.filter(User.id == data["id"]).first()
 
             header = {"Authorization": "Bearer {}".format(token)}
-            result = requests.get(url='http://192.168.0.150:8888/v1/auth/user/'+str(data["id"]), headers=header).json()
+            result = requests.get(url=authHelper()+'/user/'+str(data["id"]), headers=header).json()
 
             if result["code"] == 200:
                 user = UserModel(result["data"])
@@ -273,7 +273,7 @@ def index():
 
 @app.route("/v1/api/login", methods=["POST"])
 def login():
-    result = requests.post(url='http://192.168.0.150:8888/v1/auth/login', json=request.json).json()
+    result = requests.post(url='%s/login'%(authHelper()), json=request.json).json()
 
     return response(result["code"], result["message"], result["status"], result["data"])
     # username = request.json["username"]
