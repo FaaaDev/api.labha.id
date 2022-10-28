@@ -2016,7 +2016,7 @@ def setup_account(self):
     user = User.query.filter(User.id == self.id).first()
     if request.method == "POST":
         try:
-            cp_id = user.company
+            cp_id = self.company
             ar = request.json["ar"]
             ap = request.json["ap"]
             pnl = request.json["pnl"]
@@ -2089,7 +2089,7 @@ def setup_account(self):
         finally:
             return result
     else:
-        setup = SetupMdb.query.filter(SetupMdb.cp_id == user.company).first()
+        setup = SetupMdb.query.filter(SetupMdb.cp_id == self.company).first()
         account = AccouMdb.query.all()
 
         if setup:
