@@ -9,6 +9,7 @@ class DordSchema(ma.Schema):
                   'ord_date',
                   'no_doc',
                   'doc_date',
+                  'invoice',
                   'faktur',
                   'po_id',
                   'dep_id',
@@ -19,6 +20,9 @@ class DordSchema(ma.Schema):
                   'prod_disc',
                   'jasa_disc',
                   'total_disc',
+                  'total_b',
+                  'total_bayar',
+                  'same_sup',
                   'status',
                   'print')
 

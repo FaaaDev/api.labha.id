@@ -3,8 +3,8 @@ from main.shared.shared import db
 
 
 class DjasaDdb(db.Model):
-    __table_args__ = {'schema': 'AP'}
-    __tablename__ = 'OJASADDB'
+    __table_args__ = {"schema": "AP"}
+    __tablename__ = "OJASADDB"
 
     id = db.Column(db.Integer, primary_key=True)
     ord_id = db.Column(db.Integer)
@@ -14,9 +14,12 @@ class DjasaDdb(db.Model):
     order = db.Column(db.Integer)
     price = db.Column(db.Float)
     disc = db.Column(db.Float)
+    total_fc = db.Column(db.Float)
     total = db.Column(db.Float)
 
-    def __init__(self, ord_id, sup_id, jasa_id, unit_id, order, price, disc, total):
+    def __init__(
+        self, ord_id, sup_id, jasa_id, unit_id, order, price, disc, total_fc, total
+    ):
         self.ord_id = ord_id
         self.sup_id = sup_id
         self.jasa_id = jasa_id
@@ -24,4 +27,5 @@ class DjasaDdb(db.Model):
         self.order = order
         self.price = price
         self.disc = disc
+        self.total_fc = total_fc
         self.total = total
