@@ -10,10 +10,12 @@ class AcqDdb(db.Model):
     fk_id = db.Column(db.Integer)
     value = db.Column(db.Integer)
     payment = db.Column(db.Integer)
+    dp = db.Column(db.Integer)
 
-    def __init__(self, exp_id, fk_id, value, payment):
+    def __init__(self, exp_id, fk_id, value, payment, dp):
         self.exp_id = exp_id
         self.fk_id = fk_id
         self.value = value
         self.payment = payment
+        self.dp = dp
         
