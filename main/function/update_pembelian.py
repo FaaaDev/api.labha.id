@@ -10,6 +10,7 @@ from main.model.lokasi_mdb import LocationMdb
 from main.model.ordpb_hdb import OrdpbHdb
 from main.model.pajak_mdb import PajakMdb
 from main.model.prod_mdb import ProdMdb
+from main.model.group_prod_mdb import GroupProMdb
 from main.model.setup_mdb import SetupMdb
 from main.model.supplier_mdb import SupplierMdb
 from main.model.transddb import TransDdb
@@ -26,7 +27,7 @@ class UpdatePembelian:
         x = (
             db.session.query(FkpbHdb, OrdpbHdb, FkpbDetDdb)
             .outerjoin(OrdpbHdb, OrdpbHdb.id == FkpbDetDdb.ord_id)
-            .outerjoin(FkpbHdb, FkpbHdb.id == FkpbDetDdb.ord_id)
+            .outerjoin(FkpbHdb, FkpbHdb.id == FkpbDetDdb.fk_id)
             .filter(FkpbHdb.id == fk_id)
             .first()
         )
@@ -59,7 +60,7 @@ class UpdatePembelian:
 
             djasa = DjasaDdb.query.filter(DjasaDdb.ord_id == x[2].ord_id).all()
 
-            sup = SupplierMdb.query.filter(SupplierMdb.id == x[0].sup_id).first()
+            sup = SupplierMdb.query.filter(SupplierMdb.id == x[1].sup_id).first()
 
             gprod = (
                 db.session.query(ProdMdb, GroupProMdb)
@@ -103,7 +104,6 @@ class UpdatePembelian:
             for y in djasa:
                 total_jasa += y.total
                 jtotal_fc += y.total_fc
-
 
             trx_amnh = 0
             trx_amnv = 0

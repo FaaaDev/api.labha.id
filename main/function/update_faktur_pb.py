@@ -194,7 +194,6 @@ class UpdateFakturPB:
                         d[1].po_id,
                         None,
                         None,
-                        sup.sup_curren,
                         ppn[3].rate if sup.sup_curren != None else 0,
                         "k",
                         "LP",
@@ -205,8 +204,6 @@ class UpdateFakturPB:
                         None,
                         None,
                         None,
-                        None,
-                        False,
                     )
                 )
 
@@ -262,7 +259,7 @@ class UpdateFakturPB:
                     )
 
                     if len(trans_ppn) > 0:
-                        db.session.add(trans_ppn)
+                        db.session.add_all(trans_ppn)
 
                 # Insert Jurnal Biaya
                 # if user_product == "inv+gl":

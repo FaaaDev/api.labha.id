@@ -4,8 +4,8 @@ from main.shared.shared import db
 
 
 class SordHdb(db.Model):
-    __table_args__ = {'schema': 'AR'}
-    __tablename__ = 'SORDHDB'
+    __table_args__ = {"schema": "AR"}
+    __tablename__ = "SORDHDB"
 
     id = db.Column(db.Integer, primary_key=True)
     so_code = db.Column(db.String(255), unique=True)
@@ -21,26 +21,29 @@ class SordHdb(db.Model):
     prod_disc = db.Column(db.Integer)
     jasa_disc = db.Column(db.Integer)
     total_disc = db.Column(db.Integer)
+    total_bayar = db.Column(db.Float)
     status = db.Column(db.Integer, default=0)
     print = db.Column(db.Integer, default=0)
 
-    def __init__(self,
-                 so_code,
-                 so_date,
-                 pel_id,
-                 ppn_type,
-                 sub_addr,
-                 sub_id,
-                 req_date,
-                 top,
-                 due_date,
-                 split_inv,
-                 prod_disc,
-                 jasa_disc,
-                 total_disc,
-                 status,
-                 print
-                 ):
+    def __init__(
+        self,
+        so_code,
+        so_date,
+        pel_id,
+        ppn_type,
+        sub_addr,
+        sub_id,
+        req_date,
+        top,
+        due_date,
+        split_inv,
+        prod_disc,
+        jasa_disc,
+        total_disc,
+        total_bayar,
+        status,
+        print,
+    ):
         self.so_code = so_code
         self.so_date = so_date
         self.pel_id = pel_id
@@ -54,5 +57,6 @@ class SordHdb(db.Model):
         self.prod_disc = prod_disc
         self.jasa_disc = jasa_disc
         self.total_disc = total_disc
+        self.total_bayar = total_bayar
         self.status = status
         self.print = print

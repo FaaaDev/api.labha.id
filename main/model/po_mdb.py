@@ -56,7 +56,7 @@ class PoMdb(db.Model):
         self.prod_disc = prod_disc
         self.jasa_disc = jasa_disc
         self.total_disc = total_disc
-        self.total_bayatotal_bayar =total_bayar
+        self.total_bayar =total_bayar
         self.status = status
         self.apprv = apprv
         self.print = print

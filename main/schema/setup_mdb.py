@@ -20,6 +20,7 @@ class SetupSchema(ma.Schema):
             "sls_unbill",
             "sls_unbill_recv",
             "sls_tax",
+            "sls",
             "pur_cogs",
             "pur_discount",
             "pur_shipping",

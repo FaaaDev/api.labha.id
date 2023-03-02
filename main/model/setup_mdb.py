@@ -20,6 +20,7 @@ class SetupMdb(db.Model):
     sls_unbill = db.Column(db.Integer)
     sls_unbill_recv = db.Column(db.Integer)
     sls_tax = db.Column(db.Integer)
+    sls = db.Column(db.Integer)
     pur_cogs = db.Column(db.Integer)
     pur_discount = db.Column(db.Integer)
     pur_shipping = db.Column(db.Integer)
@@ -53,6 +54,7 @@ class SetupMdb(db.Model):
         sls_unbill,
         sls_unbill_recv,
         sls_tax,
+        sls,
         pur_cogs,
         pur_discount,
         pur_shipping,
@@ -84,6 +86,7 @@ class SetupMdb(db.Model):
         self.sls_unbill = sls_unbill
         self.sls_unbill_recv = sls_unbill_recv
         self.sls_tax = sls_tax
+        self.sls = sls
         self.pur_cogs = pur_cogs
         self.pur_discount = pur_discount
         self.pur_shipping = pur_shipping

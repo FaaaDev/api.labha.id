@@ -1,5 +1,6 @@
 from sqlalchemy import and_
 from main.model.custom_mdb import CustomerMdb
+from main.model.supplier_mdb import SupplierMdb
 from main.model.djasa_ddb import DjasaDdb
 from main.model.dprod_ddb import DprodDdb
 from main.model.group_prod_mdb import GroupProMdb
@@ -16,16 +17,22 @@ from main.model.ordpb_hdb import OrdpbHdb
 from main.model.ordpj_hdb import OrdpjHdb
 from main.model.transddb import TransDdb
 from main.model.unit_mdb import UnitMdb
+from main.model.currency_mdb import CurrencyMdb
+from main.model.comp_mdb import CompMdb
 from main.model.user import User
 from main.shared.shared import db
 
 
 class UpdateAr:
     total = 0
+    total_fc = 0
     total_product = 0
+    total_product_fc = 0
     total_jasa = 0
-    ppn = 11
+    tjasa_fc = 0
+    ppn = 0
     ppn_total = 0
+    ppn_total_fc = 0
 
     def __init__(self, delete, order_id, user_id):
         order = OrdpjHdb.query.filter(OrdpjHdb.id == order_id).first()
@@ -33,20 +40,17 @@ class UpdateAr:
         transddb = TransDdb.query.filter(TransDdb.trx_code == order.ord_code).all()
         krtst = StCard.query.filter(StCard.trx_code == order.ord_code).all()
 
-        ppn = (
-                db.session.query(OrdpjHdb, CustomerMdb, PajakMdb)
-                .outerjoin(CustomerMdb, CustomerMdb.id == OrdpjHdb.pel_id)
-                .outerjoin(PajakMdb, PajakMdb.id == CustomerMdb.cus_pjk)
-                .first()
-            ) 
+
+        # comp = CompMdb.query.filter(CompMdb.id == user_company).first()
+
+        curr = CurrencyMdb.query.all()
 
         if order.so_id:
             so = SordHdb.query.filter(SordHdb.id == order.so_id).first()
             if so:
                 if delete:
                     so.status = 0
-                    db.session.commit()
-              
+                    # db.session.commit()
 
         if delete:
             if krtar:
@@ -59,22 +63,8 @@ class UpdateAr:
                 for x in krtst:
                     db.session.delete(x)
 
-            db.session.commit()
+            # db.session.commit()
         else:
-            old_ar = ArCard.query.filter(
-                and_(ArCard.trx_code == order.ord_code, ArCard.pay_type == "P1")
-            ).first()
-            if old_ar:
-                db.session.delete(old_ar)
-            if transddb:
-                for x in transddb:
-                    db.session.delete(x)
-            if krtst:
-                for x in krtst:
-                    db.session.delete(x)
-
-            db.session.commit()
-
             product = (
                 db.session.query(JprodDdb, ProdMdb, GroupProMdb)
                 .outerjoin(ProdMdb, ProdMdb.id == JprodDdb.prod_id)
@@ -83,42 +73,65 @@ class UpdateAr:
                 .all()
             )
             jasa = (
-                db.session.query(JjasaDdb, JasaMdb)
+                db.session.query(JjasaDdb, JasaMdb, SupplierMdb)
                 .outerjoin(JasaMdb, JasaMdb.id == JjasaDdb.jasa_id)
+                .outerjoin(SupplierMdb, SupplierMdb.id == JjasaDdb.sup_id)
                 .filter(JjasaDdb.pj_id == order.id)
                 .all()
             )
-
-            unit = UnitMdb.query.all()
 
             customer = CustomerMdb.query.filter(
                 CustomerMdb.id == (order.sub_id if order.sub_addr else order.pel_id)
             ).first()
 
+
+            ppn = (
+                db.session.query(OrdpjHdb, CustomerMdb, PajakMdb)
+                .outerjoin(CustomerMdb, CustomerMdb.id == OrdpjHdb.pel_id)
+                .outerjoin(PajakMdb, PajakMdb.id == customer.cus_pjk)
+                .first()
+            )
+
+            unit = UnitMdb.query.all()
+
+            cur_rate = None
+            for y in curr:
+                if y.id == customer.cus_curren:
+                    cur_rate = y.rate
+
+            old_ar = ArCard.query.filter(
+                and_(ArCard.trx_code == order.ord_code, ArCard.pay_type == "P1")
+            ).first()
+
+            if old_ar:
+                db.session.delete(old_ar)
+
+            if transddb:
+                for x in transddb:
+                    db.session.delete(x)
+
+            if krtst:
+                for x in krtst:
+                    db.session.delete(x)
+
+            # Product
             prod_trans = []
             new_krtst = []
             for x in product:
                 self.total_product += (
-                    x[0].nett_price if x[0].nett_price and int(x[0].nett_price) > 0 else x[0].total
+                    x[0].nett_price
+                    if x[0].nett_price and int(x[0].nett_price) > 0
+                    else x[0].total
                 )
-                prod_trans.append(
-                    TransDdb(
-                        order.ord_code,
-                        order.ord_date,
-                        x[2].acc_sto,
-                        None,
-                        None,
-                        None,
-                        None,
-                        None,
-                        None,
-                        x[0].nett_price if x[0].nett_price and int(x[0].nett_price) > 0 else x[0].total,
-                        "K",
-                        "SALES GL PRODUCT %s" % (x[2].code),
-                        None,
-                        None,
-                    )
+
+                self.total_product_fc += (
+                    x[0].nett_price
+                    if x[0].nett_price and int(x[0].nett_price) > 0
+                    else x[0].total_fc
+                    if customer.cus_curren != None
+                    else 0
                 )
+
                 qty = 0
                 if x[0].unit_id != x[1].unit:
                     for y in unit:
@@ -127,6 +140,7 @@ class UpdateAr:
                 else:
                     qty = x[0].order
 
+                # Insert Kartu Stock
                 new_krtst.append(
                     StCard(
                         order.ord_code,
@@ -135,91 +149,178 @@ class UpdateAr:
                         "JL",
                         None,
                         qty,
+                        x[0].nett_price
+                        if x[0].nett_price and int(x[0].nett_price) > 0
+                        else x[0].total,
                         None,
-                        None,
-                        x[0].nett_price if x[0].nett_price and int(x[0].nett_price) > 0 else x[0].total,
-                        x[0].price,
+                        x[0].price
+                        if customer.cus_curren == None
+                        else x[0].price * cur_rate,
+                        x[0].price if customer.cus_curren != None else None,
                         x[0].disc,
                         x[0].prod_id,
                         x[0].location,
                         None,
                         0,
-                        None
+                        None,
                     )
                 )
 
-            jasa_trans = []
-            for x in jasa:
-                self.total_jasa += x.total
-                jasa_trans.append(
+                if len(new_krtst) > 0:
+                    db.session.add_all(new_krtst)
+
+                # Insert Jurnal Stock
+                acc_prod = None
+                if x[2].wip:
+                    acc_prod = x[2].acc_wip
+                else:
+                    acc_prod = x[2].acc_sto
+
+                prod_trans.append(
                     TransDdb(
                         order.ord_code,
                         order.ord_date,
-                        x[1].acc_id,
+                        acc_prod,
                         None,
                         None,
                         None,
-                        None,
-                        None,
-                        None,
-                        x[0].total,
+                        customer.cus_curren,
+                        cur_rate,
+                        x[0].nett_price
+                        if x[0].nett_price and int(x[0].nett_price) > 0
+                        else x[0].total_fc,
+                        x[0].nett_price
+                        if x[0].nett_price and int(x[0].nett_price) > 0
+                        else x[0].total,
                         "K",
-                        "SALES GL JASA %s" % (x[1].code),
+                        "SALES GL PRODUCT %s" % (x[2].code),
                         None,
                         None,
                     )
                 )
 
+                if len(prod_trans) > 0:
+                    db.session.add_all(prod_trans)
+
+            # Jasa
+            jasa_trans = []
+            cur_jasa = None
+            for x in jasa:
+                self.total_jasa += x[0].total
+                self.tjasa_fc += x[0].total_fc
+
+                for y in curr:
+                    if y.id == x[2].sup_curren:
+                        cur_jasa = y.rate
+
+                # Insert Jurnal Jasa
+                if order.surat_jalan == 2:
+                    jasa_trans.append(
+                        TransDdb(
+                            order.ord_code,
+                            order.ord_date,
+                            x[1].acc_id,
+                            None,
+                            None,
+                            None,
+                            x[2].sup_curren,
+                            cur_jasa,
+                            x[0].total_fc,
+                            x[0].total,
+                            "K",
+                            "SALES GL JASA %s" % (x[1].code),
+                            None,
+                            None,
+                        )
+                    )
+
+                    if len(jasa_trans) > 0:
+                        db.session.add_all(jasa_trans)
+
+            # AR Card
             if order.split_inv:
-                self.total = (self.total_product * ((100 + ppn[2].nilai) / 100)) + (
-                    self.total_jasa * ((100 + 2) / 100)
-                )
+                if customer.cus_pjk != None:
+                    self.total = (self.total_product * ((100 + ppn[2].nilai) / 100)) + (
+                        self.total_jasa * ((100 + 2) / 100)
+                    )
+
+                    self.total_fc = (
+                        self.total_product_fc * ((100 + ppn[2].nilai) / 100)
+                    ) + (self.tjasa_fc * ((100 + 2) / 100))
+                else:
+                    self.total = (self.total_product * ((100 + 0) / 100)) + (
+                        self.total_jasa * ((100 + 2) / 100)
+                    )
+
+                    self.total_fc = (self.total_product_fc * ((100 + 0) / 100)) + (
+                        self.tjasa_fc * ((100 + 2) / 100)
+                    )
             else:
-                self.total = (self.total_product + self.total_jasa) * (
-                    (100 + ppn[2].nilai) / 100
+                if customer.cus_pjk != None:
+                    self.total = (self.total_product + self.total_jasa) * (
+                        (100 + ppn[2].nilai) / 100
+                    )
+
+                    self.total_fc = (self.total_product_fc + self.tjasa_fc) * (
+                        (100 + ppn[2].nilai) / 100
+                    )
+                else:
+                    self.total = (self.total_product + self.total_jasa) * (
+                        (100 + 0) / 100
+                    )
+
+                    self.total_fc = (self.total_product_fc + self.tjasa_fc) * (
+                        (100 + 0) / 100
+                    )
+
+            # Insert Kartu AR
+            if order.surat_jalan == 2:
+                new_ar = ArCard(
+                    order.sub_id if order.sub_addr else order.pel_id,
+                    order.ord_code,
+                    order.ord_date,
+                    order.due_date,
+                    None,
+                    None,
+                    order.id,
+                    None,
+                    cur_rate,
+                    "D",
+                    "JL",
+                    "P1",
+                    self.total,
+                    (self.total / cur_rate) if customer.cus_curren != None else 0,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
                 )
 
-            new_ar = ArCard(
-                order.sub_id if order.sub_addr else order.pel_id,
-                order.ord_code,
-                order.ord_date,
-                order.due_date,
-                None,
-                None,
-                order.id,
-                None,
-                None,
-                "D",
-                "JL",
-                "P1",
-                self.total,
-                None,
-                None,
-                None,
-                None,
-                None,
-                None,
-                None,
-                None,
-                None,
-                product[0][0].location,
-                None,
-            )
+                db.session.add(new_ar)
 
-            db.session.add(new_ar)
-            db.session.commit()
+            if customer.cus_pjk != None:
+                self.ppn_total = self.total_product * ppn[2].nilai / 100
 
+                self.ppn_total_fc = self.total_product_fc * ppn[2].nilai / 100
 
+            setup = SetupMdb.query.filter(SetupMdb.cp_id == CompMdb.id).first()
+            # Insert Jurnal AR && PPN
             ar_trans = TransDdb(
                 order.ord_code,
                 order.ord_date,
-                customer.cus_gl,
+                setup.ar if order.surat_jalan == 2 else setup.sls,
                 None,
                 None,
                 None,
-                None,
-                None,
-                None,
+                customer.cus_curren,
+                cur_rate,
+                self.total_fc,
                 self.total,
                 "D",
                 "AR TRADE %s" % (order.ord_code),
@@ -227,40 +328,30 @@ class UpdateAr:
                 None,
             )
 
-            setup = (
-                db.session.query(User, SetupMdb)
-                .outerjoin(SetupMdb, SetupMdb.cp_id == User.company)
-                .filter(User.id == user_id)
-                .first()
-            )
+            if order.surat_jalan == 2:
+                if customer.cus_pjk != None:
+                    ppn_trans = TransDdb(
+                        order.ord_code,
+                        order.ord_date,
+                        ppn[2].acc_sls_tax,
+                        None,
+                        None,
+                        None,
+                        customer.cus_curren,
+                        cur_rate,
+                        self.ppn_total_fc,
+                        self.ppn_total
+                        if self.total_jasa == 0
+                        else (self.total_product + self.total_jasa)
+                        * ppn[2].nilai
+                        / 100,
+                        "K",
+                        "VAT - OUT %s" % (order.ord_code),
+                        None,
+                        None,
+                    )
 
-
-            self.ppn_total = self.total_product * ppn[2].nilai / 100
-
-            ppn_trans = TransDdb(
-                order.ord_code,
-                order.ord_date,
-                setup[1].sls_tax,
-                None,
-                None,
-                None,
-                None,
-                None,
-                None,
-                self.ppn_total,
-                "K",
-                "VAT - OUT %s" % (order.ord_code),
-                None,
-                None,
-            )
-
-            db.session.add(ppn_trans)
+                    db.session.add(ppn_trans)
             db.session.add(ar_trans)
-            if len(prod_trans) > 0:
-                db.session.add_all(prod_trans)
-            if len(jasa_trans) > 0:
-                db.session.add_all(jasa_trans)
-            if len(new_krtst) > 0:
-                db.session.add_all(new_krtst)
 
-            db.session.commit()
+        db.session.commit()
