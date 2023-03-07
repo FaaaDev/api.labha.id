@@ -1756,6 +1756,8 @@ def customer(self):
         cus_jpel = request.json["cus_jpel"]
         cus_sub_area = request.json["cus_sub_area"]
         cus_npwp = request.json["cus_npwp"]
+        cus_pkp = request.json["cus_pkp"]
+        cus_country = request.json["cus_country"]
         cus_address = request.json["cus_address"]
         cus_kota = request.json["cus_kota"]
         cus_kpos = request.json["cus_kpos"]
@@ -1779,6 +1781,8 @@ def customer(self):
                 cus_jpel,
                 cus_sub_area,
                 cus_npwp,
+                cus_pkp,
+                cus_country,
                 cus_address,
                 cus_kota,
                 cus_kpos,
@@ -1849,6 +1853,8 @@ def customer_id(self, id):
         customer.cus_jpel = request.json["cus_jpel"]
         customer.cus_sub_area = request.json["cus_sub_area"]
         customer.cus_npwp = request.json["cus_npwp"]
+        customer.cus_pkp = request.json["cus_pkp"]
+        customer.cus_country = request.json["cus_country"]
         customer.cus_address = request.json["cus_address"]
         customer.cus_kota = request.json["cus_kota"]
         customer.cus_kpos = request.json["cus_kpos"]
@@ -1912,6 +1918,8 @@ def supplier(self):
         sup_jpem = request.json["sup_jpem"]
         sup_ppn = request.json["sup_ppn"]
         sup_npwp = request.json["sup_npwp"]
+        sup_pkp = request.json["sup_pkp"]
+        sup_country = request.json["sup_country"]
         sup_address = request.json["sup_address"]
         sup_kota = request.json["sup_kota"]
         sup_kpos = request.json["sup_kpos"]
@@ -1931,6 +1939,8 @@ def supplier(self):
                 sup_jpem,
                 sup_ppn,
                 sup_npwp,
+                sup_pkp,
+                sup_country,
                 sup_address,
                 sup_kota,
                 sup_kpos,
@@ -1986,6 +1996,8 @@ def supplier_id(self, id):
         supplier.sup_jpem = request.json["sup_jpem"]
         supplier.sup_ppn = request.json["sup_ppn"]
         supplier.sup_npwp = request.json["sup_npwp"]
+        supplier.sup_pkp = request.json["sup_pkp"]
+        supplier.sup_country = request.json["sup_country"]
         supplier.sup_address = request.json["sup_address"]
         supplier.sup_kota = request.json["sup_kota"]
         supplier.sup_kpos = request.json["sup_kpos"]
