@@ -37,6 +37,7 @@ class SetupMdb(db.Model):
     sto_bb = db.Column(db.Integer)
     sto_bbp = db.Column(db.Integer)
     fixed_assets = db.Column(db.Integer)
+    selisih_kurs = db.Column(db.Integer)
 
     def __init__(
         self,
@@ -71,6 +72,7 @@ class SetupMdb(db.Model):
         sto_bb,
         sto_bbp,
         fixed_assets,
+        selisih_kurs,
     ):
         self.cp_id = cp_id
         self.ar = ar
@@ -103,3 +105,4 @@ class SetupMdb(db.Model):
         self.sto_bb = sto_bb
         self.sto_bbp = sto_bbp
         self.fixed_assets = fixed_assets
+        self.selisih_kurs = selisih_kurs

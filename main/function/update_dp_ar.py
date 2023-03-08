@@ -89,7 +89,7 @@ class UpdateArDP:
                         None,
                         None,
                         inc[1].cus_curren,
-                        inc[2].rate if inc[1].cus_curren != None else None,
+                        # inc[2].rate if inc[1].cus_curren != None else None,
                         "K",
                         "DP",
                         "J4",
@@ -105,8 +105,6 @@ class UpdateArDP:
                         None,
                         x[1].id,
                         None,
-                        None,
-                        False,
                     )
                 )
 

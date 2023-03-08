@@ -291,7 +291,7 @@ class UpdateFakturPj:
                         None,
                         None,
                         None,
-                        None,
+                        d[1].so_id,
                         None,
                     )
                 )

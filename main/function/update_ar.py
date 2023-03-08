@@ -298,7 +298,7 @@ class UpdateAr:
                     None,
                     None,
                     None,
-                    None,
+                    order.so_id,
                     None,
                 )
 

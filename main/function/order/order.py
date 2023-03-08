@@ -175,7 +175,7 @@ class Order:
 
                     invo = InvpbHdb.query.filter(InvpbHdb.ord_id == do.id).first()
 
-                    fk = FkpbHdb.query.first()
+                    fk = FkpbHdb.query.filter(FkpbHdb.fk_code == do.ord_code).first()
                     new_detail = FkpbDetDdb(
                         fk.id,
                         invo.id,
@@ -188,7 +188,7 @@ class Order:
                     db.session.add(new_detail)
 
                     UpdatePembelian(
-                        faktur.id,
+                        do.id,
                         user.id,
                         False,
                     )

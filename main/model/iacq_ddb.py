@@ -8,12 +8,16 @@ class IAcqDdb(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     inc_id = db.Column(db.Integer)
     sale_id = db.Column(db.Integer)
-    value = db.Column(db.Integer)
-    payment = db.Column(db.Integer)
+    sa_id = db.Column(db.Integer)
+    value = db.Column(db.Float)
+    payment = db.Column(db.Float)
+    dp = db.Column(db.Float)
 
-    def __init__(self, inc_id, sale_id, value, payment):
+    def __init__(self, inc_id, sale_id, sa_id, value, payment, dp):
         self.inc_id = inc_id
         self.sale_id = sale_id
+        self.sa_id = sa_id
         self.value = value
         self.payment = payment
+        self.dp = dp
         

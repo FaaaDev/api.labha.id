@@ -4,7 +4,16 @@ from main.shared.shared import ma
 class DincSchema(ma.Schema):
     class Meta:
         ordered = True
-        fields = ('id', 'inc_id', 'bnk_code', 'value', 'desc')
+        fields = (
+            "id",
+            "inc_id",
+            "acc_code",
+            "acc_bnk",
+            "bnk_code",
+            "value",
+            "fc",
+            "desc",
+        )
 
 
 dinc_schema = DincSchema()

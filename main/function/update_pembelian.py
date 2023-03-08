@@ -28,25 +28,25 @@ class UpdatePembelian:
             db.session.query(FkpbHdb, OrdpbHdb, FkpbDetDdb)
             .outerjoin(OrdpbHdb, OrdpbHdb.id == FkpbDetDdb.ord_id)
             .outerjoin(FkpbHdb, FkpbHdb.id == FkpbDetDdb.fk_id)
-            .filter(FkpbHdb.id == fk_id)
+            .filter(OrdpbHdb.id == fk_id)
             .first()
         )
 
         if delete:
-            if x[2]:
-                old_ap = ApCard.query.filter(
+            # if x[2]:
+            old_ap = ApCard.query.filter(
                     and_(
                         ApCard.ord_id == x[1].id,
                         ApCard.trx_type == "LP",
                         ApCard.pay_type == "P1",
                     )
                 ).first()
-                if old_ap:
+            if old_ap:
                     db.session.delete(old_ap)
 
-                old_fk = FkpbHdb.query.filter(FkpbHdb.ord_id == x[1].id).first()
+            old_fk = FkpbHdb.query.filter(FkpbHdb.ord_id == x[1].id).first()
 
-                if old_fk:
+            if old_fk:
                     db.session.delete(old_fk)
 
             old_trans = TransDdb.query.filter(TransDdb.trx_code == x[0].fk_code).all()

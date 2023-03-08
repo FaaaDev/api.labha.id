@@ -35,6 +35,7 @@ class SetupSchema(ma.Schema):
             "sto_hpp_diff",
             "sto_wip",
             "fixed_assets",
+            "selisih_kurs",
         )
 
 

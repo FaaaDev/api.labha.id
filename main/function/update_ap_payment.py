@@ -253,9 +253,10 @@ class UpdateApPayment:
 
             if old_trans_sup:
                 db.session.delete(old_trans_sup)
-            if old_trans_sup:
-                for x in old_trans_sup:
-                    db.session.delete(x)
+
+            # if old_trans_sup:
+            #     for x in old_trans_sup:
+            #         db.session.delete(x)
 
             exp_bnk = None
             if exp.exp_bnk:

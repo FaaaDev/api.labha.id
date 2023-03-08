@@ -2087,6 +2087,7 @@ def setup_account(self):
             sto_bb = request.json["sto_bb"]
             sto_bbp = request.json["sto_bbp"]
             fixed_assets = request.json["fixed_assets"]
+            selisih_kurs = request.json["selisih_kurs"]
 
             setup = SetupMdb(
                 cp_id,
@@ -2120,6 +2121,7 @@ def setup_account(self):
                 sto_bb,
                 sto_bbp,
                 fixed_assets,
+                selisih_kurs,
             )
             db.session.add(setup)
             db.session.commit()
@@ -2186,6 +2188,7 @@ def setup_account_id(self, id):
         setup.sto_bb = request.json["sto_bb"]
         setup.sto_bbp = request.json["sto_bbp"]
         setup.fixed_assets = request.json["fixed_assets"]
+        setup.selisih_kurs = request.json["selisih_kurs"]
         db.session.commit()
 
         return response(200, "Berhasil", True, setup_shcema.dump(setup))
@@ -3655,12 +3658,12 @@ def apcard(self):
 def arcard(self):
     ar = (
         db.session.query(
-            ArCard, IAcqDdb, OrdpjHdb, CustomerMdb, LocationMdb, GiroIncHdb
+            ArCard, IAcqDdb, OrdpjHdb, CustomerMdb, SordHdb, GiroIncHdb
         )
         .outerjoin(IAcqDdb, IAcqDdb.id == ArCard.acq_id)
         .outerjoin(OrdpjHdb, OrdpjHdb.id == ArCard.bkt_id)
         .outerjoin(CustomerMdb, CustomerMdb.id == ArCard.cus_id)
-        .outerjoin(LocationMdb, LocationMdb.id == ArCard.loc_id)
+        .outerjoin(SordHdb, SordHdb.id == ArCard.so_id)
         .outerjoin(GiroIncHdb, GiroIncHdb.id == ArCard.giro_id)
         .all()
     )
@@ -3698,7 +3701,7 @@ def arcard(self):
                 "bkt_amnh": x[0].bkt_amnh,
                 "trx_desc": x[0].trx_desc,
                 "pos_flag": x[0].pos_flag,
-                "loc_id": loct_schema.dump(x[4]) if x[4] else None,
+                "so_id": sord_schema.dump(x[4]) if x[4] else None,
                 "trx_pymnt": x[0].trx_pymnt,
                 "giro_id": grinc_schema.dump(x[5]) if x[5] else None,
                 "giro_date": GiroIncSchema(only=["giro_date"]).dump(x[5])["giro_date"]
@@ -6269,5 +6272,104 @@ def sto(self):
                         "loc_id": z.id,
                     }
                 )
+
+    return response(200, "Berhasil", True, final)
+
+
+@app.route("/v1/api/sisa-exp", methods=["GET"])
+@token_required
+def sisa_exp(self):
+    # sld = SaldoAPMdb.query.filter(SaldoAPMdb.id == ApCard.sa_id).all()
+    fk = OrdpbHdb.query.all()
+    ap = ApCard.query.filter(and_(ApCard.pay_type == "H4")).all()
+
+    final = []
+    for x in fk:
+        sisa = 0
+        sisa_fc = 0
+        trx = 0
+        acq = 0
+        trx_fc = 0
+        acq_fc = 0
+        # for z in sld:
+        for y in ap:
+            if x.id == y.ord_id:
+                trx = y.trx_amnh
+                acq += y.acq_amnh
+                trx_fc = y.trx_amnv if y.trx_amnv != None else 0
+                acq_fc += y.acq_amnv if y.acq_amnv != None else 0
+
+                sisa = trx - acq
+                sisa_fc = trx_fc - acq_fc
+
+                if sisa > 0 or sisa_fc > 0:
+                    final.append(
+                        {
+                            "id": x.id if y.ord_id else None,
+                            "fk_code": x.ord_code if y.ord_id else None,
+                            "fk_date": x.ord_date if y.ord_id else None,
+                            "ord_id": x.id if y.id else None,
+                            "sisa": sisa,
+                            "sisa_fc": sisa_fc,
+                        }
+                    )
+
+    return response(200, "Berhasil", True, final)
+
+
+@app.route("/v1/api/sisa-inc", methods=["GET"])
+@token_required
+def sisa_inc(self):
+    sl = OrdpjHdb.query.all()
+    # sld = SaldoARMdb.query.all()
+    ar = ArCard.query.filter(and_(ArCard.pay_type == "J4")).all()
+
+    final = []
+    for x in sl:
+        sisa = 0
+        sisa_fc = 0
+        trx = 0
+        acq = 0
+        trx_fc = 0
+        acq_fc = 0
+        # for z in sld:
+        for y in ar:
+            if x.id == y.bkt_id:
+                trx = y.trx_amnh
+                acq += y.acq_amnh
+                trx_fc = y.trx_amnv
+                acq_fc += y.acq_amnv
+
+        sisa = trx - acq
+        sisa_fc = trx_fc - acq_fc
+
+        if sisa > 0:
+            final.append(
+                {
+                    "id": x.id if y.bkt_id else None,
+                    "ord_code": x.ord_code if y.bkt_id else None,
+                    "ord_date": x.ord_date if y.bkt_id else None,
+                    "so_id": x.so_id,
+                    "sa_id": None,
+                    "pel_id": x.pel_id if y.bkt_id else None,
+                    "slsm_id": x.slsm_id,
+                    "trx_type": y.trx_type,
+                    "sisa": sisa,
+                    "sisa_fc": sisa_fc,
+                }
+            )
+
+        # elif acq:
+        #     final.append(
+        #         {
+        #             "id": x.id,
+        #             "ord_code": x.ord_code,
+        #             "ord_date": x.ord_date,
+        #             "so_id": x.so_id,
+        #             "pel_id": x.pel_id,
+        #             "slsm_id": x.slsm_id,
+        #             "sisa": 0,
+        #         }
+        #     )
 
     return response(200, "Berhasil", True, final)

@@ -232,15 +232,11 @@ class OrderId:
 
                     db.session.commit()
 
-                if ns == False:
-                    UpdateStock(
-                        do.id, False, user_product, user_company, glUrl, request
-                    )
+                # if ns == False:
+                UpdateStock(do.id, False, user_product, user_company, glUrl, request)
 
                 if faktur:
-                    UpdatePembelian(
-                        fk[0].id, id, False, user_product, user_company, glUrl, request
-                    )
+                    UpdatePembelian(do.id, id, False)
 
                 result = response(200, "Berhasil", True, dord_schema.dump(do))
 
@@ -280,8 +276,10 @@ class OrderId:
             product = DprodDdb.query.filter(DprodDdb.ord_id == do.id)
             jasa = DjasaDdb.query.filter(DjasaDdb.ord_id == do.id)
 
-            if fk:
-                UpdatePembelian(fk[0].id, id, True)
+            if fk and inv:
+                UpdatePembelian(do.id, id, True)
+                db.session.delete(fk)
+                db.session.delete(inv)
 
             if inv:
                 db.session.delete(inv)

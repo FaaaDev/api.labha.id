@@ -1,4 +1,4 @@
-from sqlalchemy import and_
+from sqlalchemy import and_, or_
 from main.model.bank_mdb import BankMdb
 from main.model.custom_mdb import CustomerMdb
 from main.model.iacq_ddb import IAcqDdb
@@ -16,111 +16,352 @@ from main.model.stcard_mdb import StCard
 from main.model.supplier_mdb import SupplierMdb
 from main.model.transddb import TransDdb
 from main.model.unit_mdb import UnitMdb
+from main.model.currency_mdb import CurrencyMdb
+from main.model.setup_mdb import SetupMdb
+from main.model.comp_mdb import CompMdb
 from main.shared.shared import db
 
 
-class UpdateArPayment():
+class UpdateArPayment:
     def __init__(self, inc_id, delete):
 
         inc = IncHdb.query.filter(IncHdb.id == inc_id).first()
 
-        acq = IAcqDdb.query.filter(IAcqDdb.inc_id == inc.id).all()
+        acq = (
+            db.session.query(IAcqDdb, OrdpjHdb)
+            .outerjoin(OrdpjHdb, OrdpjHdb.id == IAcqDdb.sale_id)
+            .filter(IAcqDdb.inc_id == inc.id)
+            .all()
+        )
 
         incs = IncDdb.query.filter(IncDdb.inc_id == inc.id).all()
 
+        curr = CurrencyMdb.query.all()
+
+        bank = BankMdb.query.all()
+
+        setup = SetupMdb.query.filter(SetupMdb.cp_id == CompMdb.id).first()
+
+        old_trans = TransDdb.query.filter(TransDdb.trx_code == inc.inc_code).all()
+
         # insert kartu ar
-        total = 0
-        if inc.inc_type == 1:
-            for x in acq:
-                if delete:
+
+        if inc.type_trx == 1 and inc.acq_pay != 3:
+            if delete:
+                for x in acq:
+                    jl = ArCard.query.filter(
+                        or_(
+                            and_(
+                                ArCard.bkt_id == x[0].sale_id,
+                                ArCard.trx_dbcr == "D",
+                                ArCard.pay_type == "P1",
+                            ),
+                            # and_(
+                            #     ArCard.sa_id == x[0].sa_id,
+                            #     ArCard.trx_type == "SA",
+                            #     ArCard.trx_dbcr == "D",
+                            #     ArCard.pay_type == "P1",
+                            # ),
+                        )
+                    ).first()
+
                     old_ar = ArCard.query.filter(
-                    and_(ArCard.acq_id == x.id, ArCard.pay_type == "J4")).first()
+                        and_(ArCard.acq_id == x[0].id, ArCard.pay_type == "J4")
+                    ).first()
                     if old_ar:
                         db.session.delete(old_ar)
+
+                    if jl.bkt_id or jl.sa_id:
+                        jl.lunas = False
                         db.session.commit()
-                else:
-                    total += x.payment
-                    sl = OrdpjHdb.query.filter(OrdpjHdb.id == x.sale_id).first()
+            else:
+                total = 0
+                total_fc = 0
+                amnt = 0
 
-                    penjualan = ArCard.query.filter(and_(ArCard.bkt_id == sl.id, ArCard.trx_type == "JL", ArCard.pay_type == "P1")).first()
-
-                    old_ar = ArCard.query.filter(
-                        and_(ArCard.acq_id == x.id, ArCard.pay_type == "J4")).first()
-                    if old_ar:
-                        db.session.delete(old_ar)
-                        db.session.commit()
-
-                    ar_card = ArCard(penjualan.cus_id, inc.inc_code, penjualan.trx_date, penjualan.trx_due,
-                                    x.id, inc.inc_date, penjualan.bkt_id, inc.inc_date, None, "K", penjualan.trx_type, "J4",
-                                    penjualan.trx_amnh, None, x.payment, None, None, None, None, inc.giro_num, inc.giro_date, None, None, None )
-
-                    db.session.add(ar_card)
-                    db.session.commit()
-
-
-        if delete:
-            old_trans_cus = TransDdb.query.filter(and_(TransDdb.trx_code == inc.inc_code, TransDdb.trx_dbcr == "D", TransDdb.trx_desc == "JURNAL PELUNASAN PENJUALAN %s"%(inc.inc_code))).first()
-            old_trans_inc = TransDdb.query.filter(and_(TransDdb.trx_code == inc.inc_code, TransDdb.trx_dbcr == "K", TransDdb.trx_desc == "JURNAL PELUNASAN PENJUALAN %s"%(inc.inc_code))).first()
-            if old_trans_cus:
-                db.session.delete(old_trans_cus)
-            if old_trans_cus:
-                db.session.delete(old_trans_inc)
-
-        else:
-            if inc.inc_type == 1:
-                old_trans_cus = TransDdb.query.filter(and_(TransDdb.trx_code == inc.inc_code, TransDdb.trx_dbcr == "D", TransDdb.trx_desc == "JURNAL PELUNASAN PENJUALAN %s"%(inc.inc_code))).first()
-                old_trans_inc = TransDdb.query.filter(and_(TransDdb.trx_code == inc.inc_code, TransDdb.trx_dbcr == "K", TransDdb.trx_desc == "JURNAL PELUNASAN PENJUALAN %s"%(inc.inc_code))).first()
-                if old_trans_cus:
-                    db.session.delete(old_trans_cus)
-                if old_trans_cus:
-                    db.session.delete(old_trans_inc)
-                
-                db.session.commit()
-
-                if inc.bank_id:
-                    bank = BankMdb.query.filter(BankMdb.id == inc.bank_id).first()
-                    
-                cus = (
-                        db.session.query(CustomerMdb, PajakMdb)
-                        .outerjoin(PajakMdb, PajakMdb.id == CustomerMdb.cus_pjk)
+                for x in acq:
+                    total += x[0].payment
+                    cus = (
+                        db.session.query(CustomerMdb, OrdpjHdb)
+                        .outerjoin(OrdpjHdb, OrdpjHdb.pel_id == CustomerMdb.id)
+                        # .outerjoin(SaldoARMdb, SaldoARMdb.cus_id == CustomerMdb.id)
                         .filter(CustomerMdb.id == inc.acq_cus)
                         .first()
                     )
-                # insert jurnal ap
-                trans_cus = TransDdb(inc.inc_code, inc.inc_date, cus[0].cus_gl, None, None,
-                                    None, None, None, None, total, "D", "JURNAL PELUNASAN PENJUALAN %s"%(inc.inc_code), None, None)
 
-                trans_inc = TransDdb(inc.inc_code, inc.inc_date, inc.acc_kas if inc.acq_pay == 1 else bank.acc_id, None, None,
-                                    None, None, None, None, total, "K", "JURNAL PELUNASAN PENJUALAN %s"%(inc.inc_code), None, None)
+                    cur_rate = None
+                    for y in curr:
+                        if y.id == cus[0].cus_curren:
+                            cur_rate = y.rate
 
-                db.session.add(trans_cus)
+                    if cus[0].cus_curren:
+                        total_fc = total * cur_rate
+
+                    # amnt = x.payment * cur_rate
+
+                    sl = OrdpjHdb.query.filter(OrdpjHdb.id == x[0].sale_id).first()
+
+                    penjualan = ArCard.query.filter(
+                        or_(
+                            and_(
+                                ArCard.bkt_id == x[0].sale_id,
+                                ArCard.trx_dbcr == "D",
+                                ArCard.pay_type == "P1",
+                            ),
+                            # and_(
+                            #     ArCard.sa_id == x[0].sa_id,
+                            #     ArCard.trx_type == "SA",
+                            #     ArCard.trx_dbcr == "D",
+                            #     ArCard.pay_type == "P1",
+                            # ),
+                        )
+                    ).first()
+
+                    # sa = ArCard.query.filter()
+
+                    old_ar = ArCard.query.filter(
+                        and_(ArCard.acq_id == x[0].id, ArCard.pay_type == "J4")
+                    ).first()
+
+                    if old_ar:
+                        db.session.delete(old_ar)
+
+                    ar_card = ArCard(
+                        inc.acq_cus,
+                        inc.inc_code,
+                        x[1].ord_date,
+                        x[1].due_date,
+                        x[0].id,
+                        inc.inc_date,
+                        x[1].id,
+                        inc.inc_date,
+                        cus[0].cus_curren,
+                        "K",
+                        penjualan.trx_type,
+                        "J4",
+                        penjualan.trx_amnh,
+                        penjualan.trx_amnv if cus[0].cus_curren != None else None,
+                        x[0].payment * cur_rate
+                        if cus[0].cus_curren != None
+                        else x[0].payment,
+                        x[0].payment if cus[0].cus_curren != None else None,
+                        None,
+                        None,
+                        None,
+                        inc.giro_num,
+                        inc.giro_date,
+                        None,
+                        x[1].so_id,
+                        None,
+                    )
+
+                    db.session.add(ar_card)
+
+                    if penjualan.bkt_id or penjualan.sa_id:
+                        if (
+                            x[0].payment + x[0].dp >= penjualan.trx_amnh
+                            or x[0].payment + x[0].dp >= penjualan.trx_amnv
+                        ):
+                            penjualan.lunas = True
+
+                    bank_acc = None
+                    if inc.bank_acc:
+                        for y in bank:
+                            if y.id == inc.bank_acc:
+                                bank_acc = y.acc_id
+
+                    if old_trans:
+                        for d in old_trans:
+                            db.session.delete(d)
+
+                    # insert jurnal ap
+                    trans_cus = TransDdb(
+                        inc.inc_code,
+                        inc.inc_date,
+                        cus[0].cus_gl,
+                        None,
+                        None,
+                        None,
+                        penjualan.cur_conv,
+                        None,
+                        penjualan.trx_amnv if cus[0].cus_curren != None else 0,
+                        penjualan.trx_amnh,
+                        "K",
+                        "JURNAL PELUNASAN PIUTANG %s" % (inc.inc_code),
+                        None,
+                        None,
+                    )
+
+                    if x[0].dp > 0:
+                        trans_dp = TransDdb(
+                            inc.inc_code,
+                            inc.inc_date,
+                            cus[0].cus_uang_muka,
+                            None,
+                            None,
+                            None,
+                            cus[0].cus_curren,
+                            cur_rate,
+                            x[0].dp / cur_rate if cus[0].cus_curren != None else 0,
+                            x[0].dp,
+                            "D",
+                            "JURNAL UANG MUKA ATAS PELUNASAN %s" % (inc.inc_code),
+                            None,
+                            None,
+                        )
+                        db.session.add(trans_dp)
+
+                    if cus[0].cus_curren != None:
+                        trans_kurs = TransDdb(
+                            inc.inc_code,
+                            inc.inc_date,
+                            setup.selisih_kurs,
+                            None,
+                            None,
+                            None,
+                            cus[0].cus_curren,
+                            cur_rate,
+                            abs((penjualan.trx_amnh - total_fc) / cur_rate),
+                            abs(penjualan.trx_amnh - total_fc),
+                            "D" if total_fc - penjualan.trx_amnh < 0 else "K",
+                            "JURNAL PELUNASAN SELISIH KURS %s" % (inc.inc_code),
+                            None,
+                            None,
+                        )
+
+                        db.session.add(trans_kurs)
+
+                    db.session.add(trans_cus)
+
+                trans_inc = TransDdb(
+                    inc.inc_code,
+                    inc.inc_date,
+                    inc.acq_kas if inc.acq_pay == 1 else bank_acc,
+                    None,
+                    None,
+                    None,
+                    cus[0].cus_curren,
+                    cur_rate,
+                    total if cus[0].cus_curren != None else 0,
+                    total_fc if cus[0].cus_curren != None else total,
+                    "D",
+                    "JURNAL PELUNASAN PENJUALAN %s" % (inc.inc_code),
+                    None,
+                    None,
+                )
+
                 db.session.add(trans_inc)
-                db.session.commit()
-            else:
-                old_trans_cus = TransDdb.query.filter(and_(TransDdb.trx_code == inc.inc_code, TransDdb.trx_dbcr == "D", TransDdb.trx_desc == "JURNAL PEMASUKAN %s"%(inc.inc_code))).first()
-                old_trans_inc = TransDdb.query.filter(and_(TransDdb.trx_code == inc.inc_code, TransDdb.trx_dbcr == "K", TransDdb.trx_desc == "JURNAL PEMASUKAN %s"%(inc.inc_code))).all()
-                if old_trans_cus:
-                    db.session.delete(old_trans_cus)
-                if old_trans_cus:
-                    for x in old_trans_cus:
-                        db.session.delete(x)
-                
-                db.session.commit()
 
+        else:
+            inc_bnk = None
+            if inc.inc_bnk:
+                for z in bank:
+                    if z.id == inc.inc_bnk:
+                        inc_bnk = z.acc_id
 
-                total = 0;
-                trans_inc = []
-                for x in incs:
-                    total += x.value
-                    trans_inc.append(TransDdb(inc.inc_code, inc.inc_date, x.acc_code, None, None,
-                                    None, None, None, None, x.value, "D", "JURNAL PEMASUKAN %s"%(inc.inc_code), None, None))
-                    
-                # insert jurnal ap
-                trans_cus = TransDdb(inc.inc_code, inc.inc_date, inc.inc_acc, None, None,
-                                    None, None, None, None, total, "K", "JURNAL PEMASUKAN %s"%(inc.inc_code), None, None)
+            if old_trans:
+                for d in old_trans:
+                    db.session.delete(d)
 
-                
+            #     old_transbank = TransBank.query.filter(
+            #         and_(
+            #             TransBank.trx_code == inc.inc_code,
+            #             TransBank.bank_id == inc.inc_bnk,
+            #         )
+            #     ).first()
+
+            #     if old_transbank:
+            #         db.session.delete(old_transbank)
+            #         db.session.commit()
+            #         db.session.close()
+
+            total = 0
+            for y in incs:
+                bnk_code = None
+                if y.bnk_code:
+                    for z in bank:
+                        if z.id == y.bnk_code:
+                            bnk_code = z.acc_id
+
+                total += y.fc
+
+                trans_cus = TransDdb(
+                    inc.inc_code,
+                    inc.inc_date,
+                    y.acc_code
+                    if inc.inc_type == 1
+                    else y.acc_bnk
+                    if inc.acc_type == 1
+                    else bnk_code,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    y.fc,
+                    "K",
+                    "JURNAL PEMASUKAN %s" % (inc.inc_code),
+                    None,
+                    None,
+                )
 
                 db.session.add(trans_cus)
-                db.session.add_all(trans_inc)
-                db.session.commit()
+
+            trans_inc = TransDdb(
+                inc.inc_code,
+                inc.inc_date,
+                inc.inc_kas if inc.inc_type == 1 else inc_bnk,
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                total,
+                "D",
+                "JURNAL PEMASUKAN %s" % (inc.inc_code),
+                None,
+                None,
+            )
+
+            db.session.add(trans_inc)
+
+            # transbank = []
+
+            # if inc.inc_type == 2 and inc.acc_type == 1:
+            #     transbank.append(
+            #         {
+            #             "trx_code": inc.inc_code,
+            #             "trx_date": inc.inc_date.isoformat(),
+            #             "bank_id": inc.inc_bnk,
+            #             "trx_amnt": total,
+            #             "trx_dbcr": "D",
+            #             "trx_desc": "TRX %s %s" % ("D", inc.inc_code),
+            #         }
+            #     )
+
+            # if inc.inc_type == 2 and inc.acc_type == 2:
+            #     transbank.append(
+            #         {
+            #             "trx_code": inc.inc_code,
+            #             "trx_date": inc.inc_date.isoformat(),
+            #             "bank_id": inc.inc_bnk,
+            #             "trx_amnt": total,
+            #             "trx_dbcr": "D",
+            #             "trx_desc": "TRX %s %s" % ("D", inc.inc_code),
+            #         }
+            #     )
+            #     for x in incs:
+            #         transbank.append(
+            #             {
+            #                 "trx_code": inc.inc_code,
+            #                 "trx_date": inc.inc_date.isoformat(),
+            #                 "bank_id": x.bnk_code,
+            #                 "trx_amnt": x.fc,
+            #                 "trx_dbcr": "K",
+            #                 "trx_desc": "TRX %s %s" % ("K", inc.inc_code),
+            #             }
+            #         )
+
+        db.session.commit()

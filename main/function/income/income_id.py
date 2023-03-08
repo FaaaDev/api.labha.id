@@ -1,11 +1,14 @@
 from main.function.update_ar_giro import UpdateArGiro
 from main.function.update_ar_payment import UpdateArPayment
+from main.function.update_dp_ar import UpdateArDP
 from main.model.accou_mdb import AccouMdb
 from main.model.iacq_ddb import IAcqDdb
 from main.model.bank_mdb import BankMdb
 from main.model.comp_mdb import CompMdb
 from main.model.dinc_ddb import IncDdb
 from main.model.inc_hdb import IncHdb
+from main.model.mukar_ddb import MukarDdb
+from main.model.sord_hdb import SordHdb
 from main.model.giro_hdb import GiroHdb
 from main.model.custom_mdb import CustomerMdb
 from main.model.ordpj_hdb import OrdpjHdb
@@ -19,7 +22,9 @@ from main.schema.inc_hdb import IncSchema, inc_schema
 from main.schema.custom_mdb import customer_schema
 from main.schema.dinc_ddb import dinc_schema
 from main.schema.iacq_ddb import iacq_schema
+from main.schema.mukar_ddb import mukar_schema
 from main.schema.ordpj_hdb import ordpj_schema
+from main.schema.sord_hdb import sord_schema
 
 
 class IncomeId:
@@ -31,50 +36,178 @@ class IncomeId:
                 inc_date = request.json["inc_date"]
                 inc_type = request.json["inc_type"]
                 inc_dep = request.json["inc_dep"]
-                inc_acc = request.json["inc_acc"]
                 inc_prj = request.json["inc_prj"]
                 acq_cus = request.json["acq_cus"]
                 acq_pay = request.json["acq_pay"]
-                acc_kas = request.json["acc_kas"]
                 bank_ref = request.json["bank_ref"]
                 bank_id = request.json["bank_id"]
                 giro_num = request.json["giro_num"]
                 giro_date = request.json["giro_date"]
                 giro_bnk = request.json["giro_bnk"]
+                dp_type = request.json["dp_type"]
+                dp_cus = request.json["dp_cus"]
+                dp_kas = request.json["dp_kas"]
+                dp_bnk = request.json["dp_bnk"]
                 acq = request.json["acq"]
                 inc = request.json["inc"]
+                det_dp = request.json["det_dp"]
 
                 incs.inc_code = inc_code
                 incs.inc_date = inc_date
                 incs.inc_type = inc_type
-                incs.inc_acc = inc_acc
                 incs.inc_dep = inc_dep
                 incs.inc_prj = inc_prj
                 incs.acq_cus = acq_cus
                 incs.acq_pay = acq_pay
-                incs.acc_kas = acc_kas
                 incs.bank_ref = bank_ref
                 incs.bank_id = bank_id
                 incs.giro_num = giro_num
                 incs.giro_date = giro_date
                 incs.giro_bnk = giro_bnk
+                incs.dp_type = dp_type
+                incs.dp_cus = dp_cus
+                incs.dp_kas = dp_kas
+                incs.dp_bnk = dp_bnk
 
                 all_inc = IncDdb.query.filter(IncDdb.inc_id == incs.id)
                 all_acq = IAcqDdb.query.filter(IAcqDdb.inc_id == incs.id)
+                all_dp = IAcqDdb.query.filter(MukarDdb.inc_id == incs.id)
 
+                old_acq = []
+                new_acq = []
                 for x in acq:
                     for y in all_acq:
                         if x["id"] == y.id:
+                            y.sale_id = x["sale_id"]
+                            y.sa_id = x["sa_id"]
                             y.value = x["value"]
+                            y.payment = x["payment"]
+                            y.dp = x["dp"]
 
+                    if x["sale_id"] and x["value"] and x["payment"] and x["payment"]:
+                        if x["id"] != 0:
+                            old_acq.append(x["id"])
+                        else:
+                            new_acq.append(
+                                IAcqDdb(
+                                    incs.id,
+                                    x["sale_id"],
+                                    x["sa_id"],
+                                    x["value"],
+                                    x["payment"],
+                                    x["dp"],
+                                )
+                            )
+
+                if len(old_acq) > 0:
+                    for x in old_acq:
+                        for y in all_acq:
+                            if y.id not in old_acq:
+                                db.session.delete(y)
+                            else:
+                                if y.id == x:
+                                    for z in acq:
+                                        if z["id"] == x:
+                                            y.sale_id = z["sale_id"]
+                                            y.sa_id = z["sa_id"]
+                                            y.value = z["value"]
+                                            y.payment = z["payment"]
+                                            y.dp = z["dp"]
+
+                if len(new_acq) > 0:
+                    db.session.add_all(new_acq)
+
+                old_inc = []
+                new_inc = []
                 for x in inc:
-                    for y in all_inc:
+                    if x["id"]:
+                        if (x["acc_code"] or x["acc_bnk"] or x["bnk_code"]) and x[
+                            "value"
+                        ]:
+                            old_inc.append(x["id"])
+
+                    else:
+                        new_inc.append(
+                            IncDdb(
+                                incs.id,
+                                x["acc_code"],
+                                x["acc_bnk"],
+                                x["bnk_code"],
+                                x["value"],
+                                x["fc"],
+                                x["desc"],
+                            )
+                        )
+
+                if len(old_inc) > 0:
+                    for x in old_inc:
+                        for y in all_inc:
+                            if y.id not in old_inc:
+                                db.session.delete(y)
+                            else:
+                                if y.id == x:
+                                    for z in inc:
+                                        if z["id"] == x:
+                                            y.acc_code = z["acc_code"]
+                                            y.acc_bnk = z["acc_bnk"]
+                                            y.bnk_code = z["bnk_code"]
+                                            y.value = z["value"]
+                                            y.fc = z["fc"]
+                                            y.desc = z["desc"]
+
+                if len(new_inc) > 0:
+                    db.session.add_all(new_inc)
+
+                old_dp = []
+                new_dp = []
+                for x in det_dp:
+                    for y in all_dp:
                         if x["id"] == y.id:
-                            y.acc_code = x["acc_code"]
+                            y.so_id = x["so_id"]
+                            y.t_bayar = x["t_bayar"]
                             y.value = x["value"]
+                            y.remain = x["remain"]
                             y.desc = x["desc"]
 
+                    if x["so_id"] and x["value"]:
+                        if x["id"] != 0:
+                            old_dp.append(x["id"])
+                        else:
+                            new_dp.append(
+                                MukarDdb(
+                                    incs.id,
+                                    x["so_id"],
+                                    x["t_bayar"],
+                                    x["value"],
+                                    x["remain"],
+                                    x["desc"],
+                                )
+                            )
+
+                if len(old_dp) > 0:
+                    for x in old_dp:
+                        for y in all_dp:
+                            if y.id not in old_dp:
+                                db.session.delete(y)
+                            else:
+                                if y.id == x:
+                                    for z in det_dp:
+                                        if z["id"] == x:
+                                            y.so_id = z["so_id"]
+                                            y.t_bayar = z["t_bayar"]
+                                            y.value = z["value"]
+                                            y.remain = z["remain"]
+                                            y.desc = z["desc"]
+
+                if len(new_dp) > 0:
+                    db.session.add_all(new_dp)
+
                 db.session.commit()
+
+                if incs.type_trx != 3:
+                    UpdateArPayment(incs.id, False)
+                else:
+                    UpdateArDP(incs.id, False)
 
                 result = response(200, "Berhasil", True, dinc_schema.dump(incs))
 
@@ -85,11 +218,15 @@ class IncomeId:
                 self.response = result
 
         elif request.method == "DELETE":
+            if incs.type_trx == 3:
+                UpdateArDP(incs.id, True)
+
             UpdateArPayment(incs.id, True)
             # DeleteApPayment(incs.id)
 
             inc = IncDdb.query.filter(IncDdb.inc_id == incs.id)
             acq = IAcqDdb.query.filter(IAcqDdb.inc_id == incs.id)
+            dp = MukarDdb.query.filter(MukarDdb.inc_id == incs.id)
 
             for x in inc:
                 db.session.delete(x)
@@ -97,10 +234,20 @@ class IncomeId:
             for x in acq:
                 db.session.delete(x)
 
+            for x in dp:
+                db.session.delete(x)
+
+            old_trans = TransDdb.query.filter(TransDdb.trx_code == incs.inc_code).all()
+            if old_trans:
+                for y in old_trans:
+                    db.session.delete(y)
+                    db.session.commit()
+
             db.session.delete(incs)
             db.session.commit()
 
             self.response = response(200, "Berhasil", True, None)
+
         else:
             incs = (
                 db.session.query(IncHdb, BankMdb, CustomerMdb)
@@ -163,7 +310,9 @@ class IncomeId:
                         "bank_ref": x[0].bank_ref,
                         "bank_id": bank_schema.dump(x[1]) if x[1] else None,
                         "giro_num": x[0].giro_num,
-                        "giro_date": IncSchema(only=["giro_date"]).dump(x[0])["giro_date"],
+                        "giro_date": IncSchema(only=["giro_date"]).dump(x[0])[
+                            "giro_date"
+                        ],
                         "giro_bnk": bank_schema.dump(x[1]) if x[1] else None,
                         "approve": x[0].approve,
                         "inc": all_inc,
@@ -173,4 +322,4 @@ class IncomeId:
 
             self.response = response(200, "Berhasil", True, final)
 
-        return self.response 
+        return self.response

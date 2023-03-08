@@ -19,17 +19,17 @@ class ArCard(db.Model):
     trx_dbcr = db.Column(db.String(2))
     trx_type = db.Column(db.String(255))
     pay_type = db.Column(db.String(255))
-    trx_amnh = db.Column(db.Integer)
-    trx_amnv = db.Column(db.Integer)
-    acq_amnh = db.Column(db.Integer)
-    acq_amnv = db.Column(db.Integer)
-    bkt_amnv = db.Column(db.Integer)
-    bkt_amnh = db.Column(db.Integer)
+    trx_amnh = db.Column(db.Float)
+    trx_amnv = db.Column(db.Float)
+    acq_amnh = db.Column(db.Float)
+    acq_amnv = db.Column(db.Float)
+    bkt_amnv = db.Column(db.Float)
+    bkt_amnh = db.Column(db.Float)
     trx_desc = db.Column(db.Text)
     giro_id = db.Column(db.Integer)
     giro_date = db.Column(db.TIMESTAMP)
     pos_flag = db.Column(db.TIMESTAMP)
-    loc_id = db.Column(db.Integer)
+    so_id = db.Column(db.Integer)
     trx_pymnt = db.Column(db.Integer)
 
     def __init__(self,
@@ -55,7 +55,7 @@ class ArCard(db.Model):
                  giro_id,
                  giro_date,
                  pos_flag,
-                 loc_id,
+                 so_id,
                  trx_pymnt):
         self.cus_id = cus_id
         self.trx_code = trx_code
@@ -79,5 +79,5 @@ class ArCard(db.Model):
         self.giro_id = giro_id
         self.giro_date = giro_date
         self.pos_flag = pos_flag
-        self.loc_id = loc_id
+        self.so_id = so_id
         self.trx_pymnt = trx_pymnt
