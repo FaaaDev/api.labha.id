@@ -15,6 +15,7 @@ from main.model.prod_mdb import ProdMdb
 from main.model.stcard_mdb import StCard
 from main.model.supplier_mdb import SupplierMdb
 from main.model.transddb import TransDdb
+from main.model.trans_bank import TransBank
 from main.model.unit_mdb import UnitMdb
 from main.model.bank_mdb import BankMdb
 from main.shared.shared import db
@@ -42,13 +43,32 @@ class UpdateApPayment:
         if exp.type_trx == 1 and exp.acq_pay != 3:
             if delete:
                 for x in acq:
+                    bl = ApCard.query.filter(
+                        or_(
+                            and_(
+                                ApCard.ord_id == x[0].fk_id,
+                                ApCard.trx_dbcr == "k",
+                                ApCard.pay_type == "P1",
+                            ),
+                            # and_(
+                            #     ApCard.sa_id == x[0].sa_id,
+                            #     ApCard.trx_type == "SA",
+                            #     ApCard.trx_dbcr == "k",
+                            #     ApCard.pay_type == "P1",
+                            # ),
+                        )
+                    ).first()
+
+                    if bl:
+                        bl.lunas = False
+                        db.session.commit()
+
                     old_ap = ApCard.query.filter(
                         and_(ApCard.acq_id == x[0].id, ApCard.pay_type == "H4")
                     ).first()
 
                     if old_ap:
                         db.session.delete(old_ap)
-                        db.session.commit()
 
             else:
                 total = 0
@@ -91,6 +111,7 @@ class UpdateApPayment:
                         db.session.delete(old_ap)
 
                     ap_card = ApCard(
+                        x[1].ord_code,
                         pembelian.sup_id,
                         pembelian.ord_id,
                         pembelian.ord_date,
@@ -110,9 +131,56 @@ class UpdateApPayment:
                         x[0].payment if fk[2].sup_curren != None else 0,
                         exp.giro_num,
                         exp.giro_date,
+                        None,
+                        False,
                     )
 
                     db.session.add(ap_card)
+
+                    cek_ap = ApCard.query.filter(
+                        or_(
+                            and_(ApCard.pay_type == "H4", ApCard.ord_id == x[1].id),
+                            # and_(ApCard.pay_type == "H4", ApCard.sa_id == x[0].sa_id),
+                        )
+                    ).all()
+
+                    cek_dp = ApCard.query.filter(
+                        and_(
+                            ApCard.po_id == x[1].po_id,
+                            ApCard.pay_type == "H4",
+                            ApCard.trx_type == "DP",
+                        ),
+                    ).all()
+
+                    t_bayar = 0
+                    t_acq = 0
+                    t_acq_fc = 0
+                    t_bayar_fc = 0
+                    t_dp = 0
+                    t_dp_fc = 0
+                    t_val = 0
+                    for dp in cek_dp:
+                        t_dp = dp.trx_amnh if dp.trx_amnh != None else 0
+                        t_dp_fc = dp.trx_amnv if dp.trx_amnv != None else 0
+
+                    for b in cek_ap:
+                        t_acq += b.acq_amnh if b.acq_amnh != None else 0
+                        t_acq_fc += b.acq_amnv if b.acq_amnv != None else 0
+
+                    t_bayar = x[0].value
+                    t_bayar_fc = pembelian.trx_amnv
+                    t_val = t_acq + t_dp
+
+                    if pembelian.ord_id or pembelian.sa_id:
+                        if fk[2].sup_curren == None:
+                            if x[0].payment + x[0].dp >= x[0].value or t_val >= t_bayar:
+                                pembelian.lunas = True
+                        else:
+                            if (
+                                x[0].payment + x[0].dp >= pembelian.trx_amnv
+                                or t_acq_fc + t_dp_fc >= t_bayar_fc
+                            ):
+                                pembelian.lunas = True
 
                     # insert jurnal ap
                     bank_acc = None
@@ -213,26 +281,6 @@ class UpdateApPayment:
 
                         db.session.add(trans_exp)
 
-        # if delete:
-        #     old_trans_sup = TransDdb.query.filter(
-        #         and_(
-        #             TransDdb.trx_code == exp.exp_code,
-        #             TransDdb.trx_dbcr == "D",
-        #             TransDdb.trx_desc == "JURNAL PELUNASAN %s" % (exp.exp_code),
-        #         )
-        #     ).first()
-        #     old_trans_exp = TransDdb.query.filter(
-        #         and_(
-        #             TransDdb.trx_code == exp.exp_code,
-        #             TransDdb.trx_dbcr == "K",
-        #             TransDdb.trx_desc == "JURNAL PELUNASAN %s" % (exp.exp_code),
-        #         )
-        #     ).first()
-        #     if old_trans_sup:
-        #         db.session.delete(old_trans_sup)
-        #     if old_trans_sup:
-        #         db.session.delete(old_trans_exp)
-
         else:
 
             old_trans_sup = TransDdb.query.filter(
@@ -243,6 +291,9 @@ class UpdateApPayment:
                 )
             ).first()
 
+            if old_trans_sup:
+                db.session.delete(old_trans_sup)
+
             old_trans_exp = TransDdb.query.filter(
                 and_(
                     TransDdb.trx_code == exp.exp_code,
@@ -251,12 +302,9 @@ class UpdateApPayment:
                 )
             ).all()
 
-            if old_trans_sup:
-                db.session.delete(old_trans_sup)
-
-            # if old_trans_sup:
-            #     for x in old_trans_sup:
-            #         db.session.delete(x)
+            if old_trans_exp:
+                for x in old_trans_exp:
+                    db.session.delete(x)
 
             exp_bnk = None
             if exp.exp_bnk:
@@ -267,7 +315,13 @@ class UpdateApPayment:
             total = 0
             trans_exp = []
             for x in exps:
-                total += x.value
+                bnk_code = None
+                if x.bnk_code:
+                    for z in bank:
+                        if z.id == x.bnk_code:
+                            bnk_code = z.acc_id
+
+                total += x.fc
                 trans_exp.append(
                     TransDdb(
                         exp.exp_code,
@@ -275,7 +329,7 @@ class UpdateApPayment:
                         x.acc_code
                         if exp.exp_type == 1
                         else x.acc_bnk
-                        if exp.acc_type == 1
+                        if exp.type_acc == 1
                         else bnk_code,
                         None,
                         None,
@@ -283,7 +337,7 @@ class UpdateApPayment:
                         None,
                         None,
                         None,
-                        x.value,
+                        x.fc,
                         "D",
                         "JURNAL PENGELUARAN %s" % (exp.exp_code),
                         None,
@@ -314,40 +368,55 @@ class UpdateApPayment:
 
             db.session.add(trans_sup)
 
-            # transbank = []
-            # if exp.exp_type == 2 and exp.type_acc == 1:
-            #     transbank.append(
-            #         {
-            #             "trx_code": exp.exp_code,
-            #             "trx_date": exp.exp_date.isoformat(),
-            #             "bank_id": exp.exp_bnk,
-            #             "trx_amnt": total,
-            #             "trx_dbcr": "K",
-            #             "trx_desc": "TRX %s %s" % ("K", exp.exp_code),
-            #         }
-            #     )
+            transbank = []
 
-            # if exp.exp_type == 2 and exp.type_acc == 2:
-            #     transbank.append(
-            #         {
-            #             "trx_code": exp.exp_code,
-            #             "trx_date": exp.exp_date.isoformat(),
-            #             "bank_id": exp.exp_bnk,
-            #             "trx_amnt": total,
-            #             "trx_dbcr": "K",
-            #             "trx_desc": "TRX %s %s" % ("K", exp.exp_code),
-            #         }
-            #     )
-            #     for x in exps:
-            #         transbank.append(
-            #             {
-            #                 "trx_code": exp.exp_code,
-            #                 "trx_date": exp.exp_date.isoformat(),
-            #                 "bank_id": x.bnk_code,
-            #                 "trx_amnt": x.fc,
-            #                 "trx_dbcr": "D",
-            #                 "trx_desc": "TRX %s %s" % ("D", exp.exp_code),
-            #             }
-            #         )
+            old_trans_bank = TransBank.query.filter(
+                TransBank.trx_code == exp.exp_code
+            ).all()
+
+            if old_trans_bank:
+                for x in old_trans_bank:
+                    db.session.delete(x)
+
+            if exp.exp_type == 2 and exp.type_acc == 1:
+                transbank.append(
+                    TransBank(
+                        exp.exp_code,
+                        exp.exp_date,
+                        exp.exp_bnk,
+                        total,
+                        "K",
+                        "TRX %s %s" % ("K", exp.exp_code),
+                        exp.user_id,
+                    )
+                )
+
+            if exp.exp_type == 2 and exp.type_acc == 2:
+                transbank.append(
+                    TransBank(
+                        exp.exp_code,
+                        exp.exp_date,
+                        exp.exp_bnk,
+                        total,
+                        "K",
+                        "TRX %s %s" % ("K", exp.exp_code),
+                        exp.user_id,
+                    )
+                )
+                for x in exps:
+                    transbank.append(
+                        TransBank(
+                            exp.exp_code,
+                            exp.exp_date,
+                            x.bnk_code,
+                            x.fc,
+                            "D",
+                            "TRX %s %s" % ("D", exp.exp_code),
+                            exp.user_id,
+                        )
+                    )
+
+            if len(transbank) > 0:
+                db.session.add_all(transbank)
 
         db.session.commit()

@@ -149,6 +149,7 @@ class UpdatePembelian:
                 db.session.delete(old_ap)
 
             ap_card = ApCard(
+                x[2].ord_code,
                 x[0].sup_id,
                 x[2].ord_id,
                 x[1].ord_date,
@@ -156,7 +157,7 @@ class UpdatePembelian:
                 x[1].po_id,
                 None,
                 None,
-                ppn[3].rate if sup.sup_curren != None else 0,
+                sup.sup_curren,
                 "k",
                 "LP",
                 "P1",
@@ -166,6 +167,8 @@ class UpdatePembelian:
                 None,
                 None,
                 None,
+                None,
+                False,
             )
 
             db.session.add(ap_card)

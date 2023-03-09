@@ -187,6 +187,7 @@ class UpdateFakturPB:
                 ap_card = []
                 ap_card.append(
                     ApCard(
+                        d[1].ord_code,
                         d[1].sup_id,
                         d[0].ord_id,
                         d[1].ord_date,
@@ -194,7 +195,7 @@ class UpdateFakturPB:
                         d[1].po_id,
                         None,
                         None,
-                        ppn[3].rate if sup.sup_curren != None else 0,
+                        sup.sup_curren,
                         "k",
                         "LP",
                         "P1",
@@ -204,6 +205,8 @@ class UpdateFakturPB:
                         None,
                         None,
                         None,
+                        None,
+                        False,
                     )
                 )
 

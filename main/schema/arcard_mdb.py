@@ -30,6 +30,8 @@ class ARCardSchema(ma.Schema):
             "pos_flag",
             "so_id",
             "trx_pymnt",
+            "sa_id",
+            "sa",
         )
 
 

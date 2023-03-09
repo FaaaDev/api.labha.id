@@ -3622,6 +3622,7 @@ def apcard(self):
         final.append(
             {
                 "id": x[0].id,
+                "trx_code": x[0].trx_code,
                 "sup_id": supplier_schema.dump(x[3]) if x[3] else None,
                 "ord_id": dord_schema.dump(x[4]) if x[4] else None,
                 "ord_date": APCardSchema(only=["ord_date"]).dump(x[0])["ord_date"]
@@ -3647,6 +3648,9 @@ def apcard(self):
                 "giro_date": APCardSchema(only=["giro_date"]).dump(x[0])["giro_date"]
                 if x[0]
                 else None,
+                "sa_id": x[0].sa_id,
+                "sa": x[0].sa,
+                "lunas": x[0].lunas,
             }
         )
 
@@ -3701,12 +3705,15 @@ def arcard(self):
                 "bkt_amnh": x[0].bkt_amnh,
                 "trx_desc": x[0].trx_desc,
                 "pos_flag": x[0].pos_flag,
-                "so_id": sord_schema.dump(x[4]) if x[4] else None,
-                "trx_pymnt": x[0].trx_pymnt,
                 "giro_id": grinc_schema.dump(x[5]) if x[5] else None,
                 "giro_date": GiroIncSchema(only=["giro_date"]).dump(x[5])["giro_date"]
                 if x[5]
                 else None,
+                "so_id": sord_schema.dump(x[4]) if x[4] else None,
+                "trx_pymnt": x[0].trx_pymnt,
+                "sa_id": x[0].sa_id,
+                "sa": x[0].sa,
+                "lunas": x[0].lunas,
             }
         )
 
@@ -6337,8 +6344,8 @@ def sisa_inc(self):
             if x.id == y.bkt_id:
                 trx = y.trx_amnh
                 acq += y.acq_amnh
-                trx_fc = y.trx_amnv
-                acq_fc += y.acq_amnv
+                trx_fc = y.trx_amnv if y.trx_amnv != None else 0
+                acq_fc += y.acq_amnv if y.acq_amnv != None else 0
 
         sisa = trx - acq
         sisa_fc = trx_fc - acq_fc

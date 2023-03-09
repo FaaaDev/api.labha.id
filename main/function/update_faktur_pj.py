@@ -293,6 +293,8 @@ class UpdateFakturPj:
                         None,
                         d[1].so_id,
                         None,
+                        None,
+                        False,
                     )
                 )
 

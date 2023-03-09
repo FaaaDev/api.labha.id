@@ -300,6 +300,8 @@ class UpdateAr:
                     None,
                     order.so_id,
                     None,
+                    None,
+                    False,
                 )
 
                 db.session.add(new_ar)

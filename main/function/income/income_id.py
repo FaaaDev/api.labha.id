@@ -13,6 +13,8 @@ from main.model.giro_hdb import GiroHdb
 from main.model.custom_mdb import CustomerMdb
 from main.model.ordpj_hdb import OrdpjHdb
 from main.model.user import User
+from main.model.transddb import TransDdb
+from main.model.trans_bank import TransBank
 from main.schema.accou_mdb import accou_schema
 from main.shared.shared import db
 from main.utils.response import response
@@ -241,7 +243,13 @@ class IncomeId:
             if old_trans:
                 for y in old_trans:
                     db.session.delete(y)
-                    db.session.commit()
+
+            old_trans_bank = TransBank.query.filter(
+                TransBank.trx_code == incs.inc_code
+            ).all()
+            if old_trans_bank:
+                for y in old_trans_bank:
+                    db.session.delete(y)
 
             db.session.delete(incs)
             db.session.commit()

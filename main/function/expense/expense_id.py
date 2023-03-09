@@ -3,6 +3,7 @@ from main.function.update_ap_giro import UpdateApGiro
 from main.function.update_ap_payment import UpdateApPayment
 from main.function.update_dp_ap import UpdateApDP
 from main.model.transddb import TransDdb
+from main.model.trans_bank import TransBank
 from main.model.acq_ddb import AcqDdb
 from main.model.bank_mdb import BankMdb
 from main.model.comp_mdb import CompMdb
@@ -237,7 +238,7 @@ class ExpenseId:
                 UpdateApDP(exps.id, True)
 
             UpdateApPayment(exps.id, True)
-            DeleteApPayment(exps.id)
+            # DeleteApPayment(exps.id)
 
             exp = ExpDdb.query.filter(ExpDdb.exp_id == exps.id)
             acq = AcqDdb.query.filter(AcqDdb.exp_id == exps.id)
@@ -257,6 +258,15 @@ class ExpenseId:
                 for y in old_trans:
                     db.session.delete(y)
                     db.session.commit()
+
+
+            old_trans_bank = TransBank.query.filter(
+                TransBank.trx_code == exps.exp_code
+            ).all()
+
+            if old_trans_bank:
+                for x in old_trans_bank:
+                    db.session.delete(x)
 
             db.session.delete(exps)
             db.session.commit()

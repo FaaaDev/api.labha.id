@@ -91,6 +91,7 @@ class UpdateApDP:
                 ap_card = []
                 ap_card.append(
                     ApCard(
+                        exp[0].exp_code,
                         exp[0].dp_sup,
                         None,
                         exp[0].exp_date,
@@ -108,6 +109,8 @@ class UpdateApDP:
                         None,
                         None,
                         None,
+                        None,
+                        False,
                     )
                 )
 

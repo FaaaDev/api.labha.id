@@ -15,6 +15,7 @@ from main.model.prod_mdb import ProdMdb
 from main.model.stcard_mdb import StCard
 from main.model.supplier_mdb import SupplierMdb
 from main.model.transddb import TransDdb
+from main.model.trans_bank import TransBank
 from main.model.unit_mdb import UnitMdb
 from main.model.currency_mdb import CurrencyMdb
 from main.model.setup_mdb import SetupMdb
@@ -65,15 +66,16 @@ class UpdateArPayment:
                         )
                     ).first()
 
+                    if jl.bkt_id or jl.sa_id:
+                        jl.lunas = False
+                        db.session.commit()
+
                     old_ar = ArCard.query.filter(
                         and_(ArCard.acq_id == x[0].id, ArCard.pay_type == "J4")
                     ).first()
                     if old_ar:
                         db.session.delete(old_ar)
 
-                    if jl.bkt_id or jl.sa_id:
-                        jl.lunas = False
-                        db.session.commit()
             else:
                 total = 0
                 total_fc = 0
@@ -153,16 +155,55 @@ class UpdateArPayment:
                         None,
                         x[1].so_id,
                         None,
+                        None,
+                        False,
                     )
 
                     db.session.add(ar_card)
 
+                    cek_ar = ArCard.query.filter(
+                        or_(
+                            and_(ArCard.pay_type == "J4", ArCard.bkt_id == x[1].id),
+                            # and_(ArCard.pay_type == "J4", ArCard.sa_id == x[0].sa_id),
+                        )
+                    ).all()
+
+                    cek_dp = ArCard.query.filter(
+                        and_(ArCard.so_id == x[1].so_id),
+                        ArCard.pay_type == "J4",
+                        ArCard.trx_type == "DP",
+                    ).all()
+
+                    t_bayar = 0
+                    t_acq = 0
+                    t_acq_fc = 0
+                    t_bayar_fc = 0
+                    t_dp = 0
+                    t_dp_fc = 0
+                    t_val = 0
+                    for dp in cek_dp:
+                        t_dp = dp.trx_amnh if dp.trx_amnh != None else 0
+                        t_dp_fc = dp.trx_amnv if dp.trx_amnv != None else 0
+
+                    for b in cek_ar:
+                        t_acq += b.acq_amnh if b.acq_amnh != None else 0
+                        t_acq_fc += b.acq_amnv if b.acq_amnv != None else 0
+
+                    t_bayar = x[0].value
+                    t_bayar_fc = penjualan.trx_amnv
+                    t_val = t_acq + t_dp
+
                     if penjualan.bkt_id or penjualan.sa_id:
-                        if (
-                            x[0].payment + x[0].dp >= penjualan.trx_amnh
-                            or x[0].payment + x[0].dp >= penjualan.trx_amnv
-                        ):
-                            penjualan.lunas = True
+                        if cus[0].cus_curren == None:
+                            if x[0].payment + x[0].dp >= x[0].value or t_val >= t_bayar:
+                                penjualan.lunas = True
+
+                        else:
+                            if (
+                                x[0].payment + x[0].dp >= penjualan.trx_amnv
+                                or t_acq_fc + t_dp_fc >= t_bayar_fc
+                            ):
+                                penjualan.lunas = True
 
                     bank_acc = None
                     if inc.bank_acc:
@@ -263,17 +304,15 @@ class UpdateArPayment:
                 for d in old_trans:
                     db.session.delete(d)
 
-            #     old_transbank = TransBank.query.filter(
-            #         and_(
-            #             TransBank.trx_code == inc.inc_code,
-            #             TransBank.bank_id == inc.inc_bnk,
-            #         )
-            #     ).first()
+            old_transbank = TransBank.query.filter(
+                and_(
+                    TransBank.trx_code == inc.inc_code,
+                    TransBank.bank_id == inc.inc_bnk,
+                )
+            ).first()
 
-            #     if old_transbank:
-            #         db.session.delete(old_transbank)
-            #         db.session.commit()
-            #         db.session.close()
+            if old_transbank:
+                db.session.delete(old_transbank)
 
             total = 0
             for y in incs:
@@ -327,41 +366,46 @@ class UpdateArPayment:
 
             db.session.add(trans_inc)
 
-            # transbank = []
+            transbank = []
 
-            # if inc.inc_type == 2 and inc.acc_type == 1:
-            #     transbank.append(
-            #         {
-            #             "trx_code": inc.inc_code,
-            #             "trx_date": inc.inc_date.isoformat(),
-            #             "bank_id": inc.inc_bnk,
-            #             "trx_amnt": total,
-            #             "trx_dbcr": "D",
-            #             "trx_desc": "TRX %s %s" % ("D", inc.inc_code),
-            #         }
-            #     )
+            if inc.inc_type == 2 and inc.acc_type == 1:
+                transbank.append(
+                    TransBank(
+                        inc.inc_code,
+                        inc.inc_date,
+                        inc.inc_bnk,
+                        total,
+                        "D",
+                        "TRX %s %s" % ("D", inc.inc_code),
+                        inc.user_id,
+                    )
+                )
 
-            # if inc.inc_type == 2 and inc.acc_type == 2:
-            #     transbank.append(
-            #         {
-            #             "trx_code": inc.inc_code,
-            #             "trx_date": inc.inc_date.isoformat(),
-            #             "bank_id": inc.inc_bnk,
-            #             "trx_amnt": total,
-            #             "trx_dbcr": "D",
-            #             "trx_desc": "TRX %s %s" % ("D", inc.inc_code),
-            #         }
-            #     )
-            #     for x in incs:
-            #         transbank.append(
-            #             {
-            #                 "trx_code": inc.inc_code,
-            #                 "trx_date": inc.inc_date.isoformat(),
-            #                 "bank_id": x.bnk_code,
-            #                 "trx_amnt": x.fc,
-            #                 "trx_dbcr": "K",
-            #                 "trx_desc": "TRX %s %s" % ("K", inc.inc_code),
-            #             }
-            #         )
+            if inc.inc_type == 2 and inc.acc_type == 2:
+                transbank.append(
+                    TransBank(
+                        inc.inc_code,
+                        inc.inc_date,
+                        inc.inc_bnk,
+                        total,
+                        "D",
+                        "TRX %s %s" % ("D", inc.inc_code),
+                        inc.user_id,
+                    )
+                )
+                for x in incs:
+                    transbank.append(
+                        TransBank(
+                            inc.inc_code,
+                            inc.inc_date,
+                            x.bnk_code,
+                            x.fc,
+                            "K",
+                            "TRX %s %s" % ("K", inc.inc_code),
+                            inc.user_id,
+                        )
+                    )
+            if len(transbank) > 0:
+                db.session.add_all(transbank)
 
         db.session.commit()
