@@ -1,5 +1,6 @@
 from main.function.update_pembelian import UpdatePembelian
 from main.function.update_faktur_pb import UpdateFakturPB
+from main.function.update_table import UpdateTable
 from main.model.ccost_mdb import CcostMdb
 from main.model.djasa_ddb import DjasaDdb
 from main.model.dprod_ddb import DprodDdb
@@ -15,7 +16,7 @@ from main.model.supplier_mdb import SupplierMdb
 from main.schema.dord_hdb import DordSchema, dord_schema
 from main.shared.shared import db
 from main.utils.response import response
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import *
 from main.schema.prod_mdb import prod_schema
 from main.schema.jasa_mdb import jasa_schema
 from main.schema.unit_mdb import unit_schema
@@ -75,101 +76,117 @@ class FakturPb:
             UpdateFakturPB(faktur.id, user.id, False)
             db.session.commit()
 
-            self.response = response(200, "success", True, fkpb_schema.dump(faktur))
+            return response(200, "success", True, fkpb_schema.dump(faktur))
         else:
-            fk = (
-                db.session.query(FkpbHdb, SupplierMdb)
-                .outerjoin(SupplierMdb, SupplierMdb.id == FkpbHdb.sup_id)
-                .order_by(FkpbHdb.id.desc())
-                .all()
-            )
-            det = (
-                db.session.query(FkpbDetDdb, InvpbHdb, OrdpbHdb)
-                .outerjoin(InvpbHdb, InvpbHdb.id == FkpbDetDdb.inv_id)
-                .outerjoin(OrdpbHdb, OrdpbHdb.id == FkpbDetDdb.ord_id)
-                .all()
-            )
-
-            dprod = (
-                db.session.query(DprodDdb, ProdMdb, UnitMdb, LocationMdb)
-                .outerjoin(ProdMdb, ProdMdb.id == DprodDdb.prod_id)
-                .outerjoin(UnitMdb, UnitMdb.id == DprodDdb.unit_id)
-                .outerjoin(LocationMdb, LocationMdb.id == DprodDdb.location)
-                .all()
-            )
-
-            djasa = (
-                db.session.query(DjasaDdb, JasaMdb, UnitMdb)
-                .outerjoin(JasaMdb, JasaMdb.id == DjasaDdb.jasa_id)
-                .outerjoin(UnitMdb, UnitMdb.id == DjasaDdb.unit_id)
-                .all()
-            )
-
-            final = []
-            for x in fk:
-                detail = []
-                if x[0]:
-                    for y in det:
-                        if x[0]:
-                            if y[0].fk_id == x[0].id:
-                                prod = []
-                                for p in dprod:
-                                    if y[0]:
-                                        if p[0].ord_id == y[2].id:
-                                            p[0].prod_id = prod_schema.dump(p[1])
-                                            p[0].unit_id = unit_schema.dump(p[2])
-                                            p[0].location = (
-                                                loct_schema.dump(p[3])
-                                                if p[0].location
-                                                else None
-                                            )
-                                            prod.append(dprod_schema.dump(p[0]))
-
-                                jasa = []
-                                for z in djasa:
-                                    if y[0]:
-                                        if z[0].ord_id == y[2].id:
-                                            z[0].jasa_id = jasa_schema.dump(z[1])
-                                            z[0].unit_id = unit_schema.dump(z[2])
-                                            jasa.append(djasa_schema.dump(z[0]))
-
-                                y[0].inv_id = invpb_schema.dump(y[1])
-                                # y[0].ord_id = dord_schema.dump(y[2])
-                                y[0].ord_id = {
-                                    "id": y[2].id,
-                                    "ord_code": y[2].ord_code,
-                                    "ord_date": y[2].ord_date.isoformat(),
-                                    "invoice": y[2].invoice,
-                                    "faktur": y[2].faktur,
-                                    "po_id": y[2].po_id,
-                                    "dep_id": y[2].dep_id,
-                                    "sup_id": y[2].sup_id,
-                                    "due_date": y[2].due_date.isoformat(),
-                                    "product": prod,
-                                    "jasa": jasa,
-                                }
-                                detail.append(fkpbd_schema.dump(y[0]))
-
-                        # if y[0].fk_id == x[0].id:
-
-                final.append(
-                    {
-                        "id": x[0].id,
-                        "fk_code": x[0].fk_code,
-                        "fk_date": x[0].fk_date.isoformat(),
-                        "sup_id": supplier_schema.dump(x[1]),
-                        "fk_tax": x[0].fk_tax,
-                        "fk_ppn": x[0].fk_ppn,
-                        "fk_lunas": x[0].fk_lunas,
-                        "fk_desc": x[0].fk_desc,
-                        "post": x[0].post,
-                        "closing": x[0].closing,
-                        "detail": detail,
-                        # "product": prod,
-                        # "jasa": jasa,
-                    }
+            try:
+                fk = (
+                    db.session.query(FkpbHdb, SupplierMdb)
+                    .outerjoin(SupplierMdb, SupplierMdb.id == FkpbHdb.sup_id)
+                    .order_by(FkpbHdb.id.desc())
+                    .all()
+                )
+                det = (
+                    db.session.query(FkpbDetDdb, InvpbHdb, OrdpbHdb)
+                    .outerjoin(InvpbHdb, InvpbHdb.id == FkpbDetDdb.inv_id)
+                    .outerjoin(OrdpbHdb, OrdpbHdb.id == FkpbDetDdb.ord_id)
+                    .all()
                 )
 
-            self.response = response(200, "success", True, final)
+                dprod = (
+                    db.session.query(DprodDdb, ProdMdb, UnitMdb, LocationMdb)
+                    .outerjoin(ProdMdb, ProdMdb.id == DprodDdb.prod_id)
+                    .outerjoin(UnitMdb, UnitMdb.id == DprodDdb.unit_id)
+                    .outerjoin(LocationMdb, LocationMdb.id == DprodDdb.location)
+                    .all()
+                )
 
-        return self.response
+                djasa = (
+                    db.session.query(DjasaDdb, JasaMdb, UnitMdb)
+                    .outerjoin(JasaMdb, JasaMdb.id == DjasaDdb.jasa_id)
+                    .outerjoin(UnitMdb, UnitMdb.id == DjasaDdb.unit_id)
+                    .all()
+                )
+
+                final = []
+                for x in fk:
+                    detail = []
+                    if x[0]:
+                        for y in det:
+                            if x[0]:
+                                if y[0].fk_id == x[0].id:
+                                    prod = []
+                                    for p in dprod:
+                                        if y[0]:
+                                            if p[0].ord_id == y[2].id:
+                                                p[0].prod_id = prod_schema.dump(p[1])
+                                                p[0].unit_id = unit_schema.dump(p[2])
+                                                p[0].location = (
+                                                    loct_schema.dump(p[3])
+                                                    if p[0].location
+                                                    else None
+                                                )
+                                                prod.append(dprod_schema.dump(p[0]))
+
+                                    jasa = []
+                                    for z in djasa:
+                                        if y[0]:
+                                            if z[0].ord_id == y[2].id:
+                                                z[0].jasa_id = jasa_schema.dump(z[1])
+                                                z[0].unit_id = unit_schema.dump(z[2])
+                                                jasa.append(djasa_schema.dump(z[0]))
+
+                                    y[0].inv_id = invpb_schema.dump(y[1])
+                                    # y[0].ord_id = dord_schema.dump(y[2])
+                                    y[0].ord_id = {
+                                        "id": y[2].id,
+                                        "ord_code": y[2].ord_code,
+                                        "ord_date": y[2].ord_date.isoformat(),
+                                        "invoice": y[2].invoice,
+                                        "faktur": y[2].faktur,
+                                        "po_id": y[2].po_id,
+                                        "dep_id": y[2].dep_id,
+                                        "sup_id": y[2].sup_id,
+                                        "due_date": y[2].due_date.isoformat(),
+                                        "product": prod,
+                                        "jasa": jasa,
+                                    }
+                                    detail.append(fkpbd_schema.dump(y[0]))
+
+                            # if y[0].fk_id == x[0].id:
+
+                    final.append(
+                        {
+                            "id": x[0].id,
+                            "fk_code": x[0].fk_code,
+                            "fk_date": x[0].fk_date.isoformat(),
+                            "sup_id": supplier_schema.dump(x[1]),
+                            "fk_tax": x[0].fk_tax,
+                            "fk_ppn": x[0].fk_ppn,
+                            "fk_lunas": x[0].fk_lunas,
+                            "fk_desc": x[0].fk_desc,
+                            "post": x[0].post,
+                            "closing": x[0].closing,
+                            "detail": detail,
+                            # "product": prod,
+                            # "jasa": jasa,
+                        }
+                    )
+
+                return response(200, "success", True, final)
+            except ProgrammingError as e:
+                return UpdateTable(
+                    [
+                        FkpbHdb,
+                        SupplierMdb,
+                        FkpbDetDdb,
+                        InvpbHdb,
+                        OrdpbHdb,
+                        DprodDdb,
+                        ProdMdb,
+                        UnitMdb,
+                        LocationMdb,
+                        DjasaDdb,
+                        JasaMdb,
+                    ],
+                    request,
+                )

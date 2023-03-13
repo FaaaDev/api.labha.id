@@ -1,3 +1,4 @@
+from main.function.update_table import UpdateTable
 from main.model.pjasa_ddb import PjasaDdb
 from main.model.po_mdb import PoMdb
 from main.model.po_sup_ddb import PoSupDdb
@@ -13,7 +14,7 @@ from main.model.unit_mdb import UnitMdb
 from main.model.syarat_bayar_mdb import RulesPayMdb
 from main.shared.shared import db
 from main.utils.response import response
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import *
 from main.schema.preq_mdb import PreqSchema, preq_schema
 from main.schema.pprod_ddb import pprod_schema
 from main.schema.pjasa_ddb import pjasa_schema
@@ -172,105 +173,121 @@ class PurchaseOrder:
 
                 db.session.commit()
 
-                result = response(200, "Berhasil", True, po_schema.dump(po))
-
             except IntegrityError:
                 db.session.rollback()
-                result = response(400, "Kode sudah digunakan", False, None)
+                return response(400, "Kode sudah digunakan", False, None)
             finally:
-                self.response = result
+                return response(200, "Berhasil", True, po_schema.dump(po))
         else:
-            po = (
-                db.session.query(PoMdb, PreqMdb, CcostMdb, SupplierMdb, RulesPayMdb)
-                .outerjoin(PreqMdb, PreqMdb.id == PoMdb.preq_id)
-                .outerjoin(CcostMdb, CcostMdb.id == PreqMdb.req_dep)
-                .outerjoin(SupplierMdb, SupplierMdb.id == PoMdb.sup_id)
-                .outerjoin(RulesPayMdb, RulesPayMdb.id == PoMdb.top)
-                .order_by(PoMdb.id.desc())
-                .all()
-            )
-
-            pprod = (
-                db.session.query(PprodDdb, ProdMdb, UnitMdb)
-                .outerjoin(ProdMdb, ProdMdb.id == PprodDdb.prod_id)
-                .outerjoin(UnitMdb, UnitMdb.id == PprodDdb.unit_id)
-                .all()
-            )
-
-            pjasa = (
-                db.session.query(PjasaDdb, JasaMdb, UnitMdb)
-                .outerjoin(JasaMdb, JasaMdb.id == PjasaDdb.jasa_id)
-                .outerjoin(UnitMdb, UnitMdb.id == PjasaDdb.unit_id)
-                .all()
-            )
-            psup = (
-                db.session.query(PoSupDdb, SupplierMdb, ProdMdb)
-                .outerjoin(SupplierMdb, SupplierMdb.id == PoSupDdb.sup_id)
-                .outerjoin(ProdMdb, ProdMdb.id == PoSupDdb.prod_id)
-                .all()
-            )
-
-            final = []
-            for x in po:
-                product = []
-                for y in pprod:
-                    if y[0].po_id == x[0].id:
-                        y[0].prod_id = prod_schema.dump(y[1])
-                        y[0].unit_id = unit_schema.dump(y[2])
-                        product.append(pprod_schema.dump(y[0]))
-
-                jasa = []
-                for z in pjasa:
-                    if z[0].po_id == x[0].id:
-                        z[0].jasa_id = jasa_schema.dump(z[1])
-                        z[0].unit_id = unit_schema.dump(z[2])
-                        jasa.append(pjasa_schema.dump(z[0]))
-
-                sup = []
-                for z in psup:
-                    if z[0].po_id == x[0].id:
-                        z[0].sup_id = supplier_schema.dump(z[1])
-                        z[0].prod_id = prod_schema.dump(z[2])
-                        sup.append(poSup_schema.dump(z[0]))
-
-                final.append(
-                    {
-                        "id": x[0].id,
-                        "po_code": x[0].po_code,
-                        "po_date": PoSchema(only=["po_date"]).dump(x[0])["po_date"],
-                        "preq_id": {
-                            "id": x[1].id,
-                            "req_code": x[1].req_code,
-                            "req_date": PreqSchema(only=["req_date"]).dump(x[1])[
-                                "req_date"
-                            ],
-                            "req_dep": ccost_schema.dump(x[2]) if x[2] else None,
-                            "req_ket": x[1].req_ket,
-                            "status": x[1].status,
-                        }
-                        if x[1]
-                        else None,
-                        "ppn_type": x[0].ppn_type,
-                        "sup_id": supplier_schema.dump(x[3]) if x[3] else None,
-                        "ref_sup": x[0].ref_sup,
-                        "top": rpay_schema.dump(x[4]) if x[4] else None,
-                        "due_date": PoSchema(only=["due_date"]).dump(x[0])["due_date"]
-                        if x[0].due_date
-                        else None,
-                        "split_inv": x[0].split_inv,
-                        "prod_disc": x[0].prod_disc,
-                        "jasa_disc": x[0].jasa_disc,
-                        "total_disc": x[0].total_disc,
-                        "total_bayar": x[0].total_bayar,
-                        "status": x[0].status,
-                        "apprv": x[0].apprv,
-                        "print": x[0].print,
-                        "pprod": product,
-                        "pjasa": jasa,
-                        "psup": sup,
-                    }
+            try:
+                po = (
+                    db.session.query(PoMdb, PreqMdb, CcostMdb, SupplierMdb, RulesPayMdb)
+                    .outerjoin(PreqMdb, PreqMdb.id == PoMdb.preq_id)
+                    .outerjoin(CcostMdb, CcostMdb.id == PreqMdb.req_dep)
+                    .outerjoin(SupplierMdb, SupplierMdb.id == PoMdb.sup_id)
+                    .outerjoin(RulesPayMdb, RulesPayMdb.id == PoMdb.top)
+                    .order_by(PoMdb.id.desc())
+                    .all()
                 )
 
-            self.response = response(200, "Berhasil", True, final)
+                pprod = (
+                    db.session.query(PprodDdb, ProdMdb, UnitMdb)
+                    .outerjoin(ProdMdb, ProdMdb.id == PprodDdb.prod_id)
+                    .outerjoin(UnitMdb, UnitMdb.id == PprodDdb.unit_id)
+                    .all()
+                )
 
-        return self.response
+                pjasa = (
+                    db.session.query(PjasaDdb, JasaMdb, UnitMdb)
+                    .outerjoin(JasaMdb, JasaMdb.id == PjasaDdb.jasa_id)
+                    .outerjoin(UnitMdb, UnitMdb.id == PjasaDdb.unit_id)
+                    .all()
+                )
+                psup = (
+                    db.session.query(PoSupDdb, SupplierMdb, ProdMdb)
+                    .outerjoin(SupplierMdb, SupplierMdb.id == PoSupDdb.sup_id)
+                    .outerjoin(ProdMdb, ProdMdb.id == PoSupDdb.prod_id)
+                    .all()
+                )
+
+                final = []
+                for x in po:
+                    product = []
+                    for y in pprod:
+                        if y[0].po_id == x[0].id:
+                            y[0].prod_id = prod_schema.dump(y[1])
+                            y[0].unit_id = unit_schema.dump(y[2])
+                            product.append(pprod_schema.dump(y[0]))
+
+                    jasa = []
+                    for z in pjasa:
+                        if z[0].po_id == x[0].id:
+                            z[0].jasa_id = jasa_schema.dump(z[1])
+                            z[0].unit_id = unit_schema.dump(z[2])
+                            jasa.append(pjasa_schema.dump(z[0]))
+
+                    sup = []
+                    for z in psup:
+                        if z[0].po_id == x[0].id:
+                            z[0].sup_id = supplier_schema.dump(z[1])
+                            z[0].prod_id = prod_schema.dump(z[2])
+                            sup.append(poSup_schema.dump(z[0]))
+
+                    final.append(
+                        {
+                            "id": x[0].id,
+                            "po_code": x[0].po_code,
+                            "po_date": PoSchema(only=["po_date"]).dump(x[0])["po_date"],
+                            "preq_id": {
+                                "id": x[1].id,
+                                "req_code": x[1].req_code,
+                                "req_date": PreqSchema(only=["req_date"]).dump(x[1])[
+                                    "req_date"
+                                ],
+                                "req_dep": ccost_schema.dump(x[2]) if x[2] else None,
+                                "req_ket": x[1].req_ket,
+                                "status": x[1].status,
+                            }
+                            if x[1]
+                            else None,
+                            "ppn_type": x[0].ppn_type,
+                            "sup_id": supplier_schema.dump(x[3]) if x[3] else None,
+                            "ref_sup": x[0].ref_sup,
+                            "top": rpay_schema.dump(x[4]) if x[4] else None,
+                            "due_date": PoSchema(only=["due_date"]).dump(x[0])[
+                                "due_date"
+                            ]
+                            if x[0].due_date
+                            else None,
+                            "split_inv": x[0].split_inv,
+                            "prod_disc": x[0].prod_disc,
+                            "jasa_disc": x[0].jasa_disc,
+                            "total_disc": x[0].total_disc,
+                            "total_bayar": x[0].total_bayar,
+                            "status": x[0].status,
+                            "apprv": x[0].apprv,
+                            "print": x[0].print,
+                            "pprod": product,
+                            "pjasa": jasa,
+                            "psup": sup,
+                        }
+                    )
+
+                return response(200, "Berhasil", True, final)
+            except ProgrammingError as e:
+                return UpdateTable(
+                    [
+                        PoMdb,
+                        PreqMdb,
+                        CcostMdb,
+                        SupplierMdb,
+                        RulesPayMdb,
+                        PprodDdb,
+                        ProdMdb,
+                        UnitMdb,
+                        PjasaDdb,
+                        JasaMdb,
+                        PoSupDdb,
+                    ],
+                    request,
+                )

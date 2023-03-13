@@ -1,8 +1,9 @@
 from main.shared.shared import db
 
+
 class CompMdb(db.Model):
-    __table_args__ = {'schema': 'master'}
-    __tablename__ = 'COMPMDB'
+    __table_args__ = {"schema": "master"}
+    __tablename__ = "COMPMDB"
 
     id = db.Column(db.Integer, primary_key=True)
     cp_name = db.Column(db.String(255))
@@ -22,9 +23,31 @@ class CompMdb(db.Model):
     tiered = db.Column(db.Boolean)
     rp = db.Column(db.Boolean)
     over_po = db.Column(db.Boolean)
-    
+    cutoff = db.Column(db.Integer)
+    year_co = db.Column(db.Integer)
 
-    def __init__(self, cp_name, cp_addr, cp_ship_addr, cp_telp, cp_email, cp_webs, cp_npwp, cp_coper, cp_logo, multi_currency, appr_po, appr_payment, over_stock, discount, tiered, rp, over_po):
+    def __init__(
+        self,
+        cp_name,
+        cp_addr,
+        cp_ship_addr,
+        cp_telp,
+        cp_email,
+        cp_webs,
+        cp_npwp,
+        cp_coper,
+        cp_logo,
+        multi_currency,
+        appr_po,
+        appr_payment,
+        over_stock,
+        discount,
+        tiered,
+        rp,
+        over_po,
+        cutoff,
+        year_co,
+    ):
         self.cp_name = cp_name
         self.cp_addr = cp_addr
         self.cp_ship_addr = cp_ship_addr
@@ -41,4 +64,6 @@ class CompMdb(db.Model):
         self.discount = discount
         self.tiered = tiered
         self.rp = rp
-        self.over_po = over_po 
+        self.over_po = over_po
+        self.cutoff = cutoff
+        self.year_co = year_co

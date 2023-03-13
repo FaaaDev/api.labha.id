@@ -1,3 +1,4 @@
+from main.function.update_table import UpdateTable
 from main.model.custom_mdb import CustomerMdb
 from main.model.sjasa_ddb import SjasaDdb
 from main.model.sord_hdb import SordHdb
@@ -9,7 +10,7 @@ from main.model.syarat_bayar_mdb import RulesPayMdb
 from main.schema.sord_hdb import SordSchema, sord_schema
 from main.shared.shared import db
 from main.utils.response import response
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import *
 from main.schema.prod_mdb import prod_schema
 from main.schema.jasa_mdb import jasa_schema
 from main.schema.unit_mdb import unit_schema
@@ -106,86 +107,103 @@ class SalesOrder:
 
                 db.session.commit()
 
-                result = response(200, "Berhasil", True, sord_schema.dump(so))
-
             except IntegrityError:
                 db.session.rollback()
-                result = response(400, "Kode sudah digunakan", False, None)
+                return response(400, "Kode sudah digunakan", False, None)
             finally:
-                self.response = result
+                return response(200, "Berhasil", True, sord_schema.dump(so))
         else:
-            so = (
-                db.session.query(SordHdb, RulesPayMdb)
-                .outerjoin(RulesPayMdb, RulesPayMdb.id == SordHdb.top)
-                .order_by(SordHdb.id.desc())
-                .all()
-            )
-
-            cust = CustomerMdb.query.all()
-
-            sprod = (
-                db.session.query(SprodDdb, ProdMdb, UnitMdb)
-                .outerjoin(ProdMdb, ProdMdb.id == SprodDdb.prod_id)
-                .outerjoin(UnitMdb, UnitMdb.id == SprodDdb.unit_id)
-                .all()
-            )
-
-            sjasa = (
-                db.session.query(SjasaDdb, JasaMdb, UnitMdb)
-                .outerjoin(JasaMdb, JasaMdb.id == SjasaDdb.jasa_id)
-                .outerjoin(UnitMdb, UnitMdb.id == SjasaDdb.unit_id)
-                .all()
-            )
-
-            final = []
-            for x in so:
-                product = []
-                for y in sprod:
-                    if y[0].so_id == x[0].id:
-                        y[0].prod_id = prod_schema.dump(y[1])
-                        y[0].unit_id = unit_schema.dump(y[2])
-                        product.append(sprod_schema.dump(y[0]))
-
-                jasa = []
-                for z in sjasa:
-                    if z[0].so_id == x[0].id:
-                        z[0].jasa_id = jasa_schema.dump(z[1])
-                        z[0].unit_id = unit_schema.dump(z[2])
-                        jasa.append(sjasa_schema.dump(z[0]))
-
-                for a in cust:
-                    if a.id == x[0].pel_id:
-                        x[0].pel_id = customer_schema.dump(a)
-
-                if x[0].sub_addr:
-                    for b in cust:
-                        if b.id == x[0].sub_id:
-                            x[0].sub_id = customer_schema.dump(b)
-
-                final.append(
-                    {
-                        "id": x[0].id,
-                        "so_code": x[0].so_code,
-                        "so_date": SordSchema(only=["so_date"]).dump(x[0])["so_date"],
-                        "pel_id": x[0].pel_id,
-                        "ppn_type": x[0].ppn_type,
-                        "sub_addr": x[0].sub_addr,
-                        "sub_id": x[0].sub_id,
-                        "req_date": SordSchema(only=["req_date"]).dump(x[0])["req_date"],
-                        "top": rpay_schema.dump(x[1]),
-                        "due_date": SordSchema(only=["due_date"]).dump(x[0])["due_date"],
-                        "split_inv": x[0].split_inv,
-                        "prod_disc": x[0].prod_disc,
-                        "jasa_disc": x[0].jasa_disc,
-                        "total_disc": x[0].total_disc,
-                        "total_bayar": x[0].total_bayar,
-                        "status": x[0].status,
-                        "print": x[0].print,
-                        "sprod": product,
-                        "sjasa": jasa,
-                    }
+            try:
+                so = (
+                    db.session.query(SordHdb, RulesPayMdb)
+                    .outerjoin(RulesPayMdb, RulesPayMdb.id == SordHdb.top)
+                    .order_by(SordHdb.id.desc())
+                    .all()
                 )
 
-            self.response = response(200, "Berhasil", True, final)
+                cust = CustomerMdb.query.all()
 
-        return self.response
+                sprod = (
+                    db.session.query(SprodDdb, ProdMdb, UnitMdb)
+                    .outerjoin(ProdMdb, ProdMdb.id == SprodDdb.prod_id)
+                    .outerjoin(UnitMdb, UnitMdb.id == SprodDdb.unit_id)
+                    .all()
+                )
+
+                sjasa = (
+                    db.session.query(SjasaDdb, JasaMdb, UnitMdb)
+                    .outerjoin(JasaMdb, JasaMdb.id == SjasaDdb.jasa_id)
+                    .outerjoin(UnitMdb, UnitMdb.id == SjasaDdb.unit_id)
+                    .all()
+                )
+
+                final = []
+                for x in so:
+                    product = []
+                    for y in sprod:
+                        if y[0].so_id == x[0].id:
+                            y[0].prod_id = prod_schema.dump(y[1])
+                            y[0].unit_id = unit_schema.dump(y[2])
+                            product.append(sprod_schema.dump(y[0]))
+
+                    jasa = []
+                    for z in sjasa:
+                        if z[0].so_id == x[0].id:
+                            z[0].jasa_id = jasa_schema.dump(z[1])
+                            z[0].unit_id = unit_schema.dump(z[2])
+                            jasa.append(sjasa_schema.dump(z[0]))
+
+                    for a in cust:
+                        if a.id == x[0].pel_id:
+                            x[0].pel_id = customer_schema.dump(a)
+
+                    if x[0].sub_addr:
+                        for b in cust:
+                            if b.id == x[0].sub_id:
+                                x[0].sub_id = customer_schema.dump(b)
+
+                    final.append(
+                        {
+                            "id": x[0].id,
+                            "so_code": x[0].so_code,
+                            "so_date": SordSchema(only=["so_date"]).dump(x[0])[
+                                "so_date"
+                            ],
+                            "pel_id": x[0].pel_id,
+                            "ppn_type": x[0].ppn_type,
+                            "sub_addr": x[0].sub_addr,
+                            "sub_id": x[0].sub_id,
+                            "req_date": SordSchema(only=["req_date"]).dump(x[0])[
+                                "req_date"
+                            ],
+                            "top": rpay_schema.dump(x[1]),
+                            "due_date": SordSchema(only=["due_date"]).dump(x[0])[
+                                "due_date"
+                            ],
+                            "split_inv": x[0].split_inv,
+                            "prod_disc": x[0].prod_disc,
+                            "jasa_disc": x[0].jasa_disc,
+                            "total_disc": x[0].total_disc,
+                            "total_bayar": x[0].total_bayar,
+                            "status": x[0].status,
+                            "print": x[0].print,
+                            "sprod": product,
+                            "sjasa": jasa,
+                        }
+                    )
+
+                return response(200, "Berhasil", True, final)
+            except ProgrammingError as e:
+                return UpdateTable(
+                    [
+                        SordHdb,
+                        RulesPayMdb,
+                        CustomerMdb,
+                        SprodDdb,
+                        ProdMdb,
+                        UnitMdb,
+                        SjasaDdb,
+                        JasaMdb,
+                    ],
+                    request,
+                )

@@ -1,3 +1,4 @@
+from main.function.update_table import UpdateTable
 from main.function.update_ap_giro import UpdateApGiro
 from main.function.update_ap_payment import UpdateApPayment
 from main.function.update_dp_ap import UpdateApDP
@@ -9,6 +10,7 @@ from main.model.exp_hdb import ExpHdb
 from main.model.mukap_ddb import MukapDdb
 from main.model.fkpb_hdb import FkpbHdb
 from main.model.fkpb_det_ddb import FkpbDetDdb
+
 # from main.model.sa_ap_mdb import SaldoAPMdb
 from main.model.giro_hdb import GiroHdb
 from main.model.supplier_mdb import SupplierMdb
@@ -19,7 +21,7 @@ from main.schema.exp_hdb import ExpSchema
 from main.model.accou_mdb import AccouMdb
 from main.shared.shared import db
 from main.utils.response import response
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import *
 from main.schema.bank_mdb import bank_schema
 from main.schema.accou_mdb import accou_schema
 from main.schema.exp_hdb import exp_schema
@@ -30,6 +32,7 @@ from main.schema.mukap_ddb import mukap_schema
 from main.schema.fkpb_hdb import fkpb_schema
 from main.schema.dord_hdb import dord_schema
 from main.schema.po_mdb import po_schema
+
 # from main.schema.sa_ap_mdb import saap_schema
 
 
@@ -120,7 +123,9 @@ class Expense:
                 elif exps.type_trx == 2:
                     new_exp = []
                     for x in exp:
-                        if (x["acc_code"] or x["acc_bnk"] or x["bnk_code"]) and x["value"]:
+                        if (x["acc_code"] or x["acc_bnk"] or x["bnk_code"]) and x[
+                            "value"
+                        ]:
                             new_exp.append(
                                 ExpDdb(
                                     exps.id,
@@ -135,7 +140,7 @@ class Expense:
 
                     if len(new_exp) > 0:
                         db.session.add_all(new_exp)
-                        
+
                 else:
                     new_dp = []
                     for x in det_dp:
@@ -179,99 +184,116 @@ class Expense:
                 else:
                     UpdateApDP(exps.id, False)
 
-                result = response(200, "Berhasil", True, exp_schema.dump(exps))
             except IntegrityError:
                 db.session.rollback()
-                result = response(400, "Kode sudah digunakan", False, None)
+                return response(400, "Kode sudah digunakan", False, None)
             finally:
-                self.response = result
+                return response(200, "Berhasil", True, exp_schema.dump(exps))
         else:
-            exps = (
-                db.session.query(ExpHdb, BankMdb, SupplierMdb)
-                .outerjoin(BankMdb, BankMdb.id == ExpHdb.bank_id)
-                .outerjoin(SupplierMdb, SupplierMdb.id == ExpHdb.acq_sup)
-                .order_by(ExpHdb.id.desc())
-                .all()
-            )
-
-            acc = AccouMdb.query.all()
-
-            exp = (
-                db.session.query(ExpDdb, AccouMdb)
-                .outerjoin(AccouMdb, AccouMdb.id == ExpDdb.acc_code)
-                .all()
-            )
-
-            acq = (
-                db.session.query(AcqDdb, OrdpbHdb)
-                .outerjoin(OrdpbHdb, OrdpbHdb.id == AcqDdb.fk_id)
-                # .outerjoin(SaldoAPMdb, SaldoAPMdb.id == AcqDdb.sa_id)
-                # .outerjoin(OrdpbHdb, OrdpbHdb.id == FkpbDetDdb.ord_id)
-                .all()
-            )
-
-            dp = (
-                db.session.query(MukapDdb, PoMdb).outerjoin(
-                    PoMdb, PoMdb.id == MukapDdb.po_id
-                )
-                # .outerjoin(OrdpbHdb, OrdpbHdb.id == FkpbDetDdb.ord_id)
-                .all()
-            )
-
-            final = []
-            for x in exps:
-
-                all_acq = []
-                for z in acq:
-                    if z[0].exp_id == x[0].id:
-                        z[0].fk_id = dord_schema.dump(z[1]) if z[1] else None
-                        all_acq.append(dacq_schema.dump(z[0]))
-
-                all_exp = []
-                for y in exp:
-                    if y[0].exp_id == x[0].id:
-                        all_exp.append(dexp_schema.dump(y[0]))
-
-                all_dp = []
-                for y in dp:
-                    if y[0].exp_id == x[0].id:
-                        y[0].po_id = po_schema.dump(y[1])
-                        all_dp.append(mukap_schema.dump(y[0]))
-
-                final.append(
-                    {
-                        "id": x[0].id,
-                        "exp_code": x[0].exp_code,
-                        "exp_date": ExpSchema(only=["exp_date"]).dump(x[0])["exp_date"],
-                        "type_trx": x[0].type_trx,
-                        "acq_sup": supplier_schema.dump(x[2]) if x[2] else None,
-                        "acq_pay": x[0].acq_pay,
-                        "acq_kas": x[0].acq_kas,
-                        "bank_ref": x[0].bank_ref,
-                        "bank_acc": x[0].bank_acc,
-                        "giro_num": x[0].giro_num,
-                        "giro_date": ExpSchema(only=["giro_date"]).dump(x[0])[
-                            "giro_date"
-                        ],
-                        "bank_id": bank_schema.dump(x[1]) if x[1] else None,
-                        "exp_type": x[0].exp_type,
-                        "kas_acc": x[0].kas_acc,
-                        "exp_bnk": x[0].exp_bnk,
-                        "type_acc": x[0].type_acc,
-                        "exp_dep": x[0].exp_dep,
-                        "exp_prj": x[0].exp_prj,
-                        "dp_type": x[0].dp_type,
-                        "dp_sup": x[0].dp_sup,
-                        "dp_kas": x[0].dp_kas,
-                        "dp_bnk": x[0].dp_bnk,
-                        "approve": x[0].approve,
-                        "user_id": x[0].user_id,
-                        "exp": all_exp,
-                        "acq": all_acq,
-                        "det_dp": all_dp,
-                    }
+            try:
+                exps = (
+                    db.session.query(ExpHdb, BankMdb, SupplierMdb)
+                    .outerjoin(BankMdb, BankMdb.id == ExpHdb.bank_id)
+                    .outerjoin(SupplierMdb, SupplierMdb.id == ExpHdb.acq_sup)
+                    .order_by(ExpHdb.id.desc())
+                    .all()
                 )
 
-            self.response = response(200, "Berhasil", True, final)
+                acc = AccouMdb.query.all()
 
-        return self.response
+                exp = (
+                    db.session.query(ExpDdb, AccouMdb)
+                    .outerjoin(AccouMdb, AccouMdb.id == ExpDdb.acc_code)
+                    .all()
+                )
+
+                acq = (
+                    db.session.query(AcqDdb, OrdpbHdb).outerjoin(
+                        OrdpbHdb, OrdpbHdb.id == AcqDdb.fk_id
+                    )
+                    # .outerjoin(SaldoAPMdb, SaldoAPMdb.id == AcqDdb.sa_id)
+                    # .outerjoin(OrdpbHdb, OrdpbHdb.id == FkpbDetDdb.ord_id)
+                    .all()
+                )
+
+                dp = (
+                    db.session.query(MukapDdb, PoMdb).outerjoin(
+                        PoMdb, PoMdb.id == MukapDdb.po_id
+                    )
+                    # .outerjoin(OrdpbHdb, OrdpbHdb.id == FkpbDetDdb.ord_id)
+                    .all()
+                )
+
+                final = []
+                for x in exps:
+
+                    all_acq = []
+                    for z in acq:
+                        if z[0].exp_id == x[0].id:
+                            z[0].fk_id = dord_schema.dump(z[1]) if z[1] else None
+                            all_acq.append(dacq_schema.dump(z[0]))
+
+                    all_exp = []
+                    for y in exp:
+                        if y[0].exp_id == x[0].id:
+                            all_exp.append(dexp_schema.dump(y[0]))
+
+                    all_dp = []
+                    for y in dp:
+                        if y[0].exp_id == x[0].id:
+                            y[0].po_id = po_schema.dump(y[1])
+                            all_dp.append(mukap_schema.dump(y[0]))
+
+                    final.append(
+                        {
+                            "id": x[0].id,
+                            "exp_code": x[0].exp_code,
+                            "exp_date": ExpSchema(only=["exp_date"]).dump(x[0])[
+                                "exp_date"
+                            ],
+                            "type_trx": x[0].type_trx,
+                            "acq_sup": supplier_schema.dump(x[2]) if x[2] else None,
+                            "acq_pay": x[0].acq_pay,
+                            "acq_kas": x[0].acq_kas,
+                            "bank_ref": x[0].bank_ref,
+                            "bank_acc": x[0].bank_acc,
+                            "giro_num": x[0].giro_num,
+                            "giro_date": ExpSchema(only=["giro_date"]).dump(x[0])[
+                                "giro_date"
+                            ],
+                            "bank_id": bank_schema.dump(x[1]) if x[1] else None,
+                            "exp_type": x[0].exp_type,
+                            "kas_acc": x[0].kas_acc,
+                            "exp_bnk": x[0].exp_bnk,
+                            "type_acc": x[0].type_acc,
+                            "exp_dep": x[0].exp_dep,
+                            "exp_prj": x[0].exp_prj,
+                            "dp_type": x[0].dp_type,
+                            "dp_sup": x[0].dp_sup,
+                            "dp_kas": x[0].dp_kas,
+                            "dp_bnk": x[0].dp_bnk,
+                            "approve": x[0].approve,
+                            "user_id": x[0].user_id,
+                            "exp": all_exp,
+                            "acq": all_acq,
+                            "det_dp": all_dp,
+                        }
+                    )
+
+                return response(200, "Berhasil", True, final)
+            except ProgrammingError as e:
+                return UpdateTable(
+                    [
+                        ExpHdb,
+                        BankMdb,
+                        SupplierMdb,
+                        ExpDdb,
+                        AccouMdb,
+                        AcqDdb,
+                        OrdpbHdb,
+                        MukapDdb,
+                        PoMdb,
+                        GiroHdb,
+                    ],
+                    request,
+                )

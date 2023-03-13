@@ -40,6 +40,13 @@ from main.function.sale.faktur_sl import FakturPj
 from main.function.sale.faktur_sl_id import FakturPjId
 from main.function.expense.expense import Expense
 from main.function.expense.expense_id import ExpenseId
+from main.function.saldo_awal.saldo_awal import SaldoInv
+from main.function.saldo_awal.saldo_awal_ap import SaldoAP
+from main.function.saldo_awal.saldo_awal_ap_id import SaldoAPId
+from main.function.saldo_awal.saldo_awal_ar import SaldoAR
+from main.function.saldo_awal.saldo_awal_ar_id import SaldoARId
+from main.function.saldo_awal.saldo_awal_gl import SaldoAwalGl
+from main.function.saldo_awal.saldo_awal_gl_sts import SaldoAwalGlStatus
 from main.model.giro_inc_hdb import GiroIncHdb
 from main.model.iacq_ddb import IAcqDdb
 from main.model.inc_hdb import IncHdb
@@ -1639,6 +1646,8 @@ def company(self):
             tiered = request.json["tiered"]
             rp = request.json["rp"]
             over_po = request.json["over_po"]
+            cutoff = request.json["cutoff"]
+            year_co = request.json["year_co"]
 
             company = CompMdb(
                 cp_name,
@@ -1658,6 +1667,8 @@ def company(self):
                 tiered,
                 rp,
                 over_po,
+                cutoff,
+                year_co,
             )
             db.session.add(company)
             db.session.commit()
@@ -1695,6 +1706,8 @@ def company_id(self, id):
             company.cp_webs = request.json["cp_webs"]
             company.cp_npwp = request.json["cp_npwp"]
             company.cp_coper = request.json["cp_coper"]
+            company.cutoff = request.json["cutoff"]
+            company.year_co = request.json["year_co"]
 
             if server_name + "/v1/api/upload/" in request.json["cp_logo"]:
                 cp_logo = request.json["cp_logo"].replace(
@@ -1729,6 +1742,8 @@ def company_id(self, id):
             company.tiered = request.json["tiered"]
             company.rp = request.json["rp"]
             company.over_po = request.json["over_po"]
+            company.cutoff = request.json["cutoff"]
+            company.year_co = request.json["year_co"]
 
             db.session.commit()
 
@@ -6380,3 +6395,43 @@ def sisa_inc(self):
         #     )
 
     return response(200, "Berhasil", True, final)
+
+
+@app.route("/v1/api/saldo-awal-inv", methods=["GET", "POST"])
+@token_required
+def saldo_awal_inv(self):
+    return SaldoInv(self, request)
+
+
+@app.route("/v1/api/saldo-awal-ap", methods=["GET", "POST"])
+@token_required
+def saldo_awal_ap(self):
+    return SaldoAP(self, request)
+
+
+@app.route("/v1/api/saldo-awal-ap/<int:id>", methods=["PUT", "DELETE"])
+@token_required
+def sa_ap_id(self, id):
+    return SaldoAPId(id, request)
+
+
+@app.route("/v1/api/saldo-awal-ar", methods=["GET", "POST"])
+@token_required
+def saldo_awal_ar(self):
+    return SaldoAR(self, request)
+
+
+@app.route("/v1/api/saldo-awal-ar/<int:id>", methods=["PUT", "DELETE"])
+@token_required
+def sa_ar_id(self, id):
+    return SaldoARId(id, request)
+
+@app.route("/v1/api/saldo-awal-gl", methods=["POST", "PUT", "GET"])
+@token_required
+def saldo_awal_gl(self):
+    return SaldoAwalGl(self, request)
+
+@app.route("/v1/api/saldo-awal-gl/status", methods=["GET"])
+@token_required
+def saldo_awal_status(self):
+    return SaldoAwalGlStatus(self, request)

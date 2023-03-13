@@ -1,4 +1,5 @@
 from datetime import datetime
+from main.function.update_table import UpdateTable
 from main.function.update_ar_giro import UpdateArGiro
 from main.function.update_dp_ar import UpdateArDP
 from main.function.update_ar_payment import UpdateArPayment
@@ -18,7 +19,7 @@ from main.model.user import User
 from main.model.accou_mdb import AccouMdb
 from main.shared.shared import db
 from main.utils.response import response
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import *
 from main.schema.bank_mdb import bank_schema
 from main.schema.accou_mdb import accou_schema
 from main.schema.inc_hdb import IncSchema, inc_schema
@@ -103,7 +104,9 @@ class Income:
                 if incs.type_trx == 2:
                     new_inc = []
                     for x in inc:
-                        if (x["acc_code"] or x["acc_bnk"] or x["bnk_code"]) and x["value"]:
+                        if (x["acc_code"] or x["acc_bnk"] or x["bnk_code"]) and x[
+                            "value"
+                        ]:
                             new_inc.append(
                                 IncDdb(
                                     incs.id,
@@ -115,16 +118,20 @@ class Income:
                                     x["desc"],
                                 )
                             )
-                    
+
                     if len(new_inc) > 0:
                         db.session.add_all(new_inc)
-
 
                 elif incs.type_trx == 1:
                     new_acq = []
                     value = 0
                     for x in acq:
-                        if x["sale_id"] and x["value"] and x["payment"] and x["payment"]:
+                        if (
+                            x["sale_id"]
+                            and x["value"]
+                            and x["payment"]
+                            and x["payment"]
+                        ):
                             value += x["payment"]
                             new_acq.append(
                                 IAcqDdb(
@@ -136,10 +143,9 @@ class Income:
                                     x["dp"],
                                 )
                             )
-                        
+
                     if len(new_acq) > 0:
                         db.session.add_all(new_acq)
-
 
                 else:
                     new_dp = []
@@ -182,97 +188,114 @@ class Income:
                 else:
                     UpdateArDP(incs.id, False)
 
-                result = response(200, "Berhasil", True, inc_schema.dump(incs))
             except IntegrityError:
                 db.session.rollback()
-                result = response(400, "Kode sudah digunakan", False, None)
+                return response(400, "Kode sudah digunakan", False, None)
             finally:
-                self.response = result
+                return response(200, "Berhasil", True, inc_schema.dump(incs))
         else:
-            incs = (
-                db.session.query(IncHdb, BankMdb, CustomerMdb, AccouMdb)
-                .outerjoin(BankMdb, BankMdb.id == IncHdb.bank_acc)
-                .outerjoin(CustomerMdb, CustomerMdb.id == IncHdb.acq_cus)
-                .outerjoin(AccouMdb, AccouMdb.id == IncHdb.inc_kas)
-                .order_by(IncHdb.id.desc())
-                .all()
-            )
-
-            acc = AccouMdb.query.all()
-
-            inc = (
-                db.session.query(IncDdb, BankMdb)
-                .outerjoin(BankMdb, BankMdb.id == IncDdb.bnk_code)
-                .all()
-            )
-
-            acq = (
-                db.session.query(IAcqDdb, OrdpjHdb).outerjoin(
-                    OrdpjHdb, OrdpjHdb.id == IAcqDdb.sale_id
-                )
-                # .outerjoin(SaldoARMdb, SaldoARMdb.id == IAcqDdb.sa_id)
-                .all()
-            )
-
-            dp = (
-                db.session.query(MukarDdb, SordHdb)
-                .outerjoin(SordHdb, SordHdb.id == MukarDdb.so_id)
-                .all()
-            )
-
-            final = []
-            for x in incs:
-                all_inc = []
-                for y in inc:
-                    if y[0].inc_id == x[0].id:
-                        all_inc.append(dinc_schema.dump(y[0]))
-
-                all_acq = []
-                for z in acq:
-                    if z[0].inc_id == x[0].id:
-                        z[0].sale_id = ordpj_schema.dump(z[1]) if z[1] else None
-                        # z[0].sa_id = saar_schema.dump(z[2]) if z[2] else None
-                        all_acq.append(iacq_schema.dump(z[0]))
-
-                all_dp = []
-                for z in dp:
-                    if z[0].inc_id == x[0].id:
-                        z[0].so_id = sord_schema.dump(z[1])
-                        all_dp.append(mukar_schema.dump(z[0]))
-
-                final.append(
-                    {
-                        "id": x[0].id,
-                        "inc_code": x[0].inc_code,
-                        "inc_date": IncSchema(only=["inc_date"]).dump(x[0])["inc_date"],
-                        "type_trx": x[0].type_trx,
-                        "acq_cus": customer_schema.dump(x[2]) if x[2] else None,
-                        "acq_pay": x[0].acq_pay,
-                        "acq_kas": x[0].acq_kas,
-                        "bank_ref": x[0].bank_ref,
-                        "bank_acc": x[0].bank_acc,
-                        "giro_num": x[0].giro_num,
-                        "giro_date": IncSchema(only=["giro_date"]).dump(x[0])[
-                            "giro_date"
-                        ],
-                        "giro_bnk": bank_schema.dump(x[1]) if x[1] else None,
-                        "inc_type": x[0].inc_type,
-                        "inc_kas": x[0].inc_kas,
-                        "inc_bnk": x[0].inc_bnk,
-                        "inc_dep": x[0].inc_dep,
-                        "inc_prj": x[0].inc_prj,
-                        "acc_type": x[0].acc_type,
-                        "dp_type": x[0].dp_type,
-                        "dp_cus": x[0].dp_cus,
-                        "dp_kas": x[0].dp_kas,
-                        "dp_bnk": x[0].dp_bnk,
-                        "approve": x[0].approve,
-                        "inc": all_inc,
-                        "acq": all_acq,
-                        "det_dp": all_dp,
-                    }
+            try:
+                incs = (
+                    db.session.query(IncHdb, BankMdb, CustomerMdb, AccouMdb)
+                    .outerjoin(BankMdb, BankMdb.id == IncHdb.bank_acc)
+                    .outerjoin(CustomerMdb, CustomerMdb.id == IncHdb.acq_cus)
+                    .outerjoin(AccouMdb, AccouMdb.id == IncHdb.inc_kas)
+                    .order_by(IncHdb.id.desc())
+                    .all()
                 )
 
-            self.response = response(200, "Berhasil", True, final)
+                acc = AccouMdb.query.all()
 
-        return self.response
+                inc = (
+                    db.session.query(IncDdb, BankMdb)
+                    .outerjoin(BankMdb, BankMdb.id == IncDdb.bnk_code)
+                    .all()
+                )
+
+                acq = (
+                    db.session.query(IAcqDdb, OrdpjHdb).outerjoin(
+                        OrdpjHdb, OrdpjHdb.id == IAcqDdb.sale_id
+                    )
+                    # .outerjoin(SaldoARMdb, SaldoARMdb.id == IAcqDdb.sa_id)
+                    .all()
+                )
+
+                dp = (
+                    db.session.query(MukarDdb, SordHdb)
+                    .outerjoin(SordHdb, SordHdb.id == MukarDdb.so_id)
+                    .all()
+                )
+
+                final = []
+                for x in incs:
+                    all_inc = []
+                    for y in inc:
+                        if y[0].inc_id == x[0].id:
+                            all_inc.append(dinc_schema.dump(y[0]))
+
+                    all_acq = []
+                    for z in acq:
+                        if z[0].inc_id == x[0].id:
+                            z[0].sale_id = ordpj_schema.dump(z[1]) if z[1] else None
+                            # z[0].sa_id = saar_schema.dump(z[2]) if z[2] else None
+                            all_acq.append(iacq_schema.dump(z[0]))
+
+                    all_dp = []
+                    for z in dp:
+                        if z[0].inc_id == x[0].id:
+                            z[0].so_id = sord_schema.dump(z[1])
+                            all_dp.append(mukar_schema.dump(z[0]))
+
+                    final.append(
+                        {
+                            "id": x[0].id,
+                            "inc_code": x[0].inc_code,
+                            "inc_date": IncSchema(only=["inc_date"]).dump(x[0])[
+                                "inc_date"
+                            ],
+                            "type_trx": x[0].type_trx,
+                            "acq_cus": customer_schema.dump(x[2]) if x[2] else None,
+                            "acq_pay": x[0].acq_pay,
+                            "acq_kas": x[0].acq_kas,
+                            "bank_ref": x[0].bank_ref,
+                            "bank_acc": x[0].bank_acc,
+                            "giro_num": x[0].giro_num,
+                            "giro_date": IncSchema(only=["giro_date"]).dump(x[0])[
+                                "giro_date"
+                            ],
+                            "giro_bnk": bank_schema.dump(x[1]) if x[1] else None,
+                            "inc_type": x[0].inc_type,
+                            "inc_kas": x[0].inc_kas,
+                            "inc_bnk": x[0].inc_bnk,
+                            "inc_dep": x[0].inc_dep,
+                            "inc_prj": x[0].inc_prj,
+                            "acc_type": x[0].acc_type,
+                            "dp_type": x[0].dp_type,
+                            "dp_cus": x[0].dp_cus,
+                            "dp_kas": x[0].dp_kas,
+                            "dp_bnk": x[0].dp_bnk,
+                            "approve": x[0].approve,
+                            "inc": all_inc,
+                            "acq": all_acq,
+                            "det_dp": all_dp,
+                        }
+                    )
+
+                return response(200, "Berhasil", True, final)
+            except ProgrammingError as e:
+                return UpdateTable(
+                    [
+                        IncHdb,
+                        BankMdb,
+                        CustomerMdb,
+                        AccouMdb,
+                        IncDdb,
+                        BankMdb,
+                        IAcqDdb,
+                        OrdpjHdb,
+                        MukarDdb,
+                        SordHdb,
+                        GiroIncHdb,
+                    ],
+                    request,
+                )

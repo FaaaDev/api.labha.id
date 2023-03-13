@@ -1,3 +1,4 @@
+from main.function.update_table import UpdateTable
 from main.model.fkpb_hdb import FkpbHdb
 from main.model.stcard_mdb import StCard
 from main.model.lokasi_mdb import LocationMdb
@@ -11,7 +12,7 @@ from main.schema.dord_hdb import DordSchema, dord_schema
 from main.schema.retord_hdb import RetordSchema, retord_schema
 from main.shared.shared import db
 from main.utils.response import response
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import *
 from main.schema.prod_mdb import prod_schema
 from main.schema.reprod_ddb import reprod_schema
 from main.schema.unit_mdb import unit_schema
@@ -31,13 +32,17 @@ class ReturOrder:
 
                 retur = RetordHdb(ret_code, ret_date, fk_id)
 
-
                 db.session.add(retur)
                 db.session.commit()
 
                 new_prod = []
                 for x in product:
-                    if x["prod_id"] and x["unit_id"] and x["retur"] and int(x["retur"]) > 0:
+                    if (
+                        x["prod_id"]
+                        and x["unit_id"]
+                        and x["retur"]
+                        and int(x["retur"]) > 0
+                    ):
                         new_prod.append(
                             ReprodDdb(
                                 retur.id,
@@ -57,7 +62,9 @@ class ReturOrder:
                     db.session.add_all(new_prod)
                     db.session.commit()
 
-                    old_sto = StCard.query.filter(StCard.trx_code == retur.ret_code).all()
+                    old_sto = StCard.query.filter(
+                        StCard.trx_code == retur.ret_code
+                    ).all()
                     if old_sto:
                         for x in old_sto:
                             db.session.delete(x)
@@ -74,7 +81,9 @@ class ReturOrder:
                                 None,
                                 x.retur,
                                 x.price,
-                                x.nett_price if x.nett_price and x.nett_price > 0 else x.totl,
+                                x.nett_price
+                                if x.nett_price and x.nett_price > 0
+                                else x.totl,
                                 None,
                                 None,
                                 x.disc,
@@ -90,53 +99,68 @@ class ReturOrder:
                             db.session.add_all(all_sto)
                             db.session.commit()
 
-                result = response(200, "success", True, retord_schema.dump(retur))
             except IntegrityError:
                 db.session.rollback()
-                result = response(400, "Kode sudah digunakan", False, None)
+                return response(400, "Kode sudah digunakan", False, None)
             finally:
-                self.response = result
+                return response(200, "success", True, retord_schema.dump(retur))
         else:
-            retur = (
-                db.session.query(RetordHdb, FkpbHdb, OrdpbHdb, SupplierMdb)
-                .outerjoin(FkpbHdb, FkpbHdb.id == RetordHdb.fk_id)
-                .outerjoin(OrdpbHdb, OrdpbHdb.id == FkpbHdb.ord_id)
-                .outerjoin(SupplierMdb, SupplierMdb.id == OrdpbHdb.sup_id)
-                .all()
-            )
-
-            product = (
-                db.session.query(ReprodDdb, ProdMdb, UnitMdb, LocationMdb)
-                .outerjoin(ProdMdb, ProdMdb.id == ReprodDdb.prod_id)
-                .outerjoin(UnitMdb, UnitMdb.id == ReprodDdb.unit_id)
-                .outerjoin(LocationMdb, LocationMdb.id == ReprodDdb.location)
-                .all()
-            )
-
-            result = []
-            for x in retur:
-                prod = []
-                for y in product:
-                    if x[0].id == y[0].ret_id:
-                        y[0].prod_id = prod_schema.dump(y[1])
-                        y[0].unit_id = unit_schema.dump(y[2])
-                        y[0].location = loct_schema.dump(y[3])
-                        prod.append(reprod_schema.dump(y[0]))
-
-                if x[1]:
-                    x[1].ord_id = dord_schema.dump(x[2])
-                result.append(
-                    {
-                        "id": x[0].id,
-                        "ret_code": x[0].ret_code,
-                        "ret_date": RetordSchema(only=["ret_date"]).dump(x[0])["ret_date"]
-                        if x[0].ret_date
-                        else None,
-                        "fk_id": fkpb_schema.dump(x[1]),
-                        "product": prod,
-                    }
+            try:
+                retur = (
+                    db.session.query(RetordHdb, FkpbHdb, OrdpbHdb, SupplierMdb)
+                    .outerjoin(FkpbHdb, FkpbHdb.id == RetordHdb.fk_id)
+                    .outerjoin(OrdpbHdb, OrdpbHdb.id == FkpbHdb.ord_id)
+                    .outerjoin(SupplierMdb, SupplierMdb.id == OrdpbHdb.sup_id)
+                    .all()
                 )
 
-            self.response = response(200, "success", True, result)
+                product = (
+                    db.session.query(ReprodDdb, ProdMdb, UnitMdb, LocationMdb)
+                    .outerjoin(ProdMdb, ProdMdb.id == ReprodDdb.prod_id)
+                    .outerjoin(UnitMdb, UnitMdb.id == ReprodDdb.unit_id)
+                    .outerjoin(LocationMdb, LocationMdb.id == ReprodDdb.location)
+                    .all()
+                )
 
-        return self.response
+                result = []
+                for x in retur:
+                    prod = []
+                    for y in product:
+                        if x[0].id == y[0].ret_id:
+                            y[0].prod_id = prod_schema.dump(y[1])
+                            y[0].unit_id = unit_schema.dump(y[2])
+                            y[0].location = loct_schema.dump(y[3])
+                            prod.append(reprod_schema.dump(y[0]))
+
+                    if x[1]:
+                        x[1].ord_id = dord_schema.dump(x[2])
+                    result.append(
+                        {
+                            "id": x[0].id,
+                            "ret_code": x[0].ret_code,
+                            "ret_date": RetordSchema(only=["ret_date"]).dump(x[0])[
+                                "ret_date"
+                            ]
+                            if x[0].ret_date
+                            else None,
+                            "fk_id": fkpb_schema.dump(x[1]),
+                            "product": prod,
+                        }
+                    )
+
+                return response(200, "success", True, result)
+            except ProgrammingError as e:
+                return UpdateTable(
+                    [
+                        RetordHdb,
+                        FkpbHdb,
+                        OrdpbHdb,
+                        SupplierMdb,
+                        ReprodDdb,
+                        ProdMdb,
+                        UnitMdb,
+                        LocationMdb,
+                        StCard,
+                    ],
+                    request,
+                )
