@@ -47,6 +47,16 @@ from main.function.saldo_awal.saldo_awal_ar import SaldoAR
 from main.function.saldo_awal.saldo_awal_ar_id import SaldoARId
 from main.function.saldo_awal.saldo_awal_gl import SaldoAwalGl
 from main.function.saldo_awal.saldo_awal_gl_sts import SaldoAwalGlStatus
+from main.function.setup.setup_sa import SetupSldAkhir
+from main.function.setup.setup_sa_id import SetupSaId
+from main.function.saldo_akhir.saldo_akhir import SaldoAkhir, SaldoAkhirId
+from main.function.posting.posting_ym import GetYearPosting
+from main.function.posting.posting import Posting
+from main.function.posting.unpost import Unpost
+from main.function.posting.trasfer import TransferGL
+from main.function.posting.closing import Closing
+from main.function.koreksi_hutang.koreksi_hutang import KoreksiHutang
+from main.function.koreksi_hutang.koreksi_hutang_id import KoreksiHutangId
 from main.model.giro_inc_hdb import GiroIncHdb
 from main.model.iacq_ddb import IAcqDdb
 from main.model.inc_hdb import IncHdb
@@ -2427,7 +2437,7 @@ def setup_pnl(self):
         finally:
             return result
     else:
-        setup = PnlMdb.query.filter(PnlMdb.cp_id == user.company).first()
+        setup = PnlMdb.query.filter(PnlMdb.cp_id == self.company).first()
 
         if setup:
             setup.klasi = (
@@ -3676,9 +3686,7 @@ def apcard(self):
 @token_required
 def arcard(self):
     ar = (
-        db.session.query(
-            ArCard, IAcqDdb, OrdpjHdb, CustomerMdb, SordHdb, GiroIncHdb
-        )
+        db.session.query(ArCard, IAcqDdb, OrdpjHdb, CustomerMdb, SordHdb, GiroIncHdb)
         .outerjoin(IAcqDdb, IAcqDdb.id == ArCard.acq_id)
         .outerjoin(OrdpjHdb, OrdpjHdb.id == ArCard.bkt_id)
         .outerjoin(CustomerMdb, CustomerMdb.id == ArCard.cus_id)
@@ -6397,6 +6405,18 @@ def sisa_inc(self):
     return response(200, "Berhasil", True, final)
 
 
+@app.route("/v1/api/koreksi-hut", methods=["POST", "GET"])
+@token_required
+def korHut(self):
+    return KoreksiHutang(self, request)
+
+
+@app.route("/v1/api/koreksi-hut/<int:id>", methods=["PUT", "GET", "DELETE"])
+@token_required
+def korHut_id(self, id):
+    return KoreksiHutangId(id, request)
+
+
 @app.route("/v1/api/saldo-awal-inv", methods=["GET", "POST"])
 @token_required
 def saldo_awal_inv(self):
@@ -6426,12 +6446,68 @@ def saldo_awal_ar(self):
 def sa_ar_id(self, id):
     return SaldoARId(id, request)
 
+
 @app.route("/v1/api/saldo-awal-gl", methods=["POST", "PUT", "GET"])
 @token_required
 def saldo_awal_gl(self):
     return SaldoAwalGl(self, request)
 
+
 @app.route("/v1/api/saldo-awal-gl/status", methods=["GET"])
 @token_required
 def saldo_awal_status(self):
     return SaldoAwalGlStatus(self, request)
+
+
+@app.route("/v1/api/setup/saldo-akhir", methods=["POST", "GET"])
+@token_required
+def setup_sa(self):
+    return SetupSldAkhir(self, request)
+
+
+@app.route("/v1/api/setup/saldo-akhir/<int:id>", methods=["PUT", "GET", "DELETE"])
+@token_required
+def setup_sa_id(self, id):
+    return SetupSaId(id, request, self)
+
+
+@app.route("/v1/api/saldo-akhir", methods=["POST", "GET"])
+@token_required
+def saldo_akhir(self):
+    return SaldoAkhir(request, self.id, self.company)
+
+
+@app.route("/v1/api/saldo-akhir/<int:id>", methods=["PUT"])
+@token_required
+def saldo_akhir_id(self, id):
+    return SaldoAkhirId(request, id)
+
+
+@app.route("/v1/api/posting/ym", methods=["GET"])
+@token_required
+def get_year(self):
+    return GetYearPosting(self, request)
+
+
+@app.route("/v1/api/posting", methods=["POST", "GET"])
+@token_required
+def posting(self):
+    return Posting(self, request)
+
+
+@app.route("/v1/api/unpost/<int:month>/<int:year>", methods=["GET"])
+@token_required
+def unpost(self, month, year):
+    return Unpost(self, month, year, request)
+
+
+@app.route("/v1/api/posting/transfer", methods=["POST"])
+@token_required
+def tf(self):
+    return TransferGL(self, request)
+
+
+@app.route("/v1/api/closing/<int:month>/<int:year>", methods=["GET"])
+@token_required
+def closing(self, month, year):
+    return Closing(self, month, year, request)
