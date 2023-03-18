@@ -21,6 +21,8 @@ class PoMdb(db.Model):
     jasa_disc = db.Column(db.Float)
     total_disc = db.Column(db.Float)
     total_bayar = db.Column(db.Float)
+    ns = db.Column(db.Boolean)
+    same_sup = db.Column(db.Boolean)
     status = db.Column(db.Integer, default=0)
     apprv = db.Column(db.Boolean)
     print = db.Column(db.Integer, default=0)
@@ -40,6 +42,8 @@ class PoMdb(db.Model):
         jasa_disc,
         total_disc,
         total_bayar,
+        ns,
+        same_sup,
         status,
         apprv,
         print,
@@ -57,6 +61,8 @@ class PoMdb(db.Model):
         self.jasa_disc = jasa_disc
         self.total_disc = total_disc
         self.total_bayar =total_bayar
+        self.ns =ns
+        self.same_sup =same_sup
         self.status = status
         self.apprv = apprv
         self.print = print

@@ -94,6 +94,7 @@ class UpdateApDP:
                         exp[0].exp_code,
                         exp[0].dp_sup,
                         None,
+                        None,
                         exp[0].exp_date,
                         x[1].due_date,
                         x[0].po_id,

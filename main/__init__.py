@@ -57,6 +57,12 @@ from main.function.posting.trasfer import TransferGL
 from main.function.posting.closing import Closing
 from main.function.koreksi_hutang.koreksi_hutang import KoreksiHutang
 from main.function.koreksi_hutang.koreksi_hutang_id import KoreksiHutangId
+from main.function.koreksi_piutang.koreksi_piutang import KoreksiPiutang
+from main.function.koreksi_piutang.koreksi_piutang_id import KoreksiPiutangId
+from main.function.group_product.group_product import GroupProduct
+from main.function.group_product.group_product_id import GroupProductId
+from main.function.request_purchase.rp import RequestPurchase
+from main.function.request_purchase.rp_id import RequestPurchaseId
 from main.model.giro_inc_hdb import GiroIncHdb
 from main.model.iacq_ddb import IAcqDdb
 from main.model.inc_hdb import IncHdb
@@ -2673,6 +2679,7 @@ def product(self):
             lt_stock = request.json["lt_stock"]
             max_order = request.json["max_order"]
             image = request.json["image"]
+            ns = request.json["ns"]
 
             prod = ProdMdb(
                 code,
@@ -2692,6 +2699,8 @@ def product(self):
                 lt_stock,
                 max_order,
                 image,
+                ns,
+                False,
             )
             db.session.add(prod)
             db.session.commit()
@@ -2751,6 +2760,7 @@ def product_id(self, id):
             prod.re_stock = request.json["re_stock"]
             prod.lt_stock = request.json["lt_stock"]
             prod.max_order = request.json["max_order"]
+            prod.ns = request.json["ns"]
 
             if request.host_url + "static/upload/" in request.json["image"]:
                 image = request.json["image"].replace(
@@ -2788,6 +2798,64 @@ def product_id(self, id):
             else None
         )
         return response(200, "Berhasil", True, prod_schema.dump(prod))
+
+
+@app.route("/v1/api/import/prod", methods=["POST"])
+@token_required
+def prod_import(self):
+
+    prod = request.json["prod"]
+
+    if ProdMdb.imp == True:
+        db.session.query(ProdMdb).delete()
+        db.session.commit()
+
+    a = []
+    for x in prod:
+        code = x["code"]
+        name = x["name"]
+        group = x["group"]
+        unit = x["unit"]
+        metode = x["metode"]
+        ns = False
+        a.append(
+            ProdMdb(
+                code,
+                name,
+                group,
+                None,
+                None,
+                unit,
+                None,
+                None,
+                None,
+                None,
+                metode,
+                None,
+                None,
+                None,
+                None,
+                None,
+                ns,
+                None,
+                True,
+                True,
+            )
+        )
+
+    try:
+        db.session.execute(
+            'TRUNCATE TABLE master. "' + "PRODMDB" + '" RESTART IDENTITY'
+        )
+        db.session.commit()
+
+        db.session.add_all(a)
+        db.session.commit()
+
+    except IntegrityError:
+        db.session.rollback()
+
+    return response(200, "Berhasil", True, None)
 
 
 # Divisi
@@ -2843,105 +2911,13 @@ def divisi_id(self, id):
 @app.route("/v1/api/group-product", methods=["POST", "GET"])
 @token_required
 def groupPro(self):
-    if request.method == "POST":
-        code = request.json["code"]
-        name = request.json["name"]
-        div_code = request.json["div_code"]
-        wip = request.json["wip"]
-        acc_sto = request.json["acc_sto"]
-        acc_send = request.json["acc_send"]
-        acc_terima = request.json["acc_terima"]
-        hrg_pokok = request.json["hrg_pokok"]
-        acc_penj = request.json["acc_penj"]
-        acc_wip = request.json["acc_wip"]
-        potongan = request.json["potongan"]
-        pengembalian = request.json["pengembalian"]
-        selisih = request.json["selisih"]
-        try:
-            groupPro = GroupProMdb(
-                code,
-                name,
-                div_code,
-                wip,
-                acc_sto,
-                acc_send,
-                acc_terima,
-                hrg_pokok,
-                acc_penj,
-                acc_wip,
-                potongan,
-                pengembalian,
-                selisih,
-            )
-            db.session.add(groupPro)
-            db.session.commit()
-            result = response(200, "Berhasil", True, groupPro_schema.dump(groupPro))
-        except IntegrityError:
-            db.session.rollback()
-            result = response(
-                400, "Kode akun " + code + " sudah digunakan", False, None
-            )
-        finally:
-            return result
-    else:
-        result = (
-            db.session.query(GroupProMdb, DivisionMdb)
-            .outerjoin(DivisionMdb, DivisionMdb.id == GroupProMdb.div_code)
-            .order_by(GroupProMdb.id.asc())
-            .all()
-        )
-        data = [
-            {
-                "groupPro": groupPro_schema.dump(x[0]),
-                "divisi": division_schema.dump(x[1]),
-            }
-            for x in result
-        ]
-
-        return response(200, "Berhasil", True, data)
+    return GroupProduct(self, request)
 
 
 @app.route("/v1/api/group-product/<int:id>", methods=["PUT", "GET", "DELETE"])
 @token_required
 def groupPro_id(self, id):
-    groupPro = GroupProMdb.query.filter(GroupProMdb.id == id).first()
-    if request.method == "PUT":
-        groupPro.code = request.json["code"]
-        groupPro.name = request.json["name"]
-        groupPro.div_code = request.json["div_code"]
-        groupPro.wip = request.json["wip"]
-        groupPro.acc_sto = request.json["acc_sto"]
-        groupPro.acc_send = request.json["acc_send"]
-        groupPro.acc_terima = request.json["acc_terima"]
-        groupPro.hrg_pokok = request.json["hrg_pokok"]
-        groupPro.acc_penj = request.json["acc_penj"]
-        groupPro.acc_wip = request.json["acc_wip"]
-        groupPro.potongan = request.json["potongan"]
-        groupPro.pengembalian = request.json["pengembalian"]
-        groupPro.selisih = request.json["selisih"]
-        db.session.commit()
-
-        return response(200, "Berhasil", True, groupPro_schema.dump(groupPro))
-    elif request.method == "DELETE":
-        db.session.delete(groupPro)
-        db.session.commit()
-
-        return response(200, "Berhasil", True, None)
-    else:
-        result = (
-            db.session.query(GroupProMdb, DivisionMdb)
-            .join(DivisionMdb, DivisionMdb.id == GroupProMdb.div_code)
-            .order_by(GroupProMdb.div_code.asc())
-            .filter(GroupProMdb.id == id)
-            .first()
-        )
-
-        data = {
-            "groupPro": groupPro_schema.dump(result[0]),
-            "divisi": division_schema.dump(result[1]),
-        }
-
-        return response(200, "Berhasil", True, data)
+    return GroupProductId(id, request)
 
 
 # Pajak
@@ -3079,306 +3055,13 @@ def jasa_id(self, id):
 @app.route("/v1/api/rp", methods=["POST", "GET"])
 @token_required
 def rp(self):
-    if request.method == "POST":
-        try:
-            req_code = request.json["req_code"]
-            req_date = request.json["req_date"]
-            req_dep = request.json["req_dep"]
-            req_ket = request.json["req_ket"]
-            refrence = request.json["refrence"]
-            ref_sup = request.json["ref_sup"]
-            ref_ket = request.json["ref_ket"]
-
-            rp = PreqMdb(
-                req_code, req_date, req_dep, req_ket, refrence, ref_sup, ref_ket, 0
-            )
-            db.session.add(rp)
-            db.session.commit()
-
-            rprod = request.json["rprod"]
-            all_prod = []
-            for x in rprod:
-                if x["prod_id"] and x["unit_id"] and x["request"]:
-                    all_prod.append(
-                        RprodMdb(
-                            rp.id,
-                            x["prod_id"],
-                            x["unit_id"],
-                            x["request"],
-                            x["request"],
-                        )
-                    )
-
-            if len(all_prod) > 0:
-                db.session.add_all(all_prod)
-
-            rjasa = request.json["rjasa"]
-            all_jasa = []
-            for x in rjasa:
-                if x["jasa_id"] and x["request"] and x["unit_id"]:
-                    all_jasa.append(
-                        RjasaMdb(
-                            rp.id,
-                            x["jasa_id"],
-                            x["unit_id"],
-                            x["request"],
-                            x["request"],
-                        )
-                    )
-
-            if len(all_jasa) > 0:
-                db.session.add_all(all_jasa)
-
-            db.session.commit()
-
-            result = response(200, "Berhasil", True, preq_schema.dump(rp))
-        except IntegrityError:
-            db.session.rollback()
-            result = response(400, "Kode sudah digunakan", False, None)
-        finally:
-            return result
-    else:
-        preq = (
-            db.session.query(PreqMdb, CcostMdb, SupplierMdb)
-            .outerjoin(CcostMdb, CcostMdb.id == PreqMdb.req_dep)
-            .outerjoin(SupplierMdb, SupplierMdb.id == PreqMdb.ref_sup)
-            .order_by(PreqMdb.id.asc())
-            .all()
-        )
-        rprod = (
-            db.session.query(RprodMdb, ProdMdb, UnitMdb)
-            .outerjoin(ProdMdb, ProdMdb.id == RprodMdb.prod_id)
-            .outerjoin(UnitMdb, UnitMdb.id == RprodMdb.unit_id)
-            .all()
-        )
-        rjasa = (
-            db.session.query(RjasaMdb, JasaMdb, UnitMdb)
-            .outerjoin(JasaMdb, JasaMdb.id == RjasaMdb.jasa_id)
-            .outerjoin(UnitMdb, UnitMdb.id == RjasaMdb.unit_id)
-            .all()
-        )
-
-        final = []
-
-        for x in preq:
-            product = []
-            for y in rprod:
-                if y[0].preq_id == x[0].id:
-                    y[0].prod_id = prod_schema.dump(y[1])
-                    y[0].unit_id = unit_schema.dump(y[2])
-                    product.append(rprod_schema.dump(y[0]))
-
-            jasa = []
-            for z in rjasa:
-                if z[0].preq_id == x[0].id:
-                    z[0].jasa_id = jasa_schema.dump(z[1])
-                    z[0].unit_id = unit_schema.dump(z[2])
-                    jasa.append(rjasa_schema.dump(z[0]))
-
-            final.append(
-                {
-                    "id": x[0].id,
-                    "req_code": x[0].req_code,
-                    "req_date": PreqSchema(only=["req_date"]).dump(x[0])["req_date"],
-                    "req_dep": ccost_schema.dump(x[1]) if x[1] else None,
-                    "req_ket": x[0].req_ket,
-                    "refrence": x[0].refrence,
-                    "ref_sup": supplier_schema.dump(x[2]) if x[2] else None,
-                    "ref_ket": x[0].ref_ket,
-                    "status": x[0].status,
-                    "rprod": product,
-                    "rjasa": jasa,
-                }
-            )
-
-        return response(200, "Berhasil", True, final)
+    return RequestPurchase(self, request)
 
 
 @app.route("/v1/api/rp/<int:id>", methods=["GET", "PUT", "DELETE"])
 @token_required
 def rp_id(self, id):
-    preq = PreqMdb.query.filter(PreqMdb.id == id).first()
-    product = RprodMdb.query.filter(RprodMdb.preq_id == id).all()
-    jasa = RjasaMdb.query.filter(RjasaMdb.preq_id == id).all()
-    if request.method == "PUT":
-        if preq.status == 0:
-            req_code = request.json["req_code"]
-            req_date = request.json["req_date"]
-            req_dep = request.json["req_dep"]
-            req_ket = request.json["req_ket"]
-            refrence = request.json["refrence"]
-            ref_sup = request.json["ref_sup"]
-            ref_ket = request.json["ref_ket"]
-            rprod = request.json["rprod"]
-            rjasa = request.json["rjasa"]
-
-            preq.req_code = req_code
-            preq.req_date = req_date
-            preq.req_dep = req_dep
-            preq.req_ket = req_ket
-            preq.refrence = refrence
-            preq.ref_sup = ref_sup
-            preq.ref_ket = ref_ket
-
-            old_prod = []
-            new_prod = []
-
-            for x in rprod:
-                if x["prod_id"] and x["unit_id"] and x["request"]:
-                    if x["id"] != 0:
-                        old_prod.append(x["id"])
-                    else:
-                        new_prod.append(
-                            RprodMdb(
-                                preq.id,
-                                x["prod_id"],
-                                x["unit_id"],
-                                x["request"],
-                                x["request"],
-                            )
-                        )
-
-            if len(old_prod) > 0:
-                for x in old_prod:
-                    for y in product:
-                        if y.id not in old_prod:
-                            db.session.delete(y)
-                        else:
-                            if y.id == x:
-                                for z in rprod:
-                                    if z["id"] == x:
-                                        y.prod_id = z["prod_id"]
-                                        y.unit_id = z["unit_id"]
-                                        y.request = z["request"]
-
-            if len(new_prod) > 0:
-                db.session.add_all(new_prod)
-
-            old_jasa = []
-            new_jasa = []
-
-            for x in rjasa:
-                if x["jasa_id"] and x["qty"] and x["unit_id"]:
-                    if x["id"] != 0:
-                        old_jasa.append(x["id"])
-                    else:
-                        new_jasa.append(
-                            RjasaMdb(
-                                preq.id,
-                                None,
-                                x["jasa_id"],
-                                x["unit_id"],
-                                x["qty"],
-                                None,
-                                None,
-                                None,
-                            )
-                        )
-
-            if len(old_jasa) > 0:
-                for x in old_jasa:
-                    for y in jasa:
-                        if y.id not in old_jasa:
-                            db.session.delete(y)
-                        else:
-                            if y.id == x:
-                                for z in rjasa:
-                                    if z["id"] == x:
-                                        y.jasa_id = z["jasa_id"]
-                                        y.unit_id = z["unit_id"]
-                                        y.qty = z["qty"]
-
-            if len(new_jasa) > 0:
-                db.session.add_all(new_jasa)
-
-            db.session.commit()
-
-            preq = PreqMdb.query.filter(PreqMdb.id == id).first()
-            product = RprodMdb.query.filter(RprodMdb.preq_id == id).all()
-            jasa = RjasaMdb.query.filter(RjasaMdb.preq_id == id).all()
-            final = {
-                "id": preq.id,
-                "req_code": preq.req_code,
-                "req_date": preq.req_date,
-                "req_dep": preq.req_dep,
-                "req_ket": preq.req_ket,
-                "refrence": preq.refrence,
-                "ref_sup": preq.ref_sup,
-                "ref_ket": preq.ref_ket,
-                "status": preq.status,
-                "rprod": rprods_schema.dump(product),
-                "rjasa": rjasas_schema.dump(jasa),
-            }
-
-            return response(200, "Berhasil", True, final)
-        else:
-            return response(400, "Tidak dapat mengedit karena status", False, None)
-    elif request.method == "DELETE":
-        if preq:
-            if preq.status == 0:
-                db.session.delete(preq)
-                for x in product:
-                    db.session.delete(x)
-                for x in jasa:
-                    db.session.delete(x)
-                db.session.commit()
-                return response(200, "Berhasil", True, None)
-
-        return response(
-            400, "Tidak dapat mengedit karena status tidak open", False, None
-        )
-    else:
-        preq = (
-            db.session.query(PreqMdb, CcostMdb, SupplierMdb)
-            .outerjoin(CcostMdb, CcostMdb.id == PreqMdb.req_dep)
-            .outerjoin(SupplierMdb, SupplierMdb.id == PreqMdb.ref_sup)
-            .filter(PreqMdb.id == id)
-            .first()
-        )
-
-        rprod = (
-            db.session.query(RprodMdb, ProdMdb, UnitMdb)
-            .outerjoin(ProdMdb, ProdMdb.id == RprodMdb.prod_id)
-            .outerjoin(UnitMdb, UnitMdb.id == RprodMdb.unit_id)
-            .filter(RprodMdb.preq_id == id)
-            .all()
-        )
-
-        rjasa = (
-            db.session.query(RjasaMdb, JasaMdb, UnitMdb)
-            .outerjoin(JasaMdb, JasaMdb.id == RjasaMdb.jasa_id)
-            .outerjoin(UnitMdb, UnitMdb.id == RjasaMdb.unit_id)
-            .filter(RjasaMdb.preq_id == id)
-            .all()
-        )
-
-        prods = []
-        for y in rprod:
-            y[0].prod_id = prod_schema.dump(y[1])
-            y[0].unit_id = unit_schema.dump(y[2])
-            prods.append(rprod_schema.dump(y[0]))
-
-        jasas = []
-        for z in rjasa:
-            z[0].jasa_id = jasa_schema.dump(z[1])
-            z[0].unit_id = unit_schema.dump(z[2])
-            jasas.append(rjasa_schema.dump(z[0]))
-
-        final = {
-            "id": preq[0].id,
-            "req_code": preq[0].req_code,
-            "req_date": preq[0].req_date,
-            "req_dep": preq[0].req_dep,
-            "req_ket": preq[0].req_ket,
-            "refrence": preq[0].refrence,
-            "ref_sup": preq[0].ref_sup,
-            "ref_ket": preq[0].ref_ket,
-            "status": preq[0].status,
-            "rprod": prods,
-            "rjasa": jasas,
-        }
-
-        return response(200, "Berhasil", True, final)
+    return RequestPurchaseId(id, request)
 
 
 @app.route("/v1/api/po", methods=["POST", "GET"])
@@ -3649,6 +3332,7 @@ def apcard(self):
                 "id": x[0].id,
                 "trx_code": x[0].trx_code,
                 "sup_id": supplier_schema.dump(x[3]) if x[3] else None,
+                # "fk_id": fkpb_schema.dump(x[6]) if x[6] else None,
                 "ord_id": dord_schema.dump(x[4]) if x[4] else None,
                 "ord_date": APCardSchema(only=["ord_date"]).dump(x[0])["ord_date"]
                 if x[0]
@@ -6259,9 +5943,17 @@ def sto_loc(self, id):
 @token_required
 def sto(self):
     product = ProdMdb.query.all()
-    sto = StCard.query.filter(
-        and_(StCard.trx_dbcr == "d", StCard.trx_type == "BL")
-    ).all()
+    sto = StCard.query.all()
+
+    # filter(
+    #     or_(
+    #         and_(StCard.trx_dbcr == "d", StCard.trx_type == "BL"),
+    #         and_(StCard.trx_dbcr == "k", StCard.trx_type == "JL"),
+    #         and_(StCard.trx_dbcr == "d", StCard.trx_type == "MD"),
+    #         and_(StCard.trx_dbcr == "k", StCard.trx_type == "MK"),
+    #         and_(StCard.trx_type == "KS"),
+    #     )
+    # ).
 
     loc = LocationMdb.query.all()
 
@@ -6273,8 +5965,13 @@ def sto(self):
             for y in sto:
                 if z.id == y.loc_id:
                     if x.id == y.prod_id:
-                        total_sto += y.trx_qty
-                        hrg_pokok += y.trx_hpok
+                        if y.trx_dbcr == "d":
+                            total_sto += y.trx_qty
+                            # hrg_pokok += y.trx_hpok
+
+                        else:
+                            total_sto -= y.trx_qty
+                            # hrg_pokok -= y.trx_hpok
 
             if total_sto > 0:
                 final.append(
@@ -6298,7 +5995,7 @@ def sto(self):
                         "max_order": x.max_order,
                         "image": x.image,
                         "stock": total_sto,
-                        "hpok": hrg_pokok / total_sto,
+                        # "hpok": hrg_pokok / total_sto,
                         "loc_id": z.id,
                     }
                 )
@@ -6415,6 +6112,18 @@ def korHut(self):
 @token_required
 def korHut_id(self, id):
     return KoreksiHutangId(id, request)
+
+
+@app.route("/v1/api/koreksi-piu", methods=["POST", "GET"])
+@token_required
+def korPiu(self):
+    return KoreksiPiutang(self, request)
+
+
+@app.route("/v1/api/koreksi-piu/<int:id>", methods=["PUT", "GET", "DELETE"])
+@token_required
+def korPiu_id(self, id):
+    return KoreksiPiutangId(id, request)
 
 
 @app.route("/v1/api/saldo-awal-inv", methods=["GET", "POST"])

@@ -24,6 +24,8 @@ class ProdMdb(db.Model):
     lt_stock = db.Column(db.String(200))
     max_order = db.Column(db.Integer)
     image = db.Column(db.Text)
+    ns = db.Column(db.Boolean)
+    imp = db.Column(db.Boolean)
 
     def __init__(
         self,
@@ -43,7 +45,9 @@ class ProdMdb(db.Model):
         re_stock,
         lt_stock,
         max_order,
-        image
+        image,
+        ns,
+        imp
     ):
         self.code = code
         self.name = name
@@ -62,3 +66,5 @@ class ProdMdb(db.Model):
         self.lt_stock = lt_stock
         self.max_order = max_order
         self.image = image
+        self.ns = ns
+        self.imp = imp

@@ -52,6 +52,7 @@ class SaldoAP:
                     code,
                     sup_id,
                     None,
+                    None,
                     date,
                     due_date,
                     None,

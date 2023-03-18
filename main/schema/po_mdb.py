@@ -18,6 +18,8 @@ class PoSchema(ma.Schema):
             "jasa_disc",
             "total_disc",
             "total_bayar",
+            "ns",
+            "same_sup",
             "status",
             "apprv",
             "print",

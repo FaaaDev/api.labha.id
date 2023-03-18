@@ -1,6 +1,6 @@
+from main.function.update_table import UpdateTable
 from main.function.update_pembelian import UpdatePembelian
 from main.function.update_stock import UpdateStock
-from main.function.update_table import UpdateTable
 from main.model.ccost_mdb import CcostMdb
 from main.model.djasa_ddb import DjasaDdb
 from main.model.dprod_ddb import DprodDdb
@@ -54,6 +54,7 @@ class Order:
                 total_disc = request.json["total_disc"]
                 total_b = request.json["total_b"]
                 total_bayar = request.json["total_bayar"]
+                ns = request.json["ns"]
                 same_sup = request.json["same_sup"]
                 dprod = request.json["dprod"]
                 djasa = request.json["djasa"]
@@ -76,6 +77,7 @@ class Order:
                     total_disc,
                     total_b,
                     total_bayar,
+                    ns,
                     same_sup,
                     0,
                     0,
@@ -156,27 +158,35 @@ class Order:
 
                     db.session.commit()
 
-                UpdateStock(do.id, False)
+                if do.ns == False:
+                    UpdateStock(do.id, False)
 
-                if faktur == False and invoice == True:
+                if do.invoice:
                     inv = InvpbHdb(
-                        ord_code, ord_date, do.id, None, None, None, total_bayar, False
+                        ord_code,
+                        ord_date,
+                        do.id,
+                        None,
+                        None,
+                        None,
+                        total_bayar,
+                        do.faktur,
                     )
+                    print("=========fk")
 
                     db.session.add(inv)
+                    db.session.commit()
 
-                if faktur and invoice:
-                    faktur = FkpbHdb(ord_code, ord_date, do.sup_id, None, None, None)
-                    inv = InvpbHdb(
-                        ord_code, ord_date, do.id, None, None, None, total_bayar, True
-                    )
 
-                    db.session.add(faktur)
-                    db.session.add(inv)
+                if do.faktur:
+                    fk = FkpbHdb(ord_code, ord_date, do.sup_id, None, None, None)
+
+                    db.session.add(fk)
+                    db.session.commit()
 
                     invo = InvpbHdb.query.filter(InvpbHdb.ord_id == do.id).first()
 
-                    fk = FkpbHdb.query.filter(FkpbHdb.fk_code == do.ord_code).first()
+
                     new_detail = FkpbDetDdb(
                         fk.id,
                         invo.id,
@@ -187,17 +197,19 @@ class Order:
                     )
 
                     db.session.add(new_detail)
+                    db.session.commit()
 
-                    UpdatePembelian(
-                        do.id,
-                        user.id,
-                        False,
-                    )
+                    print("=========fkkk")
+
+                
+                    UpdatePembelian(fk.id, user.id, False)
+
 
                 db.session.commit()
 
             except IntegrityError:
                 db.session.rollback()
+                db.session.close()
                 return response(400, "Kode sudah digunakan", False, None)
             finally:
                 return response(200, "Berhasil", True, dord_schema.dump(do))
@@ -275,6 +287,8 @@ class Order:
                             "total_disc": x[0].total_disc,
                             "total_b": x[0].total_b,
                             "total_bayar": x[0].total_bayar,
+                            "ns": x[0].ns,
+                            "same_sup": x[0].same_sup,
                             "status": x[0].status,
                             "print": x[0].print,
                             "post": x[0].post,

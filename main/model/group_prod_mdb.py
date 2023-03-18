@@ -4,13 +4,14 @@ import datetime
 
 
 class GroupProMdb(db.Model):
-    __table_args__ = {'schema': 'master'}
-    __tablename__ = 'GPRODKMDB'
+    __table_args__ = {"schema": "master"}
+    __tablename__ = "GPRODKMDB"
 
     id = db.Column(db.Integer, primary_key=True)
-    code = db.Column(db.String(20), unique = True)
+    code = db.Column(db.String(20), unique=True)
     name = db.Column(db.String(100))
     div_code = db.Column(db.Integer)
+    stok = db.Column(db.Boolean)
     wip = db.Column(db.Boolean)
     acc_sto = db.Column(db.Integer)
     acc_send = db.Column(db.Integer)
@@ -21,13 +22,30 @@ class GroupProMdb(db.Model):
     potongan = db.Column(db.Integer)
     pengembalian = db.Column(db.Integer)
     selisih = db.Column(db.Integer)
-    
+    biaya = db.Column(db.Integer)
 
-    def __init__(self, code, name, div_code, wip, acc_sto, acc_send,
-    acc_terima, hrg_pokok, acc_penj, acc_wip, potongan, pengembalian, selisih):
+    def __init__(
+        self,
+        code,
+        name,
+        div_code,
+        stok,
+        wip,
+        acc_sto,
+        acc_send,
+        acc_terima,
+        hrg_pokok,
+        acc_penj,
+        acc_wip,
+        potongan,
+        pengembalian,
+        selisih,
+        biaya
+    ):
         self.code = code
         self.name = name
         self.div_code = div_code
+        self.stok = stok
         self.wip = wip
         self.acc_sto = acc_sto
         self.acc_send = acc_send
@@ -38,3 +56,4 @@ class GroupProMdb(db.Model):
         self.potongan = potongan
         self.pengembalian = pengembalian
         self.selisih = selisih
+        self.biaya = biaya

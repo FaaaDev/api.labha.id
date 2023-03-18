@@ -48,6 +48,7 @@ class SaldoAPId:
                     sa.code,
                     sa.sup_id,
                     None,
+                    None,
                     sa.date,
                     sa.due_date,
                     None,

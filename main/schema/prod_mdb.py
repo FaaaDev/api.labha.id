@@ -23,6 +23,8 @@ class ProdSchema(ma.Schema):
             "lt_stock",
             "max_order",
             "image",
+            "ns",
+            "imp",
         )
 
 

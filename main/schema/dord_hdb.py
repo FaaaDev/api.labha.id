@@ -22,6 +22,7 @@ class DordSchema(ma.Schema):
                   'total_disc',
                   'total_b',
                   'total_bayar',
+                  'ns',
                   'same_sup',
                   'status',
                   'print')

@@ -129,7 +129,11 @@ class FakturPj:
                                                     if p[0].location
                                                     else None
                                                 )
-                                                prod.append(jprod_schema.dump(p[0]))
+                                                prod.append(
+                                                    jprod_schema.dump(p[0])
+                                                    if p[0]
+                                                    else None
+                                                )
 
                                     jasa = []
                                     for z in jjasa:
@@ -137,7 +141,11 @@ class FakturPj:
                                             if z[0].pj_id == y[2].id:
                                                 z[0].jasa_id = jasa_schema.dump(z[1])
                                                 z[0].unit_id = unit_schema.dump(z[2])
-                                                jasa.append(jjasa_schema.dump(z[0]))
+                                                jasa.append(
+                                                    jjasa_schema.dump(z[0])
+                                                    if z[0]
+                                                    else None
+                                                )
 
                                     y[0].inv_id = invpj_schema.dump(y[1])
                                     y[0].sale_id = {
@@ -168,8 +176,8 @@ class FakturPj:
                             "post": x[0].post,
                             "closing": x[0].closing,
                             "detail": detail,
-                            "product": prod,
-                            "jasa": jasa,
+                            # "product": prod,
+                            # "jasa": jasa,
                         }
                     )
 

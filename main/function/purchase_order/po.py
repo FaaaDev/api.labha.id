@@ -45,6 +45,8 @@ class PurchaseOrder:
                 jasa_disc = request.json["jasa_disc"]
                 total_disc = request.json["total_disc"]
                 total_bayar = request.json["total_bayar"]
+                ns = request.json["ns"]
+                same_sup = request.json["same_sup"]
                 pprod = request.json["pprod"]
                 pjasa = request.json["pjasa"]
                 psup = request.json["psup"]
@@ -63,6 +65,8 @@ class PurchaseOrder:
                     jasa_disc,
                     total_disc,
                     total_bayar,
+                    ns,
+                    same_sup,
                     0,
                     False,
                     0,
@@ -264,6 +268,8 @@ class PurchaseOrder:
                             "jasa_disc": x[0].jasa_disc,
                             "total_disc": x[0].total_disc,
                             "total_bayar": x[0].total_bayar,
+                            "ns": x[0].ns,
+                            "same_sup": x[0].same_sup,
                             "status": x[0].status,
                             "apprv": x[0].apprv,
                             "print": x[0].print,

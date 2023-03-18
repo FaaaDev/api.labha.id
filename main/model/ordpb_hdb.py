@@ -28,6 +28,7 @@ class OrdpbHdb(db.Model):
     total_disc = db.Column(db.Integer)
     total_b = db.Column(db.Integer)
     total_bayar = db.Column(db.Integer)
+    ns = db.Column(db.Boolean)
     same_sup = db.Column(db.Boolean)
     status = db.Column(db.Integer, default=0)
     print = db.Column(db.Integer, default=0)
@@ -53,6 +54,7 @@ class OrdpbHdb(db.Model):
         total_disc,
         total_b,
         total_bayar,
+        ns,
         same_sup,
         status,
         print,
@@ -74,6 +76,7 @@ class OrdpbHdb(db.Model):
         self.total_disc = total_disc
         self.total_b = total_b
         self.total_bayar = total_bayar
+        self.ns = ns
         self.same_sup = same_sup
         self.status = status
         self.print = print

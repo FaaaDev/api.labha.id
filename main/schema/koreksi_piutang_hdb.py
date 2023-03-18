@@ -4,7 +4,18 @@ from main.shared.shared import ma
 class KoreksiPiuSchema(ma.Schema):
     class Meta:
         ordered = True
-        fields = ('id', 'code', 'date', 'cus_id', 'type_kor', 'value', 'due_date', 'desc', 'user_id')
+        fields = (
+            "id",
+            "code",
+            "date",
+            "cus_id",
+            "type_kor",
+            "acc_lwn",
+            "value",
+            "due_date",
+            "desc",
+            "user_id",
+        )
 
 
 korPiut_schema = KoreksiPiuSchema()

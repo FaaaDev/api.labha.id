@@ -53,6 +53,7 @@ class UpdateApGiro:
             ap_card = ApCard(
                 fk[1].ord_code,
                 pembelian.sup_id,
+                pembelian.fk_id,
                 pembelian.ord_id,
                 pembelian.ord_date,
                 pembelian.ord_due,

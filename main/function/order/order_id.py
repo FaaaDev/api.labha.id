@@ -59,6 +59,8 @@ class OrderId:
                 total_disc = request.json["total_disc"]
                 total_b = request.json["total_b"]
                 total_bayar = request.json["total_bayar"]
+                ns = request.json["ns"]
+                same_sup = request.json["same_sup"]
                 dprod = request.json["dprod"]
                 djasa = request.json["djasa"]
 
@@ -78,6 +80,8 @@ class OrderId:
                 do.total_disc = total_disc
                 do.total_b = total_b
                 do.total_bayar = total_bayar
+                do.ns = ns
+                do.same_sup = same_sup
 
                 po = PoMdb.query.filter(PoMdb.id == po_id).first()
                 pprod = PprodDdb.query.filter(PprodDdb.po_id == po_id).all()
@@ -232,15 +236,70 @@ class OrderId:
 
                     db.session.commit()
 
-                # if ns == False:
-                UpdateStock(do.id, False, user_product, user_company, glUrl, request)
+                if ns == False:
+                    UpdateStock(do.id, False)
 
-                if faktur:
-                    UpdatePembelian(do.id, id, False)
+                if do.invoice:
+                    old_inv = InvpbHdb.query.filter(InvpbHdb.ord_id == id).all()
+                    if old_inv:
+                        for x in old_inv:
+                            db.session.delete(x)
+                            db.session.commit()
+
+                    inv = InvpbHdb(
+                        ord_code,
+                        ord_date,
+                        id,
+                        None,
+                        None,
+                        None,
+                        total_bayar,
+                        do.faktur,
+                    )
+
+                    db.session.add(inv)
+                    db.session.commit()
+
+                if do.faktur:
+                    old_fk = FkpbHdb.query.filter(FkpbHdb.fk_code == do.ord_code).all()
+                    if old_fk:
+                        for x in old_fk:
+                            db.session.delete(x)
+                            db.session.commit()
+
+                    fk = FkpbHdb(ord_code, ord_date, do.sup_id, None, None, None)
+
+                    db.session.add(fk)
+                    db.session.commit()
+
+
+                    invo = InvpbHdb.query.filter(InvpbHdb.ord_id == id).first()
+                    old_fkdet = FkpbDetDdb.query.filter(
+                        FkpbDetDdb.ord_id == id
+                    ).all()
+                    if old_fkdet:
+                        for x in old_fkdet:
+                            db.session.delete(x)
+                            db.session.commit()
+
+                    new_detail = FkpbDetDdb(
+                        fk.id,
+                        invo.id,
+                        invo.ord_id,
+                        invo.inv_date,
+                        do.total_b,
+                        invo.total_bayar,
+                    )
+
+                    db.session.add(new_detail)
+                    db.session.commit()
+
+                    UpdatePembelian(fk.id, id, False)
 
                 result = response(200, "Berhasil", True, dord_schema.dump(do))
 
-            except IntegrityError:
+            except IntegrityError as e:
+                print(e)
                 db.session.rollback()
                 result = response(400, "Kode sudah digunakan", False, None)
             finally:

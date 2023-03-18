@@ -47,6 +47,8 @@ class PurchaseOrderId:
                     jasa_disc = request.json["jasa_disc"]
                     total_disc = request.json["total_disc"]
                     total_bayar = request.json["total_bayar"]
+                    ns = request.json["ns"]
+                    same_sup = request.json["same_sup"]
                     pprod = request.json["pprod"]
                     pjasa = request.json["pjasa"]
 
@@ -63,6 +65,8 @@ class PurchaseOrderId:
                     po.jasa_disc = jasa_disc
                     po.total_disc = total_disc
                     po.total_bayar = total_bayar
+                    po.ns = ns
+                    po.same_sup = same_sup
 
                     preq = PreqMdb.query.filter(PreqMdb.id == preq_id).first()
 
