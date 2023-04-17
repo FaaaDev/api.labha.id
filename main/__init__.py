@@ -249,6 +249,9 @@ from functools import wraps
 import os
 from werkzeug.utils import secure_filename
 import bcrypt
+from dotenv import load_dotenv, find_dotenv
+
+load_dotenv(find_dotenv())
 
 
 app = Flask(__name__)
@@ -267,7 +270,7 @@ def cityUrl():
 
 
 def authHelper():
-    return "http://116.193.191.236:8889/v1/auth"
+    return os.getenv("AUTH_HELPER_URL")
 
 
 def response(code, message, status, data):
