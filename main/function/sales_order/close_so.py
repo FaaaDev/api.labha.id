@@ -1,8 +1,8 @@
-from main.model.custom_mdb import CustomerMdb
-from main.model.sord_hdb import SordHdb
-from main.schema.sord_hdb import SordSchema, sord_schema
-from main.shared.shared import db
-from main.utils.response import response
+from ...model.custom_mdb import CustomerMdb
+from ...model.sord_hdb import SordHdb
+from ...schema.sord_hdb import SordSchema, sord_schema
+from ...shared.shared import db
+from ...utils.response import response
 from sqlalchemy.exc import IntegrityError
 
 

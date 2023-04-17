@@ -1,20 +1,20 @@
-# from main.function.posting.posting_year import GetYearPosting
-from main.function.update_table import UpdateTable
-from main.model.akhir_mdb import AkhirMdb
-from main.model.comp_mdb import CompMdb
-from main.model.inv_ddb import InvDdb
-from main.model.lokasi_mdb import LocationMdb
-from main.model.group_prod_mdb import GroupProMdb
-from main.model.prod_mdb import ProdMdb
-from main.model.sa_inv import SaldoInvMdb
-from main.model.stcard_mdb import StCard
-from main.model.user import User
-from main.schema.sa_inv import sainv_schema
-from main.schema.lokasi_mdb import loct_schema
-from main.schema.prod_mdb import prod_schema
-from main.schema.group_prod_mdb import groupPro_schema
-from main.shared.shared import db
-from main.utils.response import response
+# from ...function.posting.posting_year import GetYearPosting
+from ...function.update_table import UpdateTable
+from ...model.akhir_mdb import AkhirMdb
+from ...model.comp_mdb import CompMdb
+from ...model.inv_ddb import InvDdb
+from ...model.lokasi_mdb import LocationMdb
+from ...model.group_prod_mdb import GroupProMdb
+from ...model.prod_mdb import ProdMdb
+from ...model.sa_inv import SaldoInvMdb
+from ...model.stcard_mdb import StCard
+from ...model.user import User
+from ...schema.sa_inv import sainv_schema
+from ...schema.lokasi_mdb import loct_schema
+from ...schema.prod_mdb import prod_schema
+from ...schema.group_prod_mdb import groupPro_schema
+from ...shared.shared import db
+from ...utils.response import response
 from datetime import date, datetime, time
 from sqlalchemy.exc import *
 

@@ -1,15 +1,15 @@
 from operator import and_
-from main.model.ccost_mdb import CcostMdb
-from main.model.fmtrl_ddb import FmtrlDdb
-from main.model.fprdc_hdb import FprdcHdb
-from main.model.fprod_ddb import FprodDdb
-from main.model.lokasi_mdb import LocationMdb
-from main.model.plan_hdb import PlanHdb
-from main.model.prod_mdb import ProdMdb
-from main.model.rpbb_mdb import RpbbMdb
-from main.model.stcard_mdb import StCard
-from main.model.unit_mdb import UnitMdb
-from main.shared.shared import db
+from ..model.ccost_mdb import CcostMdb
+from ..model.fmtrl_ddb import FmtrlDdb
+from ..model.fprdc_hdb import FprdcHdb
+from ..model.fprod_ddb import FprodDdb
+from ..model.lokasi_mdb import LocationMdb
+from ..model.plan_hdb import PlanHdb
+from ..model.prod_mdb import ProdMdb
+from ..model.rpbb_mdb import RpbbMdb
+from ..model.stcard_mdb import StCard
+from ..model.unit_mdb import UnitMdb
+from ..shared.shared import db
 
 
 class UpdateRpbb:

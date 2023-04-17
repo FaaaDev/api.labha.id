@@ -1,5 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
-from main.shared.shared import db
+from ..shared.shared import db
 
 class KlasiMdb(db.Model):
     __table_args__ = {'schema': 'master'}

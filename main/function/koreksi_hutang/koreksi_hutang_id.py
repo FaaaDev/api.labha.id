@@ -1,13 +1,13 @@
-from main.model.koreksi_hutang_hdb import KorHutangHdb
-from main.model.supplier_mdb import SupplierMdb
-from main.model.apcard_mdb import ApCard
-from main.model.transddb import TransDdb
-from main.shared.shared import db
-from main.utils.response import response
+from ...model.koreksi_hutang_hdb import KorHutangHdb
+from ...model.supplier_mdb import SupplierMdb
+from ...model.apcard_mdb import ApCard
+from ...model.transddb import TransDdb
+from ...shared.shared import db
+from ...utils.response import response
 from sqlalchemy.exc import IntegrityError
-from main.schema.koreksi_hutang_hdb import KoreksiHutSchema, korHut_schema
-from main.schema.supplier_mdb import supplier_schema
-from main.model.currency_mdb import CurrencyMdb
+from ...schema.koreksi_hutang_hdb import KoreksiHutSchema, korHut_schema
+from ...schema.supplier_mdb import supplier_schema
+from ...model.currency_mdb import CurrencyMdb
 
 
 class KoreksiHutangId:

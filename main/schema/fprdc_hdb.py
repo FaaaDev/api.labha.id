@@ -1,4 +1,4 @@
-from main.shared.shared import ma
+from ..shared.shared import ma
 
 
 class FprdcSchema(ma.Schema):

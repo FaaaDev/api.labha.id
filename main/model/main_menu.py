@@ -1,5 +1,4 @@
-from unicodedata import category
-from main.shared.shared import db
+from ..shared.shared import db
 
 class MainMenu(db.Model):
     __table_args__ = {'schema': 'public'}

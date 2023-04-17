@@ -1,6 +1,6 @@
 from enum import unique
 from unicodedata import name
-from main.shared.shared import db
+from ..shared.shared import db
 
 class RulesPayMdb(db.Model):
     __table_args__ = {'schema': 'master'}

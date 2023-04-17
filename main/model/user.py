@@ -1,7 +1,7 @@
 from email.policy import default
 from enum import unique
 from flask_sqlalchemy import SQLAlchemy
-from main.shared.shared import db
+from ..shared.shared import db
 import datetime
 
 USER_ID_SEQ = db.Sequence('adm_user_id_adm_user_seq')

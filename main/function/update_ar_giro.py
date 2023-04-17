@@ -1,20 +1,20 @@
 from datetime import datetime
 from sqlalchemy import and_
-from main.model.bank_mdb import BankMdb
-from main.model.iacq_ddb import IAcqDdb
-from main.model.arcard_mdb import ArCard
-from main.model.dprod_ddb import DprodDdb
-from main.model.inc_hdb import IncHdb
-from main.model.ordpj_hdb import OrdpjHdb
-from main.model.giro_inc_hdb import GiroIncHdb
-from main.model.group_prod_mdb import GroupProMdb
-from main.model.lokasi_mdb import LocationMdb
-from main.model.sord_hdb import SordHdb
-from main.model.prod_mdb import ProdMdb
-from main.model.stcard_mdb import StCard
-from main.model.transddb import TransDdb
-from main.model.unit_mdb import UnitMdb
-from main.shared.shared import db
+from ..model.bank_mdb import BankMdb
+from ..model.iacq_ddb import IAcqDdb
+from ..model.arcard_mdb import ArCard
+from ..model.dprod_ddb import DprodDdb
+from ..model.inc_hdb import IncHdb
+from ..model.ordpj_hdb import OrdpjHdb
+from ..model.giro_inc_hdb import GiroIncHdb
+from ..model.group_prod_mdb import GroupProMdb
+from ..model.lokasi_mdb import LocationMdb
+from ..model.sord_hdb import SordHdb
+from ..model.prod_mdb import ProdMdb
+from ..model.stcard_mdb import StCard
+from ..model.transddb import TransDdb
+from ..model.unit_mdb import UnitMdb
+from ..shared.shared import db
 
 
 class UpdateArGiro:

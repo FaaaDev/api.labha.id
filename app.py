@@ -1,11 +1,10 @@
 import time
 import os
-from main import app
+from main import app, db, ma
 from sshtunnel import SSHTunnelForwarder
 from threading import Thread
 from flask_cors import CORS
 from os.path import join, dirname, realpath
-from main.shared.shared import db, ma
 from dotenv import load_dotenv, find_dotenv
 
 load_dotenv(find_dotenv())

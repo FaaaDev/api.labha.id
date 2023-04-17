@@ -1,31 +1,31 @@
-from main.function.update_table import UpdateTable
-from main.model.pjasa_ddb import PjasaDdb
-from main.model.po_mdb import PoMdb
-from main.model.po_sup_ddb import PoSupDdb
-from main.model.pprod_ddb import PprodDdb
-from main.model.preq_mdb import PreqMdb
-from main.model.rprod_mdb import RprodMdb
-from main.model.rjasa_mdb import RjasaMdb
-from main.model.supplier_mdb import SupplierMdb
-from main.model.ccost_mdb import CcostMdb
-from main.model.prod_mdb import ProdMdb
-from main.model.jasa_mdb import JasaMdb
-from main.model.unit_mdb import UnitMdb
-from main.model.syarat_bayar_mdb import RulesPayMdb
-from main.shared.shared import db
-from main.utils.response import response
+from ...function.update_table import UpdateTable
+from ...model.pjasa_ddb import PjasaDdb
+from ...model.po_mdb import PoMdb
+from ...model.po_sup_ddb import PoSupDdb
+from ...model.pprod_ddb import PprodDdb
+from ...model.preq_mdb import PreqMdb
+from ...model.rprod_mdb import RprodMdb
+from ...model.rjasa_mdb import RjasaMdb
+from ...model.supplier_mdb import SupplierMdb
+from ...model.ccost_mdb import CcostMdb
+from ...model.prod_mdb import ProdMdb
+from ...model.jasa_mdb import JasaMdb
+from ...model.unit_mdb import UnitMdb
+from ...model.syarat_bayar_mdb import RulesPayMdb
+from ...shared.shared import db
+from ...utils.response import response
 from sqlalchemy.exc import *
-from main.schema.preq_mdb import PreqSchema, preq_schema
-from main.schema.pprod_ddb import pprod_schema
-from main.schema.pjasa_ddb import pjasa_schema
-from main.schema.supplier_mdb import supplier_schema
-from main.schema.ccost_mdb import ccost_schema
-from main.schema.prod_mdb import prod_schema
-from main.schema.jasa_mdb import jasa_schema
-from main.schema.unit_mdb import unit_schema
-from main.schema.syarat_bayar_mdb import rpay_schema
-from main.schema.po_mdb import PoSchema, po_schema
-from main.schema.po_sup_ddb import poSup_schema
+from ...schema.preq_mdb import PreqSchema, preq_schema
+from ...schema.pprod_ddb import pprod_schema
+from ...schema.pjasa_ddb import pjasa_schema
+from ...schema.supplier_mdb import supplier_schema
+from ...schema.ccost_mdb import ccost_schema
+from ...schema.prod_mdb import prod_schema
+from ...schema.jasa_mdb import jasa_schema
+from ...schema.unit_mdb import unit_schema
+from ...schema.syarat_bayar_mdb import rpay_schema
+from ...schema.po_mdb import PoSchema, po_schema
+from ...schema.po_sup_ddb import poSup_schema
 
 
 class PurchaseOrder:

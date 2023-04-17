@@ -1,26 +1,26 @@
 from sqlalchemy import and_, or_
-from main.model.bank_mdb import BankMdb
-from main.model.custom_mdb import CustomerMdb
-from main.model.iacq_ddb import IAcqDdb
-from main.model.arcard_mdb import ArCard
-from main.model.dprod_ddb import DprodDdb
+from ..model.bank_mdb import BankMdb
+from ..model.custom_mdb import CustomerMdb
+from ..model.iacq_ddb import IAcqDdb
+from ..model.arcard_mdb import ArCard
+from ..model.dprod_ddb import DprodDdb
 from ..model.dinc_ddb import IncDdb
-from main.model.inc_hdb import IncHdb
-from main.model.ordpj_hdb import OrdpjHdb
-from main.model.group_prod_mdb import GroupProMdb
-from main.model.lokasi_mdb import LocationMdb
-from main.model.sord_hdb import SordHdb
-from main.model.pajak_mdb import PajakMdb
-from main.model.prod_mdb import ProdMdb
-from main.model.stcard_mdb import StCard
-from main.model.supplier_mdb import SupplierMdb
-from main.model.transddb import TransDdb
-from main.model.trans_bank import TransBank
-from main.model.unit_mdb import UnitMdb
-from main.model.currency_mdb import CurrencyMdb
-from main.model.setup_mdb import SetupMdb
-from main.model.comp_mdb import CompMdb
-from main.shared.shared import db
+from ..model.inc_hdb import IncHdb
+from ..model.ordpj_hdb import OrdpjHdb
+from ..model.group_prod_mdb import GroupProMdb
+from ..model.lokasi_mdb import LocationMdb
+from ..model.sord_hdb import SordHdb
+from ..model.pajak_mdb import PajakMdb
+from ..model.prod_mdb import ProdMdb
+from ..model.stcard_mdb import StCard
+from ..model.supplier_mdb import SupplierMdb
+from ..model.transddb import TransDdb
+from ..model.trans_bank import TransBank
+from ..model.unit_mdb import UnitMdb
+from ..model.currency_mdb import CurrencyMdb
+from ..model.setup_mdb import SetupMdb
+from ..model.comp_mdb import CompMdb
+from ..shared.shared import db
 
 
 class UpdateArPayment:

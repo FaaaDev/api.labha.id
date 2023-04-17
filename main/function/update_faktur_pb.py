@@ -1,23 +1,23 @@
 from sqlalchemy import and_, or_
-from main.model.apcard_mdb import ApCard
-from main.model.djasa_ddb import DjasaDdb
-from main.model.dprod_ddb import DprodDdb
-from main.model.fkpb_hdb import FkpbHdb
-from main.model.fkpb_det_ddb import FkpbDetDdb
-from main.model.jasa_mdb import JasaMdb
-from main.model.lokasi_mdb import LocationMdb
-from main.model.ordpb_hdb import OrdpbHdb
-from main.model.pajak_mdb import PajakMdb
-from main.model.prod_mdb import ProdMdb
-from main.model.setup_mdb import SetupMdb
-from main.model.comp_mdb import CompMdb
-from main.model.supplier_mdb import SupplierMdb
-from main.model.transddb import TransDdb
-from main.model.unit_mdb import UnitMdb
-from main.model.group_prod_mdb import GroupProMdb
-from main.model.currency_mdb import CurrencyMdb
-from main.model.user import User
-from main.shared.shared import db, ma
+from ..model.apcard_mdb import ApCard
+from ..model.djasa_ddb import DjasaDdb
+from ..model.dprod_ddb import DprodDdb
+from ..model.fkpb_hdb import FkpbHdb
+from ..model.fkpb_det_ddb import FkpbDetDdb
+from ..model.jasa_mdb import JasaMdb
+from ..model.lokasi_mdb import LocationMdb
+from ..model.ordpb_hdb import OrdpbHdb
+from ..model.pajak_mdb import PajakMdb
+from ..model.prod_mdb import ProdMdb
+from ..model.setup_mdb import SetupMdb
+from ..model.comp_mdb import CompMdb
+from ..model.supplier_mdb import SupplierMdb
+from ..model.transddb import TransDdb
+from ..model.unit_mdb import UnitMdb
+from ..model.group_prod_mdb import GroupProMdb
+from ..model.currency_mdb import CurrencyMdb
+from ..model.user import User
+from ..shared.shared import db, ma
 import requests
 
 

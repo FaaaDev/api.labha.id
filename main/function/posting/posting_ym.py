@@ -1,9 +1,9 @@
 from datetime import date
-from main.model.comp_mdb import CompMdb
-from main.model.akhir_mdb import AkhirMdb
-from main.model.user import User
-from main.shared.shared import db
-from main.utils.response import response
+from ...model.comp_mdb import CompMdb
+from ...model.akhir_mdb import AkhirMdb
+from ...model.user import User
+from ...shared.shared import db
+from ...utils.response import response
 
 
 class GetYearPosting:

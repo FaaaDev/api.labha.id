@@ -1,9 +1,9 @@
-from main.model.pjasa_ddb import PjasaDdb
-from main.model.po_mdb import PoMdb
-from main.shared.shared import db
-from main.utils.response import response
+from ...model.pjasa_ddb import PjasaDdb
+from ...model.po_mdb import PoMdb
+from ...shared.shared import db
+from ...utils.response import response
 from sqlalchemy.exc import IntegrityError
-from main.schema.po_mdb import PoSchema, po_schema
+from ...schema.po_mdb import PoSchema, po_schema
 
 
 class PurchaseOrderClose:

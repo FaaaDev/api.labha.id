@@ -1,18 +1,18 @@
 from sqlalchemy import and_
-from main.model.acq_ddb import AcqDdb
-from main.model.apcard_mdb import ApCard
-from main.model.dprod_ddb import DprodDdb
-from main.model.exp_hdb import ExpHdb
-from main.model.fkpb_hdb import FkpbHdb
-from main.model.giro_hdb import GiroHdb
-from main.model.group_prod_mdb import GroupProMdb
-from main.model.lokasi_mdb import LocationMdb
-from main.model.ordpb_hdb import OrdpbHdb
-from main.model.prod_mdb import ProdMdb
-from main.model.stcard_mdb import StCard
-from main.model.transddb import TransDdb
-from main.model.unit_mdb import UnitMdb
-from main.shared.shared import db
+from ..model.acq_ddb import AcqDdb
+from ..model.apcard_mdb import ApCard
+from ..model.dprod_ddb import DprodDdb
+from ..model.exp_hdb import ExpHdb
+from ..model.fkpb_hdb import FkpbHdb
+from ..model.giro_hdb import GiroHdb
+from ..model.group_prod_mdb import GroupProMdb
+from ..model.lokasi_mdb import LocationMdb
+from ..model.ordpb_hdb import OrdpbHdb
+from ..model.prod_mdb import ProdMdb
+from ..model.stcard_mdb import StCard
+from ..model.transddb import TransDdb
+from ..model.unit_mdb import UnitMdb
+from ..shared.shared import db
 
 
 class DeleteApPayment():
