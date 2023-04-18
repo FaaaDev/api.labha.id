@@ -4,6 +4,8 @@ from datetime import datetime
 from unicodedata import name
 from flask import Flask, redirect, request, jsonify, send_from_directory
 import requests
+
+from .function.cost_center.cost_center_filter import CcostFilter
 from .function.delete_ap_payment import DeleteApPayment
 from .function.income.income import Income
 from .function.income.income_id import IncomeId
@@ -1121,6 +1123,12 @@ def ccost(self):
         result = CcostMdb.query.all()
 
         return response(200, "Berhasil", True, ccosts_schema.dump(result))
+
+
+@app.route("/v1/api/cost-center/<int:page>/<int:length>/<string:filter>", methods=["GET"])
+@token_required
+def cost_center_filter(self, page, length, filter):
+    return CcostFilter(page, length, filter)
 
 
 @app.route("/v1/api/cost-center/<int:id>", methods=["PUT", "GET", "DELETE"])
