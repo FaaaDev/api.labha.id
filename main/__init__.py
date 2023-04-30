@@ -5,6 +5,8 @@ from unicodedata import name
 from flask import Flask, redirect, request, jsonify, send_from_directory
 import requests
 
+from .function.cost_center.cost_center import CostCenter
+
 from .function.cost_center.cost_center_filter import CcostFilter
 from .function.delete_ap_payment import DeleteApPayment
 from .function.income.income import Income
@@ -1105,24 +1107,7 @@ def account_id(self, id):
 @app.route("/v1/api/cost-center", methods=["POST", "GET"])
 @token_required
 def ccost(self):
-    if request.method == "POST":
-        try:
-            code = request.json["ccost_code"]
-            name = request.json["ccost_name"]
-            keterangan = request.json["ccost_ket"]
-            cost = CcostMdb(code, name, keterangan)
-            db.session.add(cost)
-            db.session.commit()
-            result = response(200, "Berhasil", True, ccost_schema.dump(cost))
-        except IntegrityError:
-            db.session.rollback()
-            result = response(400, "Kode sudah digunakan", False, None)
-        finally:
-            return result
-    else:
-        result = CcostMdb.query.all()
-
-        return response(200, "Berhasil", True, ccosts_schema.dump(result))
+    return CostCenter(request)
 
 
 @app.route("/v1/api/cost-center/<int:page>/<int:length>/<string:filter>", methods=["GET"])
