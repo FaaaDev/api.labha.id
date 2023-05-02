@@ -25,6 +25,7 @@ class CompMdb(db.Model):
     over_po = db.Column(db.Boolean)
     cutoff = db.Column(db.Integer)
     year_co = db.Column(db.Integer)
+    gl_detail = db.Column(db.Boolean)
 
     def __init__(
         self,
@@ -47,6 +48,7 @@ class CompMdb(db.Model):
         over_po,
         cutoff,
         year_co,
+        gl_detail,
     ):
         self.cp_name = cp_name
         self.cp_addr = cp_addr
@@ -67,3 +69,4 @@ class CompMdb(db.Model):
         self.over_po = over_po
         self.cutoff = cutoff
         self.year_co = year_co
+        self.gl_detail = gl_detail
