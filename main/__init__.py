@@ -85,6 +85,7 @@ from .function.update_stock import UpdateStock
 from .model.accou_mdb import AccouMdb
 from .model.acq_ddb import AcqDdb
 from .model.adm_user_menu import AdmUserMenu
+from .model.adm_menu import AdmMenu
 from .model.apcard_mdb import ApCard
 from .model.arcard_mdb import ArCard
 from .model.bank_mdb import BankMdb
@@ -461,10 +462,43 @@ def user_id(id):
 @token_required
 def profil(self):
     user = (
-        db.session.query(UserMenu, Menu)
-        .outerjoin(Menu, Menu.id == UserMenu.menu_id)
-        .filter(and_(UserMenu.user_id == self.id, Menu.visible == True))
-        .order_by(Menu.category.asc(), Menu.id.asc())
+        db.session.query(User, AdmUserMenu, AdmMenu)
+        .outerjoin(AdmUserMenu, AdmUserMenu.id_adm_user == User.id)
+        .outerjoin(AdmMenu, AdmMenu.id == AdmUserMenu.id_adm_menu)
+        .filter(User.id == self.id)
+        .all()
+    )
+
+    menu = {
+        "id": user[0][0].id,
+        "email": user[0][0].email,
+        "username": user[0][0].username,
+        "name": user[0][0].name,
+        "menu": [
+            {
+                "name": x[2].name,
+                "sequence_no": x[2].sequence_no,
+                "page_name": x[2].page_name,
+                "route_name": x[2].route_name,
+                "icon_file": x[2].icon_file,
+                "akses": AdmUserMenuSchema(only=["view", "edit", "delete"]).dump(x[1]),
+            }
+            for x in user
+        ],
+    }
+
+    return response(200, "Berhasil", True, menu)
+
+
+
+@app.route("/v1/api/akses-menu", methods=["GET"])
+@token_required
+def access(self):
+    user = (
+        db.session.query(UserMenu, MainMenu)
+        .outerjoin(MainMenu, MainMenu.id == UserMenu.menu_id)
+        .filter(and_(UserMenu.user_id == self.id, MainMenu.visible == True))
+        .order_by(MainMenu.category.asc(), MainMenu.id.asc())
         .all()
     )
 
@@ -531,6 +565,7 @@ def profil(self):
     }
 
     return response(200, "Berhasil", True, menu)
+
 
 
 @app.route("/v1/api/menu", methods=["POST", "GET"])
