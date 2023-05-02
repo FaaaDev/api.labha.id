@@ -1,16 +1,16 @@
-from main.function.update_table import UpdateTable
-from main.model.arcard_mdb import ArCard
-from main.model.transddb import TransDdb
-from main.model.koreksi_piutang_hdb import KorPiutangHdb
-from main.model.custom_mdb import CustomerMdb
-from main.model.currency_mdb import CurrencyMdb
-from main.model.accou_mdb import AccouMdb
-from main.shared.shared import db
-from main.utils.response import response
+from ...function.update_table import UpdateTable
+from ...model.arcard_mdb import ArCard
+from ...model.transddb import TransDdb
+from ...model.koreksi_piutang_hdb import KorPiutangHdb
+from ...model.custom_mdb import CustomerMdb
+from ...model.currency_mdb import CurrencyMdb
+from ...model.accou_mdb import AccouMdb
+from ...shared.shared import db
+from ...utils.response import response
 from sqlalchemy.exc import *
-from main.schema.koreksi_piutang_hdb import KoreksiPiuSchema, korPiut_schema
-from main.schema.custom_mdb import customer_schema
-from main.schema.accou_mdb import accou_schema
+from ...schema.koreksi_piutang_hdb import KoreksiPiuSchema, korPiut_schema
+from ...schema.custom_mdb import customer_schema
+from ...schema.accou_mdb import accou_schema
 
 
 class KoreksiPiutang:

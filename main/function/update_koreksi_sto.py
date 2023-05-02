@@ -1,18 +1,18 @@
 from sqlalchemy import and_
-from main.model.djasa_ddb import DjasaDdb
-from main.model.dprod_ddb import DprodDdb
-from main.model.group_prod_mdb import GroupProMdb
-from main.model.hrgbl_mdb import HrgBlMdb
-from main.model.jasa_mdb import JasaMdb
-from main.model.lokasi_mdb import LocationMdb
-from main.model.ordpb_hdb import OrdpbHdb
-from main.model.prod_mdb import ProdMdb
-from main.model.stcard_mdb import StCard
-from main.model.transddb import TransDdb
-from main.model.unit_mdb import UnitMdb
-from main.model.koreksi_sto_hdb import KorStoHdb
-from main.model.koreksi_sto_ddb import KorStoDdb
-from main.shared.shared import db
+from ..model.djasa_ddb import DjasaDdb
+from ..model.dprod_ddb import DprodDdb
+from ..model.group_prod_mdb import GroupProMdb
+from ..model.hrgbl_mdb import HrgBlMdb
+from ..model.jasa_mdb import JasaMdb
+from ..model.lokasi_mdb import LocationMdb
+from ..model.ordpb_hdb import OrdpbHdb
+from ..model.prod_mdb import ProdMdb
+from ..model.stcard_mdb import StCard
+from ..model.transddb import TransDdb
+from ..model.unit_mdb import UnitMdb
+from ..model.koreksi_sto_hdb import KorStoHdb
+from ..model.koreksi_sto_ddb import KorStoDdb
+from ..shared.shared import db
 
 
 class UpdateKoreksiSto:

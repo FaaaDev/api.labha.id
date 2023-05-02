@@ -1,16 +1,16 @@
 from datetime import date, datetime
-from main.model.comp_mdb import CompMdb
-from main.model.accou_ddb import AccouDdb
-from main.model.accou_mdb import AccouMdb
-from main.model.kateg_mdb import KategMdb
-from main.model.setup_mdb import SetupMdb
-from main.model.pnl_mdb import PnlMdb
-from main.model.transddb import TransDdb
-from main.model.user import User
-from main.schema.accou_ddb import AccddbSchema, accddb_schema, accddbs_schema
-from main.schema.accou_mdb import AccouSchema, accou_schema
-from main.shared.shared import db
-from main.utils.response import response
+from ...model.comp_mdb import CompMdb
+from ...model.accou_ddb import AccouDdb
+from ...model.accou_mdb import AccouMdb
+from ...model.kateg_mdb import KategMdb
+from ...model.setup_mdb import SetupMdb
+from ...model.pnl_mdb import PnlMdb
+from ...model.transddb import TransDdb
+from ...model.user import User
+from ...schema.accou_ddb import AccddbSchema, accddb_schema, accddbs_schema
+from ...schema.accou_mdb import AccouSchema, accou_schema
+from ...shared.shared import db
+from ...utils.response import response
 from sqlalchemy.exc import IntegrityError
 
 

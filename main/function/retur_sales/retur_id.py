@@ -1,18 +1,18 @@
-from main.model.ordpj_hdb import OrdpjHdb
-from main.model.prod_mdb import ProdMdb
-from main.model.reprod_ddb import ReprodDdb
-from main.model.retsale_hdb import RetSaleHdb
-from main.model.sord_hdb import SordHdb
-from main.model.unit_mdb import UnitMdb
-from main.schema.retsale_hdb import RetSaleSchema, retsale_schema
-from main.shared.shared import db
-from main.utils.response import response
+from ...model.ordpj_hdb import OrdpjHdb
+from ...model.prod_mdb import ProdMdb
+from ...model.reprod_ddb import ReprodDdb
+from ...model.retsale_hdb import RetSaleHdb
+from ...model.sord_hdb import SordHdb
+from ...model.unit_mdb import UnitMdb
+from ...schema.retsale_hdb import RetSaleSchema, retsale_schema
+from ...shared.shared import db
+from ...utils.response import response
 from sqlalchemy.exc import IntegrityError
-from main.schema.prod_mdb import prod_schema
-from main.schema.reprod_ddb import reprod_schema
-from main.schema.unit_mdb import unit_schema
-from main.schema.ordpj_hdb import ordpj_schema
-from main.schema.sord_hdb import sord_schema
+from ...schema.prod_mdb import prod_schema
+from ...schema.reprod_ddb import reprod_schema
+from ...schema.unit_mdb import unit_schema
+from ...schema.ordpj_hdb import ordpj_schema
+from ...schema.sord_hdb import sord_schema
 
 
 class ReturSaleId:

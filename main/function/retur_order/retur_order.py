@@ -1,24 +1,24 @@
-from main.function.update_table import UpdateTable
-from main.model.fkpb_hdb import FkpbHdb
-from main.model.stcard_mdb import StCard
-from main.model.lokasi_mdb import LocationMdb
-from main.model.ordpb_hdb import OrdpbHdb
-from main.model.prod_mdb import ProdMdb
-from main.model.supplier_mdb import SupplierMdb
-from main.model.reprod_ddb import ReprodDdb
-from main.model.retord_hdb import RetordHdb
-from main.model.unit_mdb import UnitMdb
-from main.schema.dord_hdb import DordSchema, dord_schema
-from main.schema.retord_hdb import RetordSchema, retord_schema
-from main.shared.shared import db
-from main.utils.response import response
+from ...function.update_table import UpdateTable
+from ...model.fkpb_hdb import FkpbHdb
+from ...model.stcard_mdb import StCard
+from ...model.lokasi_mdb import LocationMdb
+from ...model.ordpb_hdb import OrdpbHdb
+from ...model.prod_mdb import ProdMdb
+from ...model.supplier_mdb import SupplierMdb
+from ...model.reprod_ddb import ReprodDdb
+from ...model.retord_hdb import RetordHdb
+from ...model.unit_mdb import UnitMdb
+from ...schema.dord_hdb import DordSchema, dord_schema
+from ...schema.retord_hdb import RetordSchema, retord_schema
+from ...shared.shared import db
+from ...utils.response import response
 from sqlalchemy.exc import *
-from main.schema.prod_mdb import prod_schema
-from main.schema.reprod_ddb import reprod_schema
-from main.schema.unit_mdb import unit_schema
-from main.schema.lokasi_mdb import loct_schema
-from main.schema.supplier_mdb import supplier_schema
-from main.schema.fkpb_hdb import FkpbSchema, fkpb_schema
+from ...schema.prod_mdb import prod_schema
+from ...schema.reprod_ddb import reprod_schema
+from ...schema.unit_mdb import unit_schema
+from ...schema.lokasi_mdb import loct_schema
+from ...schema.supplier_mdb import supplier_schema
+from ...schema.fkpb_hdb import FkpbSchema, fkpb_schema
 
 
 class ReturOrder:

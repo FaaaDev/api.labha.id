@@ -1,12 +1,12 @@
 from datetime import date, datetime
 from math import prod
-from main.model.comp_mdb import CompMdb
-from main.model.accou_ddb import AccouDdb
-from main.model.transddb import TransDdb
-from main.model.setup_mdb import SetupMdb
-from main.model.user import User
-from main.shared.shared import db
-from main.utils.response import response
+from ...model.comp_mdb import CompMdb
+from ...model.accou_ddb import AccouDdb
+from ...model.transddb import TransDdb
+from ...model.setup_mdb import SetupMdb
+from ...model.user import User
+from ...shared.shared import db
+from ...utils.response import response
 from sqlalchemy.exc import IntegrityError
 
 

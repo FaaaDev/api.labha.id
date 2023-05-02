@@ -1,14 +1,14 @@
-from main.function.update_table import UpdateTable
-from main.model.akhir_mdb import AkhirMdb
-from main.model.comp_mdb import CompMdb
-from main.model.accou_ddb import AccouDdb
-from main.model.accou_mdb import AccouMdb
-from main.model.neraca_ddb import NeracaDdb
-from main.model.neraca_hdb import NeracaHdb
-from main.model.user import User
-from main.schema.accou_ddb import accddb_schema, accddbs_schema
-from main.shared.shared import db
-from main.utils.response import response
+from ...function.update_table import UpdateTable
+from ...model.akhir_mdb import AkhirMdb
+from ...model.comp_mdb import CompMdb
+from ...model.accou_ddb import AccouDdb
+from ...model.accou_mdb import AccouMdb
+from ...model.neraca_ddb import NeracaDdb
+from ...model.neraca_hdb import NeracaHdb
+from ...model.user import User
+from ...schema.accou_ddb import accddb_schema, accddbs_schema
+from ...shared.shared import db
+from ...utils.response import response
 from datetime import date, datetime, time
 from sqlalchemy.exc import *
 

@@ -1,12 +1,12 @@
-from main.model.lokasi_mdb import LocationMdb
-from main.model.prod_mdb import ProdMdb
-from main.model.sa_inv import SaldoInvMdb
-from main.model.user import User
-from main.schema.sa_inv import sainv_schema
-from main.schema.lokasi_mdb import loct_schema
-from main.schema.prod_mdb import prod_schema
-from main.shared.shared import db
-from main.utils.response import response
+from ...model.lokasi_mdb import LocationMdb
+from ...model.prod_mdb import ProdMdb
+from ...model.sa_inv import SaldoInvMdb
+from ...model.user import User
+from ...schema.sa_inv import sainv_schema
+from ...schema.lokasi_mdb import loct_schema
+from ...schema.prod_mdb import prod_schema
+from ...shared.shared import db
+from ...utils.response import response
 from datetime import datetime, time
 
 

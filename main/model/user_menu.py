@@ -1,4 +1,4 @@
-from main.shared.shared import db
+from ..shared.shared import db
 
 class UserMenu(db.Model):
     __table_args__ = {'schema': 'public'}

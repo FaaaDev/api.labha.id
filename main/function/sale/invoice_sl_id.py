@@ -1,25 +1,25 @@
-from main.function.update_pembelian import UpdatePembelian
-from main.function.update_stock import UpdateStock
-from main.model.ccost_mdb import CcostMdb
-from main.model.jjasa_ddb import JjasaDdb
-from main.model.jprod_ddb import JprodDdb
-from main.model.inv_pj_hdb import InvoicePjHdb
-from main.model.lokasi_mdb import LocationMdb
-from main.model.ordpj_hdb import OrdpjHdb
-from main.model.prod_mdb import ProdMdb
-from main.model.jasa_mdb import JasaMdb
-from main.model.unit_mdb import UnitMdb
-from main.schema.ordpj_hdb import OrdpjSchema, ordpj_schema
-from main.shared.shared import db
-from main.utils.response import response
+from ...function.update_pembelian import UpdatePembelian
+from ...function.update_stock import UpdateStock
+from ...model.ccost_mdb import CcostMdb
+from ...model.jjasa_ddb import JjasaDdb
+from ...model.jprod_ddb import JprodDdb
+from ...model.inv_pj_hdb import InvoicePjHdb
+from ...model.lokasi_mdb import LocationMdb
+from ...model.ordpj_hdb import OrdpjHdb
+from ...model.prod_mdb import ProdMdb
+from ...model.jasa_mdb import JasaMdb
+from ...model.unit_mdb import UnitMdb
+from ...schema.ordpj_hdb import OrdpjSchema, ordpj_schema
+from ...shared.shared import db
+from ...utils.response import response
 from sqlalchemy.exc import IntegrityError
-from main.schema.prod_mdb import prod_schema
-from main.schema.jasa_mdb import jasa_schema
-from main.schema.unit_mdb import unit_schema
-from main.schema.inv_pj_hdb import InvoicePjSchema, invpj_schema
-from main.schema.jprod_ddb import jprod_schema
-from main.schema.jjasa_ddb import jjasa_schema
-from main.schema.lokasi_mdb import loct_schema
+from ...schema.prod_mdb import prod_schema
+from ...schema.jasa_mdb import jasa_schema
+from ...schema.unit_mdb import unit_schema
+from ...schema.inv_pj_hdb import InvoicePjSchema, invpj_schema
+from ...schema.jprod_ddb import jprod_schema
+from ...schema.jjasa_ddb import jjasa_schema
+from ...schema.lokasi_mdb import loct_schema
 
 
 class InvoicePjId:

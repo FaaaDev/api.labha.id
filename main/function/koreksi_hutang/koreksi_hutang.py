@@ -1,16 +1,16 @@
-from main.function.update_table import UpdateTable
-from main.model.apcard_mdb import ApCard
-from main.model.transddb import TransDdb
-from main.model.koreksi_hutang_hdb import KorHutangHdb
-from main.model.supplier_mdb import SupplierMdb
-from main.model.accou_mdb import AccouMdb
-from main.shared.shared import db
-from main.utils.response import response
+from ...function.update_table import UpdateTable
+from ...model.apcard_mdb import ApCard
+from ...model.transddb import TransDdb
+from ...model.koreksi_hutang_hdb import KorHutangHdb
+from ...model.supplier_mdb import SupplierMdb
+from ...model.accou_mdb import AccouMdb
+from ...shared.shared import db
+from ...utils.response import response
 from sqlalchemy.exc import *
-from main.schema.koreksi_hutang_hdb import KoreksiHutSchema, korHut_schema
-from main.schema.supplier_mdb import supplier_schema
-from main.schema.accou_mdb import accou_schema
-from main.model.currency_mdb import CurrencyMdb
+from ...schema.koreksi_hutang_hdb import KoreksiHutSchema, korHut_schema
+from ...schema.supplier_mdb import supplier_schema
+from ...schema.accou_mdb import accou_schema
+from ...model.currency_mdb import CurrencyMdb
 
 
 class KoreksiHutang:
