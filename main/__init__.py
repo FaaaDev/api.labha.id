@@ -7,6 +7,7 @@ import requests
 
 from .function.cost_center.cost_center import CostCenter
 
+from .function.account.account_filter import AccountFilter
 from .function.cost_center.cost_center_filter import CcostFilter
 from .function.delete_ap_payment import DeleteApPayment
 from .function.income.income import Income
@@ -904,6 +905,11 @@ def account(self):
         ]
 
         return response(200, "Berhasil", True, data)
+
+@app.route("/v1/api/account/<int:page>/<int:length>/<string:filter>", methods=["GET"])
+@token_required
+def account_filter(self, page, length, filter):
+    return AccountFilter(page, length, filter)
 
 
 @app.route("/v1/api/import/account", methods=["POST"])
@@ -1864,14 +1870,14 @@ def customer(self):
             )
             db.session.add(customer)
             db.session.commit()
-            result = response(200, "Berhasil", True, customer_schema.dump(customer))
-        except IntegrityError:
+        except IntegrityError as e:
+            print(e)
             db.session.rollback()
-            result = response(
+            return response(
                 400, "Kode akun " + cus_code + " sudah digunakan", False, None
             )
         finally:
-            return result
+            return response(200, "Berhasil", True, customer_schema.dump(customer))
     else:
         result = (
             db.session.query(CustomerMdb, JpelMdb, SubAreaMdb, CurrencyMdb, PajakMdb)
@@ -1880,7 +1886,7 @@ def customer(self):
             .outerjoin(CurrencyMdb, CurrencyMdb.id == CustomerMdb.cus_curren)
             .outerjoin(PajakMdb, PajakMdb.id == CustomerMdb.cus_pjk)
             .order_by(JpelMdb.id.asc())
-            .order_by(CurrencyMdb.id.asc())
+            # .order_by(CurrencyMdb.id.asc())
             .order_by(CustomerMdb.cus_code.asc())
             .all()
         )
