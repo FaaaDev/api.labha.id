@@ -26,9 +26,9 @@ class User(db.Model):
                            default=datetime.datetime.utcnow())
     updated_at = db.Column(db.TIMESTAMP(timezone=False), default=datetime.datetime.utcnow(
     ), onupdate=datetime.datetime.utcnow())
-    company = db.Column(db.Integer, default=None)
+    company = db.Column(db.Integer)
 
-    def __init__(self, username, name, email, password, confirmation_code, remember_token, password_confirmation):
+    def __init__(self, username, name, email, password, confirmation_code, remember_token, password_confirmation, company):
         self.username = username
         self.name = name
         self.email = email
@@ -36,3 +36,4 @@ class User(db.Model):
         self.confirmation_code = confirmation_code
         self.remember_token = remember_token
         self.password_confirmation = password_confirmation
+        self.company = company

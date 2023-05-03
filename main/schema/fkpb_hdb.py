@@ -13,6 +13,7 @@ class FkpbSchema(ma.Schema):
             "fk_ppn",
             "fk_lunas",
             "fk_desc",
+            "ord_id",
         )
 
 

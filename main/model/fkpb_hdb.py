@@ -9,6 +9,7 @@ class FkpbHdb(db.Model):
     fk_code = db.Column(db.String(255), unique=True)
     fk_date = db.Column(db.TIMESTAMP)
     sup_id = db.Column(db.Integer)
+    ord_id = db.Column(db.Integer)
     fk_tax = db.Column(db.String(255))
     fk_ppn = db.Column(db.Integer)
     fk_lunas = db.Column(db.Integer, default=0)
@@ -16,10 +17,11 @@ class FkpbHdb(db.Model):
     post = db.Column(db.Boolean, default=False)
     closing = db.Column(db.Boolean, default=False)
 
-    def __init__(self, fk_code, fk_date, sup_id, fk_tax, fk_ppn, fk_desc):
+    def __init__(self, fk_code, fk_date, sup_id, fk_tax, fk_ppn, fk_desc, ord_id):
         self.fk_code = fk_code
         self.fk_date = fk_date
         self.sup_id = sup_id
         self.fk_tax = fk_tax
         self.fk_ppn = fk_ppn
         self.fk_desc = fk_desc
+        self.ord_id = ord_id

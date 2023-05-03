@@ -68,8 +68,6 @@ from .function.group_product.group_product import GroupProduct
 from .function.group_product.group_product_id import GroupProductId
 from .function.request_purchase.rp import RequestPurchase
 from .function.request_purchase.rp_id import RequestPurchaseId
-from .function.mutasi.mutasi import Mutasi
-from .function.mutasi.mutasi_id import MutasiId
 from .model.giro_inc_hdb import GiroIncHdb
 from .model.iacq_ddb import IAcqDdb
 from .model.inc_hdb import IncHdb
@@ -2291,6 +2289,9 @@ def setup_account_id(self, id):
 @token_required
 def setup_neraca(self):
     user = User.query.filter(User.id == self.id).first()
+    if user is None:
+        return response(404, "User not found", False, None)
+    
     if request.method == "POST":
         try:
             cp_id = user.company
@@ -5753,13 +5754,174 @@ def memo_import(self):
 @app.route("/v1/api/mutasi", methods=["GET", "POST"])
 @token_required
 def mutasi(self):
-   return Mutasi(self, request)
+    if request.method == "POST":
+        try:
+            mtsi_code = request.json["mtsi_code"]
+            mtsi_date = request.json["mtsi_date"]
+            loc_from = request.json["loc_from"]
+            loc_to = request.json["loc_to"]
+            dep_id = request.json["dep_id"]
+            prj_id = request.json["prj_id"]
+            doc = request.json["doc"]
+            doc_date = request.json["doc_date"]
+            mutasi = request.json["mutasi"]
+
+            mt = MtsiHdb(
+                mtsi_code, mtsi_date, loc_from, loc_to, dep_id, prj_id, doc, doc_date
+            )
+
+            db.session.add(mt)
+            db.session.commit()
+
+            new_mutasi = []
+            for x in mutasi:
+                if x["prod_id"] and x["qty"] and x["unit_id"]:
+                    new_mutasi.append(
+                        MtsiDdb(
+                            mt.id,
+                            x["prod_id"],
+                            x["unit_id"],
+                            x["qty"],
+                        )
+                    )
+
+            if len(new_mutasi) > 0:
+                db.session.add_all(new_mutasi)
+                db.session.commit()
+
+            UpdateMutasi(mt.id, False)
+
+            result = response(200, "Berhasil", True, mtsi_schema.dump(mt))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    else:
+        mt = (
+            db.session.query(MtsiHdb, CcostMdb, ProjMdb)
+            .outerjoin(CcostMdb, CcostMdb.id == MtsiHdb.dep_id)
+            .outerjoin(ProjMdb, ProjMdb.id == MtsiHdb.prj_id)
+            .order_by(MtsiHdb.id.desc())
+            .all()
+        )
+
+        mts = (
+            db.session.query(MtsiDdb, ProdMdb, UnitMdb)
+            .outerjoin(ProdMdb, ProdMdb.id == MtsiDdb.prod_id)
+            .outerjoin(UnitMdb, UnitMdb.id == MtsiDdb.unit_id)
+            .all()
+        )
+
+        loc = LocationMdb.query.all()
+
+        final = []
+        for x in mt:
+            mut = []
+            for y in mts:
+                if x[0].id == y[0].mtsi_id:
+                    y[0].prod_id = prod_schema.dump(y[1])
+                    y[0].unit_id = unit_schema.dump(y[2])
+                    mut.append(mtsiddb_schema.dump(y[0]))
+
+            for y in loc:
+                if x[0].loc_from == y.id:
+                    x[0].loc_from = loct_schema.dump(y)
+
+                if x[0].loc_to == y.id:
+                    x[0].loc_to = loct_schema.dump(y)
+
+            final.append(
+                {
+                    "id": x[0].id,
+                    "mtsi_code": x[0].mtsi_code,
+                    "mtsi_date": MtsiSchema(only=["mtsi_date"]).dump(x[0])["mtsi_date"],
+                    "loc_from": x[0].loc_from,
+                    "loc_to": x[0].loc_to,
+                    "dep_id": ccost_schema.dump(x[1]) if x[1] else None,
+                    "prj_id": proj_schema.dump(x[2]) if x[2] else None,
+                    "doc": x[0].doc,
+                    "doc_date": MtsiSchema(only=["doc_date"]).dump(x[0])["doc_date"],
+                    "mutasi": mut,
+                }
+            )
+
+        return response(200, "Berhasil", True, final)
 
 
 @app.route("/v1/api/mutasi/<int:id>", methods=["PUT", "DELETE"])
 @token_required
 def mutasi_id(self, id):
-    return MutasiId(id, request)
+    x = MtsiHdb.query.filter(MtsiHdb.id == id).first()
+    if request.method == "PUT":
+        try:
+            mtsi_code = request.json["mtsi_code"]
+            mtsi_date = request.json["mtsi_date"]
+            loc_from = request.json["loc_from"]
+            loc_to = request.json["loc_to"]
+            dep_id = request.json["dep_id"]
+            prj_id = request.json["prj_id"]
+            doc = request.json["doc"]
+            doc_date = request.json["doc_date"]
+            mt = request.json["mutasi"]
+
+            x.mtsi_code = mtsi_code
+            x.mtsi_date = mtsi_date
+            x.loc_from = loc_from
+            x.loc_to = loc_to
+            x.dep_id = dep_id
+            x.prj_id = prj_id
+            x.doc = doc
+            x.doc_date = doc_date
+
+            db.session.commit()
+
+            old_mutasi = MtsiDdb.query.filter(MtsiDdb.mtsi_id == id).all()
+            new_mutasi = []
+            for z in mt:
+                if z["id"]:
+                    for y in old_mutasi:
+                        if z["id"] == y.id:
+                            if z["id"] and z["prod_id"] and z["qty"] and z["unit_id"]:
+                                y.prod_id = z["prod_id"]
+                                y.unit_id = z["unit_id"]
+                                y.qty = z["qty"]
+                else:
+                    if x["prod_id"] and x["qty"] and x["unit_id"]:
+                        new_mutasi.append(
+                            MtsiDdb(
+                                x.id,
+                                x["prod_id"],
+                                x["unit_id"],
+                                x["qty"],
+                            )
+                        )
+
+            if len(new_mutasi) > 0:
+                db.session.add_all(new_mutasi)
+
+            db.session.commit()
+
+            UpdateMutasi(x.id, False)
+
+            result = response(200, "Berhasil", True, mtsi_schema.dump(x))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    else:
+        UpdateMutasi(mt.id, True)
+        old_mutasi = MtsiDdb.query.filter(MtsiDdb.mtsi_id == id).all()
+        if old_mutasi:
+            for y in old_mutasi:
+                db.session.delete(y)
+
+        db.session.delete(x)
+        db.session.commit()
+
+        return response(200, "Berhasil", True, None)
+
 
 @app.route("/v1/api/koreksi-sto", methods=["POST", "GET"])
 @token_required

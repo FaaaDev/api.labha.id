@@ -10,10 +10,12 @@ class NeracaHdb(db.Model):
     tittle = db.Column(db.String(255))
     type = db.Column(db.Integer)
     user_id = db.Column(db.Integer)
+    company = db.Column(db.Integer, default=None)
     
 
-    def __init__(self, cp_id, tittle, type, user_id):
+    def __init__(self, cp_id, tittle, type, user_id, company):
         self.cp_id = cp_id
         self.tittle = tittle
         self.type = type
         self.user_id = user_id
+        self.company = company
