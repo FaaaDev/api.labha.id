@@ -11,13 +11,14 @@ class ReprodDdb(db.Model):
     prod_id = db.Column(db.Integer)
     unit_id = db.Column(db.Integer)
     retur = db.Column(db.Integer)
-    price = db.Column(db.Integer)
-    disc = db.Column(db.Integer)
-    nett_price = db.Column(db.Integer)
-    totl = db.Column(db.Integer)
+    price = db.Column(db.Float)
+    disc = db.Column(db.Float)
+    nett_price = db.Column(db.Float)
+    totl = db.Column(db.Float)
     location = db.Column(db.Integer)
+    totl_fc = db.Column(db.Float)
 
-    def __init__(self, ret_id, prod_id, unit_id, retur, price, disc, nett_price, totl, location):
+    def __init__(self, ret_id, prod_id, unit_id, retur, price, disc, nett_price, totl, location, totl_fc):
         self.ret_id = ret_id
         self.prod_id = prod_id
         self.unit_id = unit_id
@@ -27,3 +28,4 @@ class ReprodDdb(db.Model):
         self.nett_price = nett_price
         self.totl = totl
         self.location = location
+        self.totl_fc = totl_fc

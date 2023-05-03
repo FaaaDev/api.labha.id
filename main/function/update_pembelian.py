@@ -58,11 +58,14 @@ class UpdatePembelian:
                         db.session.delete(x)
 
             else:
-                dprod = DprodDdb.query.filter(DprodDdb.ord_id == x[2].ord_id).all()
+                dprod = DprodDdb.query.filter(
+                    DprodDdb.ord_id == x[2].ord_id).all()
 
-                djasa = DjasaDdb.query.filter(DjasaDdb.ord_id == x[2].ord_id).all()
+                djasa = DjasaDdb.query.filter(
+                    DjasaDdb.ord_id == x[2].ord_id).all()
 
-                sup = SupplierMdb.query.filter(SupplierMdb.id == x[1].sup_id).first()
+                sup = SupplierMdb.query.filter(
+                    SupplierMdb.id == x[1].sup_id).first()
 
                 gprod = (
                     db.session.query(ProdMdb, GroupProMdb)
@@ -75,7 +78,8 @@ class UpdatePembelian:
                 # setup = SetupMdb.query.filter(SetupMdb.cp_id == user_company).first()
 
                 ppn = (
-                    db.session.query(OrdpbHdb, SupplierMdb, PajakMdb, CurrencyMdb)
+                    db.session.query(OrdpbHdb, SupplierMdb,
+                                     PajakMdb, CurrencyMdb)
                     .outerjoin(SupplierMdb, SupplierMdb.id == OrdpbHdb.sup_id)
                     .outerjoin(PajakMdb, PajakMdb.id == SupplierMdb.sup_ppn)
                     .outerjoin(CurrencyMdb, CurrencyMdb.id == SupplierMdb.sup_curren)
@@ -87,10 +91,6 @@ class UpdatePembelian:
                 total_fc = 0
                 acc_ns = None
                 for y in dprod:
-                    if x[1].ns:
-                        for z in gprod:
-                            if y.prod_id == z[0].id:
-                                acc_ns = z[1].biaya
 
                     if y.nett_price and y.nett_price > 0:
                         total_product += y.nett_price
@@ -130,9 +130,11 @@ class UpdatePembelian:
                             (100 + ppn[2].nilai) / 100
                         )
 
-                        trx_amnv = (total_fc + jtotal_fc) * ((100 + ppn[2].nilai) / 100)
+                        trx_amnv = (total_fc + jtotal_fc) * \
+                            ((100 + ppn[2].nilai) / 100)
                     else:
-                        trx_amnh = (total_product + total_jasa) * ((100 + 0) / 100)
+                        trx_amnh = (total_product + total_jasa) * \
+                            ((100 + 0) / 100)
 
                         trx_amnv = (total_fc + jtotal_fc) * ((100 + 0) / 100)
 
@@ -177,7 +179,8 @@ class UpdatePembelian:
                 old_hut = TransDdb.query.filter(
                     and_(
                         TransDdb.trx_code == x[0].fk_code,
-                        TransDdb.trx_desc == "JURNAL HUTANG %s" % (x[0].fk_code),
+                        TransDdb.trx_desc == "JURNAL HUTANG %s" % (
+                            x[0].fk_code),
                     )
                 ).first()
 
@@ -207,7 +210,8 @@ class UpdatePembelian:
                 old_ppn = TransDdb.query.filter(
                     and_(
                         TransDdb.trx_code == x[0].fk_code,
-                        TransDdb.trx_desc == "JURNAL PPN KELUARAN %s" % (x[0].fk_code),
+                        TransDdb.trx_desc == "JURNAL PPN KELUARAN %s" % (
+                            x[0].fk_code),
                     )
                 ).first()
 
@@ -235,28 +239,6 @@ class UpdatePembelian:
                     )
 
                     db.session.add(trans_ppn)
-
-                # Insert Jurnal Biaya
-                # if user_product == "inv+gl":
-                if x[1].ns:
-                    trans_biaya = TransDdb(
-                        x[0].fk_code,
-                        x[0].fk_date,
-                        acc_ns,
-                        x[1].dep_id,
-                        None,
-                        None,
-                        sup.sup_curren,
-                        ppn[3].rate if sup.sup_curren else 0,
-                        total_fc,
-                        total_product,
-                        "D",
-                        "JURNAL BIAYA %s" % (x[0].fk_code),
-                        None,
-                        None,
-                    )
-
-                    db.session.add(trans_biaya)
 
             db.session.commit()
 

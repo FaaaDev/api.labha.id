@@ -2,6 +2,7 @@ from ...function.update_table import UpdateTable
 from ...function.update_pembelian import UpdatePembelian
 from ...function.update_stock import UpdateStock
 from ...model.ccost_mdb import CcostMdb
+from ...model.proj_mdb import ProjMdb
 from ...model.djasa_ddb import DjasaDdb
 from ...model.dprod_ddb import DprodDdb
 from ...model.inv_pb_hdb import InvpbHdb
@@ -31,6 +32,7 @@ from ...schema.supplier_mdb import supplier_schema
 from ...schema.lokasi_mdb import loct_schema
 from ...schema.po_mdb import po_schema
 from ...schema.ccost_mdb import ccost_schema
+from ...schema.proj_mdb import proj_schema
 
 
 class Order:
@@ -45,6 +47,7 @@ class Order:
                 faktur = request.json["faktur"]
                 po_id = request.json["po_id"]
                 dep_id = request.json["dep_id"]
+                proj_id = request.json["proj_id"]
                 sup_id = request.json["sup_id"]
                 top = request.json["top"]
                 due_date = request.json["due_date"]
@@ -68,6 +71,7 @@ class Order:
                     faktur,
                     po_id,
                     dep_id,
+                    proj_id,
                     sup_id,
                     top,
                     due_date,
@@ -158,8 +162,8 @@ class Order:
 
                     db.session.commit()
 
-                if do.ns == False:
-                    UpdateStock(do.id, False)
+                # if do.ns == False:
+                UpdateStock(do.id, False)
 
                 if do.invoice:
                     inv = InvpbHdb(
@@ -177,15 +181,15 @@ class Order:
                     db.session.add(inv)
                     db.session.commit()
 
-
                 if do.faktur:
-                    fk = FkpbHdb(ord_code, ord_date, do.sup_id, None, None, None)
+                    fk = FkpbHdb(ord_code, ord_date,
+                                 do.sup_id, None, None, None)
 
                     db.session.add(fk)
                     db.session.commit()
 
-                    invo = InvpbHdb.query.filter(InvpbHdb.ord_id == do.id).first()
-
+                    invo = InvpbHdb.query.filter(
+                        InvpbHdb.ord_id == do.id).first()
 
                     new_detail = FkpbDetDdb(
                         fk.id,
@@ -201,9 +205,7 @@ class Order:
 
                     print("=========fkkk")
 
-                
                     UpdatePembelian(fk.id, user.id, False)
-
 
                 db.session.commit()
 
@@ -217,12 +219,13 @@ class Order:
             try:
                 do = (
                     db.session.query(
-                        OrdpbHdb, CcostMdb, SupplierMdb, RulesPayMdb, PoMdb
+                        OrdpbHdb, CcostMdb, SupplierMdb, RulesPayMdb, PoMdb, ProjMdb
                     )
                     .outerjoin(CcostMdb, CcostMdb.id == OrdpbHdb.dep_id)
                     .outerjoin(SupplierMdb, SupplierMdb.id == OrdpbHdb.sup_id)
                     .outerjoin(RulesPayMdb, RulesPayMdb.id == OrdpbHdb.top)
                     .outerjoin(PoMdb, PoMdb.id == OrdpbHdb.po_id)
+                    .outerjoin(ProjMdb, ProjMdb.id == OrdpbHdb.proj_id)
                     .order_by(OrdpbHdb.id.desc())
                     .all()
                 )
@@ -250,7 +253,8 @@ class Order:
                             y[0].prod_id = prod_schema.dump(y[1])
                             y[0].unit_id = unit_schema.dump(y[2])
                             y[0].location = (
-                                loct_schema.dump(y[3]) if y[0].location else None
+                                loct_schema.dump(
+                                    y[3]) if y[0].location else None
                             )
                             product.append(dprod_schema.dump(y[0]))
 
@@ -276,6 +280,7 @@ class Order:
                             "faktur": x[0].faktur,
                             "po_id": po_schema.dump(x[4]),
                             "dep_id": ccost_schema.dump(x[1]),
+                            "proj_id": proj_schema.dump(x[5]),
                             "sup_id": supplier_schema.dump(x[2]),
                             "top": rpay_schema.dump(x[3]),
                             "due_date": DordSchema(only=["due_date"]).dump(x[0])[
