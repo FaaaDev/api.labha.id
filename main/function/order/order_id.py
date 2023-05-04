@@ -50,6 +50,7 @@ class OrderId:
                 faktur = request.json["faktur"]
                 po_id = request.json["po_id"]
                 dep_id = request.json["dep_id"]
+                proj_id = request.json["proj_id"]
                 sup_id = request.json["sup_id"]
                 top = request.json["top"]
                 due_date = request.json["due_date"]
@@ -71,6 +72,7 @@ class OrderId:
                 do.faktur = faktur
                 do.po_id = po_id
                 do.dep_id = dep_id
+                do.proj_id = proj_id
                 do.sup_id = sup_id
                 do.top = top
                 do.due_date = due_date
@@ -236,11 +238,11 @@ class OrderId:
 
                     db.session.commit()
 
-                if ns == False:
-                    UpdateStock(do.id, False)
+                UpdateStock(do.id, False)
 
                 if do.invoice:
-                    old_inv = InvpbHdb.query.filter(InvpbHdb.ord_id == id).all()
+                    old_inv = InvpbHdb.query.filter(
+                        InvpbHdb.ord_id == id).all()
                     if old_inv:
                         for x in old_inv:
                             db.session.delete(x)
@@ -261,17 +263,18 @@ class OrderId:
                     db.session.commit()
 
                 if do.faktur:
-                    old_fk = FkpbHdb.query.filter(FkpbHdb.fk_code == do.ord_code).all()
+                    old_fk = FkpbHdb.query.filter(
+                        FkpbHdb.fk_code == do.ord_code).all()
                     if old_fk:
                         for x in old_fk:
                             db.session.delete(x)
                             db.session.commit()
 
-                    fk = FkpbHdb(ord_code, ord_date, do.sup_id, None, None, None)
+                    fk = FkpbHdb(ord_code, ord_date,
+                                 do.sup_id, None, None, None)
 
                     db.session.add(fk)
                     db.session.commit()
-
 
                     invo = InvpbHdb.query.filter(InvpbHdb.ord_id == id).first()
                     old_fkdet = FkpbDetDdb.query.filter(
@@ -355,7 +358,8 @@ class OrderId:
             self.response = response(200, "Berhasil", True, None)
         else:
             x = (
-                db.session.query(OrdpbHdb, CcostMdb, SupplierMdb, RulesPayMdb, PoMdb)
+                db.session.query(OrdpbHdb, CcostMdb,
+                                 SupplierMdb, RulesPayMdb, PoMdb)
                 .outerjoin(CcostMdb, CcostMdb.id == OrdpbHdb.dep_id)
                 .outerjoin(SupplierMdb, SupplierMdb.id == OrdpbHdb.sup_id)
                 .outerjoin(RulesPayMdb, RulesPayMdb.id == OrdpbHdb.top)
@@ -384,7 +388,8 @@ class OrderId:
                 if y[0].ord_id == x[0].id:
                     y[0].prod_id = prod_schema.dump(y[1])
                     y[0].unit_id = unit_schema.dump(y[2])
-                    y[0].lcoation = unit_schema.dump(y[3]) if y[0].location else None
+                    y[0].lcoation = unit_schema.dump(
+                        y[3]) if y[0].location else None
                     product.append(dprod_schema.dump(y[0]))
 
             jasa = []

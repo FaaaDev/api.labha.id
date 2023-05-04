@@ -1,18 +1,18 @@
 from sqlalchemy import and_
-from ..model.djasa_ddb import DjasaDdb
-from ..model.dprod_ddb import DprodDdb
-from ..model.group_prod_mdb import GroupProMdb
-from ..model.hrgbl_mdb import HrgBlMdb
-from ..model.jasa_mdb import JasaMdb
-from ..model.lokasi_mdb import LocationMdb
-from ..model.ordpb_hdb import OrdpbHdb
-from ..model.prod_mdb import ProdMdb
-from ..model.stcard_mdb import StCard
-from ..model.transddb import TransDdb
-from ..model.unit_mdb import UnitMdb
-from ..model.mtsi_hdb import MtsiHdb
-from ..model.mtsi_ddb import MtsiDdb
-from ..shared.shared import db
+from main.model.djasa_ddb import DjasaDdb
+from main.model.dprod_ddb import DprodDdb
+from main.model.group_prod_mdb import GroupProMdb
+from main.model.hrgbl_mdb import HrgBlMdb
+from main.model.jasa_mdb import JasaMdb
+from main.model.lokasi_mdb import LocationMdb
+from main.model.ordpb_hdb import OrdpbHdb
+from main.model.prod_mdb import ProdMdb
+from main.model.stcard_mdb import StCard
+from main.model.transddb import TransDdb
+from main.model.unit_mdb import UnitMdb
+from main.model.mtsi_hdb import MtsiHdb
+from main.model.mtsi_ddb import MtsiDdb
+from main.shared.shared import db
 
 
 class UpdateMutasi:
@@ -30,13 +30,27 @@ class UpdateMutasi:
             if old_st:
                 for x in old_st:
                     db.session.delete(x)
-                db.session.commit()
+
+            for p in product:
+                st_panen = StCard.query.filter(
+                    and_(
+                        StCard.trx_type == "HRV",
+                        StCard.loc_id == mtsi.loc_from,
+                        StCard.prod_id == p.prod_id,
+                    )
+                ).all()
+
+                if st_panen:
+                    for x in st_panen:
+                        x.mtsi = x.mtsi - 1
+                        db.session.commit()
+
         else:
             old_st = StCard.query.filter(StCard.trx_code == mtsi.mtsi_code).all()
             if old_st:
                 for x in old_st:
                     db.session.delete(x)
-                db.session.commit()
+
             st_k = []
             st_d = []
             for x in product:
@@ -53,19 +67,19 @@ class UpdateMutasi:
                         mtsi.mtsi_code,
                         mtsi.mtsi_date,
                         "k",
-                        "MD",
+                        "MK",
                         None,
                         x.qty,
                         None,
                         None,
-                        x.qty*(hrg_pokok/total_sto),
+                        (hrg_pokok / total_sto) * x.qty,
                         None,
                         None,
                         x.prod_id,
                         mtsi.loc_from,
                         None,
                         0,
-                        None,
+                        0,
                     )
                 )
 
@@ -74,19 +88,19 @@ class UpdateMutasi:
                         mtsi.mtsi_code,
                         mtsi.mtsi_date,
                         "d",
-                        "MK",
+                        "MD",
                         None,
-                        x.qty,
+                        x.qty_terima,
                         None,
                         None,
-                        x.qty*(hrg_pokok/total_sto),
+                        (hrg_pokok / total_sto) * x.qty,
                         None,
                         None,
                         x.prod_id,
-                        mtsi.loc_from,
+                        mtsi.loc_to,
                         None,
                         0,
-                        None,
+                        0,
                     )
                 )
 
@@ -95,4 +109,4 @@ class UpdateMutasi:
             if len(st_d) > 0:
                 db.session.add_all(st_d)
 
-            db.session.commit()
+        db.session.commit()

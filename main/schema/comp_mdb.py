@@ -25,6 +25,7 @@ class CompSchema(ma.Schema):
             "over_po",
             "cutoff",
             "year_co",
+            "gl_detail",
         )
 
 

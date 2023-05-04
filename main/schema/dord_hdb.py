@@ -13,6 +13,7 @@ class DordSchema(ma.Schema):
                   'faktur',
                   'po_id',
                   'dep_id',
+                  'proj_id',
                   'sup_id',
                   'top',
                   'due_date',
