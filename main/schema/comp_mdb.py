@@ -24,8 +24,9 @@ class CompSchema(ma.Schema):
             "rp",
             "over_po",
             "cutoff",
+            "comp_type",
             "year_co",
-            "gl_detail",
+            "user_id",
         )
 
 
