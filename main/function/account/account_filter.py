@@ -5,6 +5,7 @@ from ...model.kateg_mdb import KategMdb
 from ...schema.klasi_mdb import klasi_schema
 from ...model.klasi_mdb import KlasiMdb
 from ...shared.shared import db
+from sqlalchemy.exc import *
 from ...utils.response import response
 from sqlalchemy import func, cast, case, literal_column, or_
 

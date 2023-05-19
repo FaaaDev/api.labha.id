@@ -16,6 +16,8 @@ from .function.koreksi_sto.koreksi_sto import KoreksiPersediaan
 from .function.koreksi_sto.koreksi_sto_id import KorPersediaanId
 from .function.menu.menu import Menu
 from .function.menu.menu_id import MenuId
+from .function.kategory.kategory import Kategory
+from .function.kategory.kategory_id import KategoryId
 from .function.retur_order.retur_id import ReturOrderId
 from .function.retur_order.retur_order import ReturOrder
 from .function.retur_sales.retur_id import ReturSaleId
@@ -678,65 +680,13 @@ def klasifikasi_id(self, id):
 @app.route("/v1/api/kategory", methods=["POST", "GET"])
 @token_required
 def kategory(self):
-    if request.method == "POST":
-        name = request.json["name"]
-        kode_klasi = request.json["kode_klasi"]
-        kode_saldo = request.json["kode_saldo"]
-        kategory = KategMdb(name, kode_klasi, kode_saldo, False)
-        db.session.add(kategory)
-        db.session.commit()
-
-        return response(200, "Berhasil", True, kateg_schema.dump(kategory))
-    else:
-        result = (
-            db.session.query(KategMdb, KlasiMdb)
-            .outerjoin(KlasiMdb, KategMdb.kode_klasi == KlasiMdb.id)
-            # .order_by(KategMdb.kode_klasi.asc())
-            .order_by(KategMdb.id.asc())
-            .all()
-        )
-        data = [
-            {
-                "kategory": kateg_schema.dump(x[0]),
-                "klasifikasi": klasi_schema.dump(x[1]),
-            }
-            for x in result
-        ]
-
-        return response(200, "Berhasil", True, data)
+    return Kategory(self.id, request)
 
 
 @app.route("/v1/api/kategory/<int:id>", methods=["PUT", "GET", "DELETE"])
 @token_required
 def kategory_id(self, id):
-    kategory = KategMdb.query.filter(KategMdb.id == id).first()
-    if request.method == "PUT":
-        kategory.name = request.json["name"]
-        kategory.kode_klasi = request.json["kode_klasi"]
-        kategory.kode_saldo = request.json["kode_saldo"]
-        db.session.commit()
-
-        return response(200, "Berhasil", True, kateg_schema.dump(kategory))
-    elif request.method == "DELETE":
-        db.session.delete(kategory)
-        db.session.commit()
-
-        return response(200, "Berhasil", True, None)
-    else:
-        result = (
-            db.session.query(KategMdb, KlasiMdb)
-            .outerjoin(KlasiMdb, KategMdb.kode_klasi == KlasiMdb.id)
-            .order_by(KategMdb.id.asc())
-            .filter(KategMdb.id == id)
-            .first()
-        )
-        data = {
-            "kategory": kateg_schema.dump(result[0]),
-            "klasifikasi": klasi_schema.dump(result[1]),
-        }
-
-        return response(200, "Berhasil", True, data)
-
+    return KategoryId(id, request)
 
 @app.route("/v1/api/import/kategori", methods=["POST"])
 @token_required
