@@ -271,7 +271,7 @@ class OrderId:
                             db.session.commit()
 
                     fk = FkpbHdb(ord_code, ord_date,
-                                 do.sup_id, None, None, None)
+                                 do.sup_id, None, None, None, do.id)
 
                     db.session.add(fk)
                     db.session.commit()
@@ -327,25 +327,25 @@ class OrderId:
 
                 db.session.commit()
 
-            fk = (
-                db.session.query(FkpbDetDdb, FkpbHdb)
-                .outerjoin(FkpbHdb, FkpbHdb.id == FkpbDetDdb.fk_id)
-                .filter(FkpbDetDdb.ord_id == do.id)
-                .first()
-            )
-
             inv = InvpbHdb.query.filter(InvpbHdb.ord_id == do.id).first()
+            fk = FkpbHdb.query.filter(FkpbHdb.fk_code == do.ord_code).first()
+            fk_det = FkpbDetDdb.query.filter(FkpbDetDdb.ord_id == do.id).all()
             product = DprodDdb.query.filter(DprodDdb.ord_id == do.id)
             jasa = DjasaDdb.query.filter(DjasaDdb.ord_id == do.id)
 
-            if fk and inv:
-                UpdatePembelian(do.id, id, True)
+            if fk:
+                UpdatePembelian(
+                    do.id, id, True
+                )
                 db.session.delete(fk)
-                db.session.delete(inv)
+
+            if fk_det:
+                for x in fk_det:
+                    db.session.delete(x)
 
             if inv:
                 db.session.delete(inv)
-
+                
             for x in product:
                 db.session.delete(x)
 
