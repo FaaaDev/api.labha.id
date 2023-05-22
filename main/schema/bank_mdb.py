@@ -15,6 +15,7 @@ class BankMdb(ma.Schema):
             "user_edit",
             "entry_date",
             "edit_date",
+            "comp_id",
         )
 
 

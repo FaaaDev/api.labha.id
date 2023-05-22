@@ -63,6 +63,25 @@ from main.function.group_product.group_product import GroupProduct
 from main.function.group_product.group_product_id import GroupProductId
 from main.function.request_purchase.rp import RequestPurchase
 from main.function.request_purchase.rp_id import RequestPurchaseId
+from main.function.produksi.formula.formula import Formula
+from main.function.produksi.formula.formula_id import FormulaId
+from main.function.produksi.planning.planning import Planning
+from main.function.produksi.planning.planning_id import PlanningId
+from main.function.produksi.batch.batch import Batch
+from main.function.produksi.batch.batch_id import BatchId
+from main.function.produksi.penerimaan_hasil_jadi.phj import PenerimaanHasilJadi
+from main.function.produksi.penerimaan_hasil_jadi.phj_id import PenerimaanHasilJadiId
+from main.function.produksi.pembebanan.pembebanan import Pembebanan
+from main.function.produksi.pembebanan.pembebanan_id import PembebananId
+from main.function.account.account import Account
+from main.function.account.account_id import AccountId
+from main.function.bank.bank import Bank
+from main.function.bank.bank_id import BankId
+from main.function.currency.currency import Currency
+from main.function.currency.currency_id import CurrencyId
+from main.function.kategory.kategory import Kategory
+from main.function.kategory.kategory_id import KategoryId
+from main.function.kategory.kategory_import import KategoryImport
 from main.model.giro_inc_hdb import GiroIncHdb
 from main.model.iacq_ddb import IAcqDdb
 from main.model.inc_hdb import IncHdb
@@ -272,7 +291,8 @@ def authHelper():
 
 def response(code, message, status, data):
     return (
-        jsonify({"code": code, "status": status, "message": message, "data": data}),
+        jsonify({"code": code, "status": status,
+                "message": message, "data": data}),
         code,
     )
 
@@ -318,7 +338,8 @@ def index():
 
 @app.route("/v1/api/login", methods=["POST"])
 def login():
-    result = requests.post(url="%s/login" % (authHelper()), json=request.json).json()
+    result = requests.post(url="%s/login" %
+                           (authHelper()), json=request.json).json()
 
     return response(result["code"], result["message"], result["status"], result["data"])
     # username = request.json["username"]
@@ -353,8 +374,12 @@ def login():
 @app.route("/v1/api/user", methods=["POST", "GET"])
 @token_required
 def user(self):
+    header = request.headers
     if request.method == "POST":
-        header = request.headers
+        request.json["company"] = self.company
+        request.json["product"] = self.product
+        request.json["endpoint_id"] = self.endpoint_id
+
         result = requests.post(
             url="%s/user" % (authHelper()),
             headers=header,
@@ -380,60 +405,89 @@ def user(self):
                         )
 
                 if len(new_menu) > 0:
-
                     db.session.add_all(new_menu)
-                    db.session.commit()
-                results = response(
-                    200, "Berhasil menambahkan user", True, result["data"]
-                )
+
+                db.session.commit()
+
+                return response(200, "Berhasil menambahkan user", True, result["data"])
             except IntegrityError:
                 db.session.rollback()
-                results = response(400, "Gagal", False, None)
-            finally:
-                return results
+                return response(400, "Gagal", False, None)
+            except Exception as e:
+                print(e)
+                return response(400, str(e), False, str(e))
         else:
             return response(
                 result["code"], result["message"], result["status"], result["data"]
             )
     else:
+        result = requests.get(
+            url="%s/user" % (authHelper()),
+            headers=header,
+        ).json()
 
-        user = User.query.all()
-
-        menus = UserMenu.query.all()
-
+        menus = UserMenu.query.order_by(UserMenu.id).all()
         users = []
 
-        for x in user:
-            menu = []
-            for y in menus:
-                if x.id == y.user_id:
-                    menu.append(
-                        {
-                            "menu_id": y.menu_id,
-                            "view": y.view,
-                            "edit": y.edit,
-                            "delete": y.delete,
-                        }
-                    )
-            users.append(
-                {
-                    "id": x.id,
-                    "email": x.email,
-                    "username": x.username,
-                    "active": x.active,
-                    "menu": menu,
-                }
-            )
+        if result["code"] == 200:
+            for x in result["data"]:
+                menu = []
+                for y in menus:
+                    if x["id"] == y.user_id:
+                        menu.append(
+                            {
+                                "menu_id": y.menu_id,
+                                "view": y.view,
+                                "edit": y.edit,
+                                "delete": y.delete,
+                            }
+                        )
+                users.append(
+                    {
+                        "id": x["id"],
+                        "email": x["email"],
+                        "username": x["username"],
+                        "active": x["active"],
+                        "menu": menu,
+                    }
+                )
 
-        return response(200, "Berhasil", True, users)
+            return response(200, "Berhasil", True, users)
+        else:
+            return response(
+                result["code"], result["message"], result["status"], result["data"]
+            )
 
 
 @app.route("/v1/api/user/<int:id>", methods=["PUT", "GET", "DELETE"])
-def user_id(id):
+@token_required
+def user_id(self, id):
     user = User.query.filter(User.id == id).first()
     if request.method == "PUT":
-        username = request.json["username"]
-        user.username = username
+        old_menu = UserMenu.query.filter(UserMenu.user_id == id).all()
+        if len(old_menu) > 0:
+            for x in old_menu:
+                db.session.delete(x)
+            db.session.commit()
+
+        menu = request.json["menu"]
+
+        new_menu = []
+        for x in menu:
+            if x["menu_id"]:
+                new_menu.append(
+                    UserMenu(
+                        id,
+                        x["menu_id"],
+                        x["view"],
+                        x["edit"],
+                        x["delete"],
+                    )
+                )
+
+        if len(new_menu) > 0:
+            db.session.add_all(new_menu)
+
         db.session.commit()
 
         return response(200, "Berhasil mengupdate user", True, user_schema.dump(user))
@@ -526,6 +580,82 @@ def profil(self):
     return response(200, "Berhasil", True, menu)
 
 
+@app.route("/v1/api/akses-menu", methods=["GET"])
+@token_required
+def access(self):
+    user = (
+        db.session.query(UserMenu, MainMenu)
+        .outerjoin(MainMenu, MainMenu.id == UserMenu.menu_id)
+        .filter(and_(UserMenu.user_id == self.id, MainMenu.visible == True))
+        .order_by(MainMenu.category.asc(), MainMenu.id.asc())
+        .all()
+    )
+
+    menu = []
+    for x in user:
+        sub_menu = []
+        for y in user:
+            last_menu = []
+            for z in user:
+                if z[1].parent_id == y[1].id:
+                    last_menu.append(
+                        {
+                            "id": z[1].id,
+                            "name": z[1].name,
+                            "route_name": z[1].route_name,
+                            "icon_file": z[1].icon_file,
+                            "parent_id": z[1].parent_id,
+                            "visible": z[1].visible,
+                            "category": z[1].category,
+                            "view": z[0].view,
+                            "edit": z[0].edit,
+                            "delete": z[0].delete,
+                        }
+                    )
+            if y[1].parent_id == x[1].id:
+                sub_menu.append(
+                    {
+                        "id": y[1].id,
+                        "name": y[1].name,
+                        "route_name": y[1].route_name,
+                        "icon_file": y[1].icon_file,
+                        "visible": y[1].visible,
+                        "parent_id": y[1].parent_id,
+                        "category": y[1].category,
+                        "view": y[0].view,
+                        "edit": y[0].edit,
+                        "delete": y[0].delete,
+                        "lastmenu": last_menu,
+                    }
+                )
+        if not x[1].parent_id:
+            menu.append(
+                {
+                    "id": x[1].id,
+                    "name": x[1].name,
+                    "route_name": x[1].route_name,
+                    "icon_file": x[1].icon_file,
+                    "visible": x[1].visible,
+                    "parent_id": x[1].parent_id,
+                    "category": x[1].category,
+                    "view": x[0].view,
+                    "edit": x[0].edit,
+                    "delete": x[0].delete,
+                    "submenu": sub_menu,
+                }
+            )
+
+    menu = {
+        "id": self.id,
+        "email": self.email,
+        "username": self.username,
+        "name": self.name,
+        "menu": menu,
+    }
+
+    return response(200, "Berhasil", True, menu)
+
+
 @app.route("/v1/api/menu", methods=["POST", "GET"])
 @token_required
 def menu(self):
@@ -541,72 +671,75 @@ def menu_id(self, id):
 @app.route("/v1/api/bank", methods=["POST", "GET"])
 @token_required
 def bank(self):
-    if request.method == "POST":
-        try:
-            BANK_CODE = request.json["BANK_CODE"]
-            ACC_ID = request.json["ACC_ID"]
-            BANK_NAME = request.json["BANK_NAME"]
-            BANK_DESC = request.json["BANK_DESC"]
-            CURRENCY = request.json["CURRENCY"]
-            bank = BankMdb(
-                BANK_CODE, BANK_NAME, BANK_DESC, CURRENCY, ACC_ID, self.id, None
-            )
-            db.session.add(bank)
-            db.session.commit()
+    return Bank(self, request)
+    # if request.method == "POST":
+    #     try:
+    #         BANK_CODE = request.json["BANK_CODE"]
+    #         ACC_ID = request.json["ACC_ID"]
+    #         BANK_NAME = request.json["BANK_NAME"]
+    #         BANK_DESC = request.json["BANK_DESC"]
+    #         CURRENCY = request.json["CURRENCY"]
+    #         bank = BankMdb(
+    #             BANK_CODE, BANK_NAME, BANK_DESC, CURRENCY, ACC_ID, self.id, None
+    #         )
+    #         db.session.add(bank)
+    #         db.session.commit()
 
-            result = response(200, "Berhasil", True, bank_schema.dump(bank))
-        except IntegrityError:
-            db.session.rollback()
-            result = response(400, "Kode sudah digunakan", False, None)
-        finally:
-            return result
-    else:
-        result = (
-            db.session.query(BankMdb, AccouMdb)
-            .outerjoin(AccouMdb, BankMdb.acc_id == AccouMdb.id)
-            .order_by(BankMdb.id.asc())
-            .all()
-        )
-        data = [
-            {"bank": bank_schema.dump(x[0]), "account": accou_schema.dump(x[1])}
-            for x in result
-        ]
+    #         result = response(200, "Berhasil", True, bank_schema.dump(bank))
+    #     except IntegrityError:
+    #         db.session.rollback()
+    #         result = response(400, "Kode sudah digunakan", False, None)
+    #     finally:
+    #         return result
+    # else:
+    #     result = (
+    #         db.session.query(BankMdb, AccouMdb)
+    #         .outerjoin(AccouMdb, BankMdb.acc_id == AccouMdb.id)
+    #         .order_by(BankMdb.id.asc())
+    #         .all()
+    #     )
+    #     data = [
+    #         {"bank": bank_schema.dump(
+    #             x[0]), "account": accou_schema.dump(x[1])}
+    #         for x in result
+    #     ]
 
-        return response(200, "Berhasil", True, data)
+    #     return response(200, "Berhasil", True, data)
 
 
 @app.route("/v1/api/bank/<int:id>", methods=["PUT", "GET", "DELETE"])
 @token_required
 def bank_id(self, id):
-    bank = BankMdb.query.filter(BankMdb.id == id).first()
-    if request.method == "PUT":
-        bank.BANK_CODE = request.json["BANK_CODE"]
-        bank.acc_id = request.json["ACC_ID"]
-        bank.BANK_NAME = request.json["BANK_NAME"]
-        bank.BANK_DESC = request.json["BANK_DESC"]
-        bank.CURRENCY = request.json["CURRENCY"]
-        db.session.commit()
+    return BankId(id, request)
+    # bank = BankMdb.query.filter(BankMdb.id == id).first()
+    # if request.method == "PUT":
+    #     bank.BANK_CODE = request.json["BANK_CODE"]
+    #     bank.acc_id = request.json["ACC_ID"]
+    #     bank.BANK_NAME = request.json["BANK_NAME"]
+    #     bank.BANK_DESC = request.json["BANK_DESC"]
+    #     bank.CURRENCY = request.json["CURRENCY"]
+    #     db.session.commit()
 
-        return response(200, "Berhasil", True, bank_schema.dump(bank))
-    elif request.method == "DELETE":
-        db.session.delete(bank)
-        db.session.commit()
+    #     return response(200, "Berhasil", True, bank_schema.dump(bank))
+    # elif request.method == "DELETE":
+    #     db.session.delete(bank)
+    #     db.session.commit()
 
-        return response(200, "Berhasil", True, None)
-    else:
-        result = (
-            db.session.query(BankMdb, AccouMdb)
-            .outerjoin(AccouMdb, BankMdb.BANK_ACC == AccouMdb.acc_code)
-            .order_by(BankMdb.id.asc())
-            .filter(BankMdb.id == id)
-            .first()
-        )
-        data = {
-            "bank": bank_schema.dump(result[0]),
-            "account": accou_schema.dump(result[1]),
-        }
+    #     return response(200, "Berhasil", True, None)
+    # else:
+    #     result = (
+    #         db.session.query(BankMdb, AccouMdb)
+    #         .outerjoin(AccouMdb, BankMdb.BANK_ACC == AccouMdb.acc_code)
+    #         .order_by(BankMdb.id.asc())
+    #         .filter(BankMdb.id == id)
+    #         .first()
+    #     )
+    #     data = {
+    #         "bank": bank_schema.dump(result[0]),
+    #         "account": accou_schema.dump(result[1]),
+    #     }
 
-        return response(200, "Berhasil", True, data)
+    #     return response(200, "Berhasil", True, data)
 
 
 @app.route("/v1/api/klasifikasi", methods=["POST", "GET"])
@@ -635,90 +768,19 @@ def klasifikasi_id(self, id):
 @app.route("/v1/api/kategory", methods=["POST", "GET"])
 @token_required
 def kategory(self):
-    if request.method == "POST":
-        name = request.json["name"]
-        kode_klasi = request.json["kode_klasi"]
-        kode_saldo = request.json["kode_saldo"]
-        kategory = KategMdb(name, kode_klasi, kode_saldo, False)
-        db.session.add(kategory)
-        db.session.commit()
-
-        return response(200, "Berhasil", True, kateg_schema.dump(kategory))
-    else:
-        result = (
-            db.session.query(KategMdb, KlasiMdb)
-            .outerjoin(KlasiMdb, KategMdb.kode_klasi == KlasiMdb.id)
-            # .order_by(KategMdb.kode_klasi.asc())
-            .order_by(KategMdb.id.asc())
-            .all()
-        )
-        data = [
-            {
-                "kategory": kateg_schema.dump(x[0]),
-                "klasifikasi": klasi_schema.dump(x[1]),
-            }
-            for x in result
-        ]
-
-        return response(200, "Berhasil", True, data)
+    return Kategory(self, request)
 
 
 @app.route("/v1/api/kategory/<int:id>", methods=["PUT", "GET", "DELETE"])
 @token_required
 def kategory_id(self, id):
-    kategory = KategMdb.query.filter(KategMdb.id == id).first()
-    if request.method == "PUT":
-        kategory.name = request.json["name"]
-        kategory.kode_klasi = request.json["kode_klasi"]
-        kategory.kode_saldo = request.json["kode_saldo"]
-        db.session.commit()
-
-        return response(200, "Berhasil", True, kateg_schema.dump(kategory))
-    elif request.method == "DELETE":
-        db.session.delete(kategory)
-        db.session.commit()
-
-        return response(200, "Berhasil", True, None)
-    else:
-        result = (
-            db.session.query(KategMdb, KlasiMdb)
-            .outerjoin(KlasiMdb, KategMdb.kode_klasi == KlasiMdb.id)
-            .order_by(KategMdb.id.asc())
-            .filter(KategMdb.id == id)
-            .first()
-        )
-        data = {
-            "kategory": kateg_schema.dump(result[0]),
-            "klasifikasi": klasi_schema.dump(result[1]),
-        }
-
-        return response(200, "Berhasil", True, data)
+    return KategoryId(id, request)
 
 
 @app.route("/v1/api/import/kategori", methods=["POST"])
 @token_required
 def kateg_import(self):
-    kateg = request.json["kateg"]
-
-    db.session.query(KategMdb).delete()
-    db.session.commit()
-
-    for x in kateg:
-        id = x["id"]
-        name = x["name"]
-        kode_klasi = x["kode_klasi"]
-        kode_saldo = x["kode_saldo"]
-
-        try:
-
-            a = KategMdb(id, name, kode_klasi, kode_saldo, True)
-            db.session.add(a)
-            db.session.commit()
-
-        except IntegrityError:
-            db.session.rollback()
-
-    return response(200, "Berhasil", True, None)
+    return KategoryImport(self, request)
 
 
 @app.route("/v1/api/account/u/<int:kat_id>", methods=["GET"])
@@ -772,7 +834,8 @@ def account_sub_umum(self, umm_code):
 
     if last_acc != None:
         next_code = (
-            umm_code + "0" + str(int(last_acc.acc_code.replace(umm_code, "")) + 1)
+            umm_code + "0" +
+            str(int(last_acc.acc_code.replace(umm_code, "")) + 1)
         )
     else:
         next_code = umm_code + "0" + "1"
@@ -792,7 +855,8 @@ def account_detail(self, umm_code):
 
     if last_acc != None:
         next_code = (
-            umm_code + "." + str(int(last_acc.acc_code.replace(umm_code + ".", "")) + 1)
+            umm_code + "." +
+            str(int(last_acc.acc_code.replace(umm_code + ".", "")) + 1)
         )
         print(last_acc.acc_code)
         print(int(last_acc.acc_code.replace(umm_code + ".", "")))
@@ -804,64 +868,66 @@ def account_detail(self, umm_code):
 @app.route("/v1/api/account", methods=["POST", "GET"])
 @token_required
 def account(self):
-    if request.method == "POST":
-        if "kode_acc" in request.json:
-            acc_code = request.json["kode_acc"]
-            acc_name = request.json["acc_name"]
-            umm_code = request.json["kode_umum"]
-            kat_code = request.json["kode_kategori"]
-            dou_type = request.json["du"]
-            sld_type = request.json["kode_saldo"]
-            connect = request.json["terhubung"]
-            sld_awal = request.json["saldo_awal"]
-            level = request.json["level"]
-            try:
-                account = AccouMdb(
-                    acc_code,
-                    acc_name,
-                    umm_code,
-                    kat_code,
-                    dou_type,
-                    sld_type,
-                    connect,
-                    sld_awal,
-                    level,
-                )
-                db.session.add(account)
-                db.session.commit()
-                result = response(200, "Berhasil", True, accou_schema.dump(account))
-            except IntegrityError:
-                db.session.rollback()
-                result = response(
-                    400, "Kode akun " + acc_code + " sudah digunakan", False, None
-                )
-            finally:
-                return result
-        else:
-            return response(406, "Data isian belum lengkap", False, None)
-    else:
-        result = (
-            db.session.query(AccouMdb, KategMdb, KlasiMdb)
-            .join(AccouMdb, KategMdb.id == AccouMdb.kat_code)
-            .outerjoin(KlasiMdb, KategMdb.kode_klasi == KlasiMdb.id)
-            # .order_by(KlasiMdb.id.asc())
-            .order_by(KategMdb.id.asc())
-            .order_by(
-                AccouMdb.id.asc(),
-                cast(func.replace(AccouMdb.acc_code, ".", ""), db.Integer).asc(),
-            )
-            .all()
-        )
-        data = [
-            {
-                "account": accou_schema.dump(x[0]),
-                "kategory": kateg_schema.dump(x[1]),
-                "klasifikasi": klasi_schema.dump(x[2]),
-            }
-            for x in result
-        ]
+    return Account(self, request)
+    # if request.method == "POST":
+    #     if "kode_acc" in request.json:
+    #         acc_code = request.json["kode_acc"]
+    #         acc_name = request.json["acc_name"]
+    #         umm_code = request.json["kode_umum"]
+    #         kat_code = request.json["kode_kategori"]
+    #         dou_type = request.json["du"]
+    #         sld_type = request.json["kode_saldo"]
+    #         connect = request.json["terhubung"]
+    #         sld_awal = request.json["saldo_awal"]
+    #         level = request.json["level"]
+    #         try:
+    #             account = AccouMdb(
+    #                 acc_code,
+    #                 acc_name,
+    #                 umm_code,
+    #                 kat_code,
+    #                 dou_type,
+    #                 sld_type,
+    #                 connect,
+    #                 sld_awal,
+    #                 level,
+    #             )
+    #             db.session.add(account)
+    #             db.session.commit()
+    #             result = response(200, "Berhasil", True,
+    #                               accou_schema.dump(account))
+    #         except IntegrityError:
+    #             db.session.rollback()
+    #             result = response(
+    #                 400, "Kode akun " + acc_code + " sudah digunakan", False, None
+    #             )
+    #         finally:
+    #             return result
+    #     else:
+    #         return response(406, "Data isian belum lengkap", False, None)
+    # else:
+    #     result = (
+    #         db.session.query(AccouMdb, KategMdb, KlasiMdb)
+    #         .join(AccouMdb, KategMdb.id == AccouMdb.kat_code)
+    #         .outerjoin(KlasiMdb, KategMdb.kode_klasi == KlasiMdb.id)
+    #         # .order_by(KlasiMdb.id.asc())
+    #         .order_by(KategMdb.id.asc())
+    #         .order_by(
+    #             AccouMdb.id.asc(),
+    #             cast(func.replace(AccouMdb.acc_code, ".", ""), db.Integer).asc(),
+    #         )
+    #         .all()
+    #     )
+    #     data = [
+    #         {
+    #             "account": accou_schema.dump(x[0]),
+    #             "kategory": kateg_schema.dump(x[1]),
+    #             "klasifikasi": klasi_schema.dump(x[2]),
+    #         }
+    #         for x in result
+    #     ]
 
-        return response(200, "Berhasil", True, data)
+    #     return response(200, "Berhasil", True, data)
 
 
 @app.route("/v1/api/import/account", methods=["POST"])
@@ -871,7 +937,8 @@ def account_import(self):
     detail = request.json["detail"]
 
     # db.session.query(AccouMdb).delete()
-    db.session.execute('TRUNCATE TABLE master. "' + "ACCOUMDB" + '" RESTART IDENTITY')
+    db.session.execute('TRUNCATE TABLE master. "' +
+                       "ACCOUMDB" + '" RESTART IDENTITY')
     db.session.commit()
 
     index_umum = 0
@@ -915,7 +982,8 @@ def account_import(self):
                     str(kategory[1].id)
                     + "."
                     + str(
-                        int(last_acc.acc_code.replace(str(kategory[1].id) + ".", ""))
+                        int(last_acc.acc_code.replace(
+                            str(kategory[1].id) + ".", ""))
                         + 1
                     )
                 )
@@ -1001,13 +1069,15 @@ def account_import(self):
                         + "."
                         + str(
                             int(
-                                last_acc.acc_code.replace(str(kategory[1].id) + ".", "")
+                                last_acc.acc_code.replace(
+                                    str(kategory[1].id) + ".", "")
                             )
                             + 1
                         )
                     )
                 else:
-                    next_code = str(kategory[1].id) + "." + str(kat_code) + "0001"
+                    next_code = str(kategory[1].id) + \
+                        "." + str(kat_code) + "0001"
 
             a = AccouMdb(
                 next_code,
@@ -1059,42 +1129,43 @@ def acc_umum(self):
 @app.route("/v1/api/account/<int:id>", methods=["PUT", "GET", "DELETE"])
 @token_required
 def account_id(self, id):
-    account = AccouMdb.query.filter(AccouMdb.id == id).first()
-    if request.method == "PUT":
-        account.acc_code = request.json["kode_acc"]
-        account.acc_name = request.json["acc_name"]
-        account.umm_code = request.json["kode_umum"]
-        account.kat_code = request.json["kode_kategori"]
-        account.dou_type = request.json["du"]
-        account.sld_type = request.json["kode_saldo"]
-        account.connect = request.json["terhubung"]
-        account.sld_awal = request.json["saldo_awal"]
-        account.level = request.json["level"]
-        db.session.commit()
+    return AccountId(id, request)
+    # account = AccouMdb.query.filter(AccouMdb.id == id).first()
+    # if request.method == "PUT":
+    #     account.acc_code = request.json["kode_acc"]
+    #     account.acc_name = request.json["acc_name"]
+    #     account.umm_code = request.json["kode_umum"]
+    #     account.kat_code = request.json["kode_kategori"]
+    #     account.dou_type = request.json["du"]
+    #     account.sld_type = request.json["kode_saldo"]
+    #     account.connect = request.json["terhubung"]
+    #     account.sld_awal = request.json["saldo_awal"]
+    #     account.level = request.json["level"]
+    #     db.session.commit()
 
-        return response(200, "Berhasil", True, accou_schema.dump(account))
-    elif request.method == "DELETE":
-        db.session.delete(account)
-        db.session.commit()
+    #     return response(200, "Berhasil", True, accou_schema.dump(account))
+    # elif request.method == "DELETE":
+    #     db.session.delete(account)
+    #     db.session.commit()
 
-        return response(200, "Berhasil", True, None)
-    else:
-        result = (
-            db.session.query(AccouMdb, KategMdb, KlasiMdb)
-            .join(AccouMdb, KategMdb.id == AccouMdb.kat_code)
-            .outerjoin(KlasiMdb, KategMdb.kode_klasi == KlasiMdb.id)
-            .order_by(AccouMdb.acc_code.asc())
-            .filter(AccouMdb.id == id)
-            .first()
-        )
+    #     return response(200, "Berhasil", True, None)
+    # else:
+    #     result = (
+    #         db.session.query(AccouMdb, KategMdb, KlasiMdb)
+    #         .join(AccouMdb, KategMdb.id == AccouMdb.kat_code)
+    #         .outerjoin(KlasiMdb, KategMdb.kode_klasi == KlasiMdb.id)
+    #         .order_by(AccouMdb.acc_code.asc())
+    #         .filter(AccouMdb.id == id)
+    #         .first()
+    #     )
 
-        data = {
-            "account": accou_schema.dump(result[0]),
-            "kategory": kateg_schema.dump(result[1]),
-            "klasifikasi": klasi_schema.dump(result[2]),
-        }
+    #     data = {
+    #         "account": accou_schema.dump(result[0]),
+    #         "kategory": kateg_schema.dump(result[1]),
+    #         "klasifikasi": klasi_schema.dump(result[2]),
+    #     }
 
-        return response(200, "Berhasil", True, data)
+    #     return response(200, "Berhasil", True, data)
 
 
 @app.route("/v1/api/cost-center", methods=["POST", "GET"])
@@ -1208,7 +1279,8 @@ def jpel(self):
             db.session.add(jenis_pel)
             db.session.commit()
 
-            result = response(200, "Berhasil", True, jpel_schema.dump(jenis_pel))
+            result = response(200, "Berhasil", True,
+                              jpel_schema.dump(jenis_pel))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
@@ -1230,7 +1302,8 @@ def jpel_id(self, id):
             jenis_pel.jpel_name = request.json["jpel_name"]
             jenis_pel.jpel_ket = request.json["jpel_ket"]
             db.session.commit()
-            result = response(200, "Berhasil", True, jpel_schema.dump(jenis_pel))
+            result = response(200, "Berhasil", True,
+                              jpel_schema.dump(jenis_pel))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
@@ -1258,7 +1331,8 @@ def jpem(self):
             db.session.add(jenisPem)
             db.session.commit()
 
-            result = response(200, "Berhasil", True, jpem_schema.dump(jenisPem))
+            result = response(200, "Berhasil", True,
+                              jpem_schema.dump(jenisPem))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
@@ -1280,7 +1354,8 @@ def jpem_id(self, id):
             jenis_pem.jpem_name = request.json["jpem_name"]
             jenis_pem.jpem_ket = request.json["jpem_ket"]
             db.session.commit()
-            result = response(200, "Berhasil", True, jpem_schema.dump(jenis_pem))
+            result = response(200, "Berhasil", True,
+                              jpem_schema.dump(jenis_pem))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
@@ -1308,7 +1383,8 @@ def sales(self):
             db.session.add(salesman)
             db.session.commit()
 
-            result = response(200, "Berhasil", True, sales_schema.dump(salesman))
+            result = response(200, "Berhasil", True,
+                              sales_schema.dump(salesman))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
@@ -1330,7 +1406,8 @@ def sales_id(self, id):
             salesman.sales_name = request.json["sales_name"]
             salesman.sales_ket = request.json["sales_ket"]
             db.session.commit()
-            result = response(200, "Berhasil", True, sales_schema.dump(salesman))
+            result = response(200, "Berhasil", True,
+                              sales_schema.dump(salesman))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
@@ -1354,7 +1431,8 @@ def area_pen(self):
             area_pen_code = request.json["area_pen_code"]
             area_pen_name = request.json["area_pen_name"]
             area_pen_ket = request.json["area_pen_ket"]
-            area_pen = AreaPenjualanMdb(area_pen_code, area_pen_name, area_pen_ket)
+            area_pen = AreaPenjualanMdb(
+                area_pen_code, area_pen_name, area_pen_ket)
             db.session.add(area_pen)
             db.session.commit()
 
@@ -1471,52 +1549,13 @@ def sub_area_id(self, id):
 @app.route("/v1/api/currency", methods=["POST", "GET"])
 @token_required
 def currency(self):
-    if request.method == "POST":
-        try:
-            code = request.json["code"]
-            name = request.json["name"]
-            date = request.json["date"]
-            rate = request.json["rate"]
-            curren = CurrencyMdb(code, name, date, rate)
-            db.session.add(curren)
-            db.session.commit()
-
-            result = response(200, "Berhasil", True, currency_schema.dump(curren))
-        except IntegrityError:
-            db.session.rollback()
-            result = response(400, "Kode sudah digunakan", False, None)
-        finally:
-            return result
-    else:
-        result = CurrencyMdb.query.all()
-
-        return response(200, "Berhasil", True, currencys_schema.dump(result))
+    return Currency(self, request)
 
 
 @app.route("/v1/api/currency/<int:id>", methods=["PUT", "GET", "DELETE"])
 @token_required
 def currency_id(self, id):
-    curren = CurrencyMdb.query.filter(CurrencyMdb.id == id).first()
-    if request.method == "PUT":
-        try:
-            curren.code = request.json["code"]
-            curren.name = request.json["name"]
-            curren.date = request.json["date"]
-            curren.rate = request.json["rate"]
-            db.session.commit()
-            result = response(200, "Berhasil", True, currency_schema.dump(curren))
-        except IntegrityError:
-            db.session.rollback()
-            result = response(400, "Kode sudah digunakan", False, None)
-        finally:
-            return result
-    elif request.method == "DELETE":
-        db.session.delete(curren)
-        db.session.commit()
-
-        return response(200, "Berhasil", True, None)
-    else:
-        return response(200, "Berhasil", True, currency_schema.dump(curren))
+    return CurrencyId(id, self.company, request)
 
 
 # Rules Payment
@@ -1532,7 +1571,8 @@ def rules_pay(self):
             db.session.add(rules_pay)
             db.session.commit()
 
-            result = response(200, "Berhasil", True, rpay_schema.dump(rules_pay))
+            result = response(200, "Berhasil", True,
+                              rpay_schema.dump(rules_pay))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
@@ -1554,7 +1594,8 @@ def rules_pay_id(self, id):
             rules_pay.day = request.json["day"]
             rules_pay.ket = request.json["ket"]
             db.session.commit()
-            result = response(200, "Berhasil", True, rpay_schema.dump(rules_pay))
+            result = response(200, "Berhasil", True,
+                              rpay_schema.dump(rules_pay))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
@@ -1628,7 +1669,8 @@ def upload(self):
     file_name = secure_filename(file.filename)
     file.save(
         os.path.join(
-            os.path.abspath(os.path.dirname(__file__)), "static/upload", file_name
+            os.path.abspath(os.path.dirname(__file__)
+                            ), "static/upload", file_name
         )
     )
 
@@ -1833,7 +1875,8 @@ def customer(self):
             )
             db.session.add(customer)
             db.session.commit()
-            result = response(200, "Berhasil", True, customer_schema.dump(customer))
+            result = response(200, "Berhasil", True,
+                              customer_schema.dump(customer))
         except IntegrityError:
             db.session.rollback()
             result = response(
@@ -1843,7 +1886,8 @@ def customer(self):
             return result
     else:
         result = (
-            db.session.query(CustomerMdb, JpelMdb, SubAreaMdb, CurrencyMdb, PajakMdb)
+            db.session.query(CustomerMdb, JpelMdb, SubAreaMdb,
+                             CurrencyMdb, PajakMdb)
             .outerjoin(JpelMdb, JpelMdb.id == CustomerMdb.cus_jpel)
             .outerjoin(SubAreaMdb, SubAreaMdb.id == CustomerMdb.cus_sub_area)
             .outerjoin(CurrencyMdb, CurrencyMdb.id == CustomerMdb.cus_curren)
@@ -1914,7 +1958,8 @@ def customer_id(self, id):
         cus = CustomerMdb.query.all()
 
         result = (
-            db.session.query(CustomerMdb, JpelMdb, SubAreaMdb, CurrencyMdb, PajakMdb)
+            db.session.query(CustomerMdb, JpelMdb, SubAreaMdb,
+                             CurrencyMdb, PajakMdb)
             .outerjoin(JpelMdb, JpelMdb.id == CustomerMdb.cus_jpel)
             .outerjoin(SubAreaMdb, SubAreaMdb.id == CustomerMdb.cus_sub_area)
             .outerjoin(CurrencyMdb, CurrencyMdb.id == CustomerMdb.cus_curren)
@@ -1987,7 +2032,8 @@ def supplier(self):
             )
             db.session.add(supplier)
             db.session.commit()
-            result = response(200, "Berhasil", True, supplier_schema.dump(supplier))
+            result = response(200, "Berhasil", True,
+                              supplier_schema.dump(supplier))
         except IntegrityError:
             db.session.rollback()
             result = response(
@@ -2520,12 +2566,15 @@ def unit(self):
                 if len(u) > 0:
                     db.session.add_all(u)
                     db.session.commit()
-                    result = response(200, "Berhasil", True, units_schema.dump(u))
+                    result = response(200, "Berhasil", True,
+                                      units_schema.dump(u))
                 else:
-                    u = UnitMdb(code, name, type, desc, active, qty, u_from, u_to)
+                    u = UnitMdb(code, name, type, desc,
+                                active, qty, u_from, u_to)
                     db.session.add(u)
                     db.session.commit()
-                    result = response(200, "Berhasil", True, unit_schema.dump(u))
+                    result = response(200, "Berhasil", True,
+                                      unit_schema.dump(u))
         except IntegrityError:
             db.session.rollback()
             result = response(
@@ -2538,11 +2587,13 @@ def unit(self):
             if x.type == "k" and x.u_from:
                 for y in units:
                     if x.u_from == y.id:
-                        x.u_from = UnitSchema(only=["id", "code", "name"]).dump(y)
+                        x.u_from = UnitSchema(
+                            only=["id", "code", "name"]).dump(y)
             if x.type == "k" and x.u_to:
                 for y in units:
                     if x.u_to == y.id:
-                        x.u_to = UnitSchema(only=["id", "code", "name"]).dump(y)
+                        x.u_to = UnitSchema(
+                            only=["id", "code", "name"]).dump(y)
 
         return response(200, "Berhasil", True, units_schema.dump(units))
 
@@ -2608,7 +2659,8 @@ def satuan_id(self, id):
                         )
             if len(old_ids) > 0:
                 old_units = (
-                    db.session.query(UnitMdb).filter(UnitMdb.id.in_(old_ids)).all()
+                    db.session.query(UnitMdb).filter(
+                        UnitMdb.id.in_(old_ids)).all()
                 )
                 for x in old_units:
                     x.code = code
@@ -2656,6 +2708,12 @@ def satuan_id(self, id):
 
         return response(200, "Berhasil", True, unit_schema.dump(units))
 
+@app.route("/v1/api/product/code", methods=["POST", "GET"])
+@token_required
+def product_code(self):
+    now = datetime.now().strftime("%d%m%y")
+    prd = "PRD/" + now + "/" + str(round(time.time() * 10000))[-6:]
+    return response(200, "success", True, prd)
 
 @app.route("/v1/api/product", methods=["POST", "GET"])
 @token_required
@@ -2774,7 +2832,8 @@ def product_id(self, id):
                     if os.path.exists(
                         os.path.join(app.config["UPLOAD_FOLDER"], prod.image)
                     ):
-                        os.remove(os.path.join(app.config["UPLOAD_FOLDER"], prod.image))
+                        os.remove(os.path.join(
+                            app.config["UPLOAD_FOLDER"], prod.image))
 
             prod.image = image
 
@@ -2871,7 +2930,8 @@ def divisi(self):
             db.session.add(divisi)
             db.session.commit()
 
-            result = response(200, "Berhasil", True, division_schema.dump(divisi))
+            result = response(200, "Berhasil", True,
+                              division_schema.dump(divisi))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
@@ -2893,7 +2953,8 @@ def divisi_id(self, id):
             divisi.name = request.json["name"]
             divisi.desc = request.json["desc"]
             db.session.commit()
-            result = response(200, "Berhasil", True, division_schema.dump(divisi))
+            result = response(200, "Berhasil", True,
+                              division_schema.dump(divisi))
         except IntegrityError:
             db.session.rollback()
             result = response(400, "Kode sudah digunakan", False, None)
@@ -3150,7 +3211,8 @@ def order_date(self):
             if y[0].ord_id == x[0].id:
                 y[0].prod_id = prod_schema.dump(y[1])
                 y[0].unit_id = unit_schema.dump(y[2])
-                y[0].location = loct_schema.dump(y[3]) if y[0].location else None
+                y[0].location = loct_schema.dump(
+                    y[3]) if y[0].location else None
                 product.append(dprod_schema.dump(y[0]))
 
         jasa = []
@@ -3370,7 +3432,8 @@ def apcard(self):
 @token_required
 def arcard(self):
     ar = (
-        db.session.query(ArCard, IAcqDdb, OrdpjHdb, CustomerMdb, SordHdb, GiroIncHdb)
+        db.session.query(ArCard, IAcqDdb, OrdpjHdb,
+                         CustomerMdb, SordHdb, GiroIncHdb)
         .outerjoin(IAcqDdb, IAcqDdb.id == ArCard.acq_id)
         .outerjoin(OrdpjHdb, OrdpjHdb.id == ArCard.bkt_id)
         .outerjoin(CustomerMdb, CustomerMdb.id == ArCard.cus_id)
@@ -3436,26 +3499,30 @@ def dashboard_info(self):
     ap_card = ApCard.query.all()
     ar_card = ArCard.query.all()
     ap = (
-        db.session.query(extract("month", ApCard.ord_date), func.sum(ApCard.trx_amnh))
+        db.session.query(extract("month", ApCard.ord_date),
+                         func.sum(ApCard.trx_amnh))
         .filter(and_(ApCard.trx_type == "LP", ApCard.pay_type == "P1"))
         .group_by(extract("month", ApCard.ord_date))
         .all()
     )
     ar = (
-        db.session.query(extract("month", ArCard.trx_date), func.sum(ArCard.trx_amnh))
+        db.session.query(extract("month", ArCard.trx_date),
+                         func.sum(ArCard.trx_amnh))
         .filter(and_(ArCard.trx_type == "JL", ArCard.pay_type == "P1"))
         .group_by(extract("month", ArCard.trx_date))
         .all()
     )
 
     lns_ap = (
-        db.session.query(extract("month", ApCard.ord_date), func.sum(ApCard.acq_amnh))
+        db.session.query(extract("month", ApCard.ord_date),
+                         func.sum(ApCard.acq_amnh))
         .filter(and_(ApCard.trx_type == "LP", ApCard.pay_type == "H4"))
         .group_by(extract("month", ApCard.ord_date))
         .all()
     )
     lns_ar = (
-        db.session.query(extract("month", ArCard.trx_date), func.sum(ArCard.acq_amnh))
+        db.session.query(extract("month", ArCard.trx_date),
+                         func.sum(ArCard.acq_amnh))
         .filter(and_(ArCard.trx_type == "JL", ArCard.pay_type == "H4"))
         .group_by(extract("month", ArCard.trx_date))
         .all()
@@ -3984,1261 +4051,59 @@ def mesin_id(self, id):
 @app.route("/v1/api/formula", methods=["GET", "POST"])
 @token_required
 def formula(self):
-    if request.method == "POST":
-        try:
-            fcode = request.json["fcode"]
-            fname = request.json["fname"]
-            version = request.json["version"]
-            rev = request.json["rev"]
-            desc = request.json["desc"]
-            active = request.json["active"]
-            date_created = request.json["date_created"]
-            product = request.json["product"]
-            material = request.json["material"]
-
-            form = FprdcHdb(fcode, fname, version, rev, desc, active, date_created)
-
-            db.session.add(form)
-            db.session.commit()
-
-            new_product = []
-            for x in product:
-                if x["prod_id"] and x["unit_id"] and x["qty"] and int(x["qty"]) > 0:
-                    new_product.append(
-                        FprodDdb(
-                            form.id, x["prod_id"], x["unit_id"], x["qty"], x["aloc"]
-                        )
-                    )
-
-            new_material = []
-            for x in material:
-                if x["prod_id"] and x["unit_id"] and x["qty"] and int(x["qty"]) > 0:
-                    new_material.append(
-                        FmtrlDdb(
-                            form.id, x["prod_id"], x["unit_id"], x["qty"], x["price"]
-                        )
-                    )
-
-            if len(new_product) > 0:
-                db.session.add_all(new_product)
-
-            if len(new_material) > 0:
-                db.session.add_all(new_material)
-
-            db.session.commit()
-
-            result = response(200, "Berhasil", True, fprdc_schema.dump(form))
-        except IntegrityError:
-            db.session.rollback()
-            result = response(400, "Kode sudah digunakan", False, None)
-        finally:
-            return result
-    else:
-        form = FprdcHdb.query.order_by(FprdcHdb.id.desc()).all()
-
-        product = (
-            db.session.query(FprodDdb, ProdMdb, UnitMdb)
-            .outerjoin(ProdMdb, ProdMdb.id == FprodDdb.prod_id)
-            .outerjoin(UnitMdb, UnitMdb.id == FprodDdb.unit_id)
-            .all()
-        )
-
-        material = (
-            db.session.query(FmtrlDdb, ProdMdb, UnitMdb)
-            .outerjoin(ProdMdb, ProdMdb.id == FmtrlDdb.prod_id)
-            .outerjoin(UnitMdb, UnitMdb.id == FmtrlDdb.unit_id)
-            .all()
-        )
-
-        final = []
-        for x in form:
-            prod = []
-            for y in product:
-                if x.id == y[0].form_id:
-                    y[0].prod_id = prod_schema.dump(y[1])
-                    y[0].unit_id = unit_schema.dump(y[2])
-                    prod.append(fprod_schema.dump(y[0]))
-
-            mtrl = []
-            for y in material:
-                if x.id == y[0].form_id:
-                    y[0].prod_id = prod_schema.dump(y[1])
-                    y[0].unit_id = unit_schema.dump(y[2])
-                    mtrl.append(fmtrl_schema.dump(y[0]))
-
-            final.append(
-                {
-                    "id": x.id,
-                    "fcode": x.fcode,
-                    "fname": x.fname,
-                    "version": x.version,
-                    "rev": x.rev,
-                    "desc": x.desc,
-                    "active": x.active,
-                    "date_created": FprdcSchema(only=["date_created"]).dump(x)[
-                        "date_created"
-                    ],
-                    "date_updated": FprdcSchema(only=["date_updated"]).dump(x)[
-                        "date_updated"
-                    ],
-                    "product": prod,
-                    "material": mtrl,
-                }
-            )
-
-        return response(200, "Berhasil", True, final)
-
+   return Formula(self, request)
 
 @app.route("/v1/api/formula/<int:id>", methods=["GET", "PUT", "DELETE"])
 @token_required
 def formula_id(self, id):
-    x = FprdcHdb.query.filter(FprdcHdb.id == id).first()
-    if request.method == "PUT":
-        try:
-            fcode = request.json["fcode"]
-            fname = request.json["fname"]
-            version = request.json["version"]
-            rev = request.json["rev"]
-            desc = request.json["desc"]
-            active = request.json["active"]
-            product = request.json["product"]
-            material = request.json["material"]
-
-            x.fcode = fcode
-            x.fname = fname
-            x.version = version
-            x.rev = rev
-            x.desc = desc
-            x.active = active
-
-            db.session.commit()
-
-            old_prod = FprodDdb.query.filter(FprodDdb.form_id == id).all()
-            new_product = []
-            for y in old_prod:
-                for z in product:
-                    if z["id"]:
-                        if z["id"] == y.id:
-                            if (
-                                z["id"]
-                                and z["prod_id"]
-                                and z["unit_id"]
-                                and z["qty"]
-                                and int(z["qty"]) > 0
-                            ):
-                                y.prod_id = z["prod_id"]
-                                y.unit_id = z["unit_id"]
-                                y.qty = z["qty"]
-                                y.aloc = z["aloc"]
-                    else:
-                        if (
-                            z["prod_id"]
-                            and z["unit_id"]
-                            and z["qty"]
-                            and int(z["qty"]) > 0
-                        ):
-                            new_product.append(
-                                FprodDdb(
-                                    z.id,
-                                    z["prod_id"],
-                                    z["unit_id"],
-                                    z["qty"],
-                                    z["aloc"],
-                                )
-                            )
-
-            old_material = FmtrlDdb.query.filter(FmtrlDdb.form_id == id).all()
-            new_material = []
-            for y in old_material:
-                for z in material:
-                    if z["id"]:
-                        if z["id"] == y.id:
-                            if (
-                                z["id"]
-                                and z["prod_id"]
-                                and z["unit_id"]
-                                and z["qty"]
-                                and int(z["qty"]) > 0
-                            ):
-                                y.prod_id = z["prod_id"]
-                                y.unit_id = z["unit_id"]
-                                y.qty = z["qty"]
-                                y.price = z["price"]
-                    else:
-                        if (
-                            z["prod_id"]
-                            and z["unit_id"]
-                            and z["qty"]
-                            and int(z["qty"]) > 0
-                        ):
-                            new_material.append(
-                                FmtrlDdb(
-                                    z.id,
-                                    z["prod_id"],
-                                    z["unit_id"],
-                                    z["qty"],
-                                    z["price"],
-                                )
-                            )
-
-            if len(new_product) > 0:
-                db.session.add_all(new_product)
-
-            if len(new_material) > 0:
-                db.session.add_all(new_material)
-
-            db.session.commit()
-
-            result = response(200, "Berhasil", True, fprdc_schema.dump(x))
-        except IntegrityError:
-            db.session.rollback()
-            result = response(400, "Kode sudah digunakan", False, None)
-        finally:
-            return result
-    elif request.method == "DELETE":
-        old_prod = FprodDdb.query.filter(FprodDdb.form_id == id).all()
-        old_material = FmtrlDdb.query.filter(FmtrlDdb.form_id == id).all()
-
-        for y in old_prod:
-            db.session.delete(y)
-
-        for y in old_material:
-            db.session.delete(y)
-
-        db.session.delete(x)
-        db.session.commit()
-
-        return response(200, "Berhasil", True, None)
-    else:
-        product = (
-            db.session.query(FprodDdb, ProdMdb, UnitMdb)
-            .outerjoin(ProdMdb, ProdMdb.id == FprodDdb.prod_id)
-            .outerjoin(UnitMdb, UnitMdb.id == FprodDdb.unit_id)
-            .filter(FprodDdb.form_id == id)
-            .all()
-        )
-
-        material = (
-            db.session.query(FmtrlDdb, ProdMdb, UnitMdb)
-            .outerjoin(ProdMdb, ProdMdb.id == FmtrlDdb.prod_id)
-            .outerjoin(UnitMdb, UnitMdb.id == FmtrlDdb.unit_id)
-            .filter(FprodDdb.form_id == id)
-            .all()
-        )
-
-        final = []
-        prod = []
-        for y in product:
-            if x.id == y[0].form_id:
-                y[0].prod_id = prod_schema.dump(y[1])
-                y[0].unit_id = unit_schema.dump(y[2])
-                prod.append(fprod_schema.dump(y[0]))
-
-        mtrl = []
-        for y in material:
-            if x.id == y[0].form_id:
-                y[0].prod_id = prod_schema.dump(y[1])
-                y[0].unit_id = unit_schema.dump(y[2])
-                mtrl.append(fmtrl_schema.dump(y[0]))
-
-        final = {
-            "id": x.id,
-            "fcode": x.fcode,
-            "fname": x.fname,
-            "version": x.version,
-            "rev": x.rev,
-            "desc": x.desc,
-            "active": x.active,
-            "date_created": FprdcSchema(only=["date_created"]).dump(x)["date_created"],
-            "date_updated": FprdcSchema(only=["date_updated"]).dump(x)["date_updated"],
-            "product": prod,
-            "material": mtrl,
-        }
-
-        return response(200, "Berhasil", True, final)
-
+    return FormulaId(self, id, request)
 
 @app.route("/v1/api/planning", methods=["GET", "POST"])
 @token_required
 def planning(self):
-    if request.method == "POST":
-        try:
-            pcode = request.json["pcode"]
-            pname = request.json["pname"]
-            form_id = request.json["form_id"]
-            dep_id = request.json["dep_id"]
-            loc_id = request.json["loc_id"]
-            desc = request.json["desc"]
-            date_planing = request.json["date_planing"]
-            total = request.json["total"]
-            unit = request.json["unit"]
-            mesin = request.json["mesin"]
-
-            plan = PlanHdb(
-                pcode, pname, form_id, dep_id, loc_id, desc, date_planing, total, unit
-            )
-
-            db.session.add(plan)
-            db.session.commit()
-
-            new_mesin = []
-            for x in mesin:
-                if x["mch_id"]:
-                    new_mesin.append(PlmchDdb(plan.id, x["mch_id"]))
-
-            if len(new_mesin) > 0:
-                db.session.add_all(new_mesin)
-
-            db.session.commit()
-
-            UpdateRpbb(plan.id, False)
-
-            result = response(200, "Berhasil", True, plan_schema.dump(plan))
-        except IntegrityError:
-            db.session.rollback()
-            result = response(400, "Kode sudah digunakan", False, None)
-        finally:
-            return result
-    else:
-        plan = (
-            db.session.query(PlanHdb, FprdcHdb, UnitMdb, CcostMdb, LocationMdb)
-            .outerjoin(FprdcHdb, FprdcHdb.id == PlanHdb.form_id)
-            .outerjoin(UnitMdb, UnitMdb.id == PlanHdb.unit)
-            .outerjoin(CcostMdb, CcostMdb.id == PlanHdb.dep_id)
-            .outerjoin(LocationMdb, LocationMdb.id == PlanHdb.loc_id)
-            .order_by(PlanHdb.id.desc())
-            .all()
-        )
-
-        product = (
-            db.session.query(FprodDdb, ProdMdb, UnitMdb)
-            .outerjoin(ProdMdb, ProdMdb.id == FprodDdb.prod_id)
-            .outerjoin(UnitMdb, UnitMdb.id == FprodDdb.unit_id)
-            .all()
-        )
-
-        material = (
-            db.session.query(FmtrlDdb, ProdMdb, UnitMdb)
-            .outerjoin(ProdMdb, ProdMdb.id == FmtrlDdb.prod_id)
-            .outerjoin(UnitMdb, UnitMdb.id == FmtrlDdb.unit_id)
-            .all()
-        )
-
-        mesin = (
-            db.session.query(PlmchDdb, MsnMdb)
-            .outerjoin(MsnMdb, MsnMdb.id == PlmchDdb.mch_id)
-            .all()
-        )
-
-        final = []
-        for x in plan:
-            prod = []
-            for y in product:
-                if x[1].id == y[0].form_id:
-                    y[0].prod_id = prod_schema.dump(y[1])
-                    y[0].unit_id = unit_schema.dump(y[2])
-                    prod.append(fprod_schema.dump(y[0]))
-
-            mat = []
-            for y in material:
-                if x[1].id == y[0].form_id:
-                    y[0].prod_id = prod_schema.dump(y[1])
-                    y[0].unit_id = unit_schema.dump(y[2])
-                    mat.append(fmtrl_schema.dump(y[0]))
-
-            msn = []
-            for y in mesin:
-                if x[0].id == y[0].pl_id:
-                    y[0].mch_id = msn_schema.dump(y[1])
-                    msn.append(plmch_schema.dump(y[0]))
-
-            final.append(
-                {
-                    "id": x[0].id,
-                    "pcode": x[0].pcode,
-                    "pname": x[0].pname,
-                    "form_id": fprdc_schema.dump(x[1]),
-                    "dep_id": ccost_schema.dump(x[3]),
-                    "loc_id": loct_schema.dump(x[4]),
-                    "desc": x[0].desc,
-                    "date_created": PlanSchema(only=["date_created"]).dump(x[0])[
-                        "date_created"
-                    ],
-                    "date_planing": PlanSchema(only=["date_planing"]).dump(x[0])[
-                        "date_planing"
-                    ],
-                    "total": x[0].total,
-                    "unit": unit_schema.dump(x[2]),
-                    "material": mat,
-                    "product": prod,
-                    "mesin": msn,
-                }
-            )
-
-        return response(200, "Berhasil", True, final)
+    return Planning(self, request)
 
 
 @app.route("/v1/api/planning/<int:id>", methods=["GET", "PUT", "DELETE"])
 @token_required
 def planning_id(self, id):
-    x = PlanHdb.query.filter(PlanHdb.id == id).first()
-    if request.method == "PUT":
-        try:
-            pcode = request.json["pcode"]
-            pname = request.json["pname"]
-            form_id = request.json["form_id"]
-            dep_id = request.json["dep_id"]
-            loc_id = request.json["loc_id"]
-            desc = request.json["desc"]
-            date_planing = request.json["date_planing"]
-            total = request.json["total"]
-            unit = request.json["unit"]
-            mesin = request.json["mesin"]
-
-            x.pcode = pcode
-            x.pname = pname
-            x.form_id = form_id
-            x.dep_id = dep_id
-            x.loc_id = loc_id
-            x.desc = desc
-            x.date_planing = date_planing
-            x.total = total
-            x.unit = unit
-
-            db.session.commit()
-
-            old_mesin = PlmchDdb.query.filter(PlmchDdb.pl_id == id).all()
-            new_mesin = []
-
-            for z in mesin:
-                if z["id"]:
-                    for y in old_mesin:
-                        if z["id"] == y.id:
-                            if z["mch_id"]:
-                                y.mch_id = z["mch_id"]
-                else:
-                    if z["mch_id"]:
-                        new_mesin.append(PlmchDdb(id, x["mch_id"]))
-
-            if len(new_mesin) > 0:
-                db.session.add_all(new_mesin)
-
-            db.session.commit()
-
-            UpdateRpbb(x.id, False)
-
-            result = response(200, "Berhasil", True, plan_schema.dump(x))
-        except IntegrityError:
-            db.session.rollback()
-            result = response(400, "Kode sudah digunakan", False, None)
-        finally:
-            return result
-    elif request.method == "DELETE":
-        UpdateRpbb(x.id, True)
-        old_mesin = PlmchDdb.query.filter(PlmchDdb.pl_id == id).all()
-
-        for y in old_mesin:
-            db.session.delete(y)
-
-        db.session.delete(x)
-        db.session.commit()
-
-        return response(200, "Berhasil", True, None)
-    else:
-        x = (
-            db.session.query(PlanHdb, FprdcHdb, UnitMdb, CcostMdb, LocationMdb)
-            .outerjoin(FprdcHdb, FprdcHdb.id == PlanHdb.form_id)
-            .outerjoin(UnitMdb, UnitMdb.id == PlanHdb.unit)
-            .outerjoin(CcostMdb, CcostMdb.id == PlanHdb.dep_id)
-            .outerjoin(LocationMdb, LocationMdb.id == PlanHdb.loc_id)
-            .filter(PlanHdb.id == id)
-            .first()
-        )
-
-        product = (
-            db.session.query(FprodDdb, ProdMdb, UnitMdb)
-            .outerjoin(ProdMdb, ProdMdb.id == FprodDdb.prod_id)
-            .outerjoin(UnitMdb, UnitMdb.id == FprodDdb.unit_id)
-            .all()
-        )
-
-        material = (
-            db.session.query(FmtrlDdb, ProdMdb, UnitMdb)
-            .outerjoin(ProdMdb, ProdMdb.id == FmtrlDdb.prod_id)
-            .outerjoin(UnitMdb, UnitMdb.id == FmtrlDdb.unit_id)
-            .all()
-        )
-
-        mesin = (
-            db.session.query(PlmchDdb, MsnMdb)
-            .outerjoin(MsnMdb, MsnMdb.id == PlmchDdb.mch_id)
-            .all()
-        )
-
-        prod = []
-        for y in product:
-            if x[1].id == y[0].form_id:
-                y[0].prod_id = prod_schema.dump(y[1])
-                y[0].unit_id = unit_schema.dump(y[2])
-                prod.append(fprod_schema.dump(y[0]))
-
-        mat = []
-        for y in material:
-            if x[1].id == y[0].form_id:
-                y[0].prod_id = prod_schema.dump(y[1])
-                y[0].unit_id = unit_schema.dump(y[2])
-                mat.append(fmtrl_schema.dump(y[0]))
-
-        msn = []
-        for y in mesin:
-            if x[0].id == y[0].pl_id:
-                y[0].mch_id = msn_schema.dump(y[1])
-                msn.append(plmch_schema.dump(y[0]))
-
-        final = {
-            "id": x[0].id,
-            "pcode": x[0].pcode,
-            "pname": x[0].pname,
-            "form_id": fprdc_schema.dump(x[1]),
-            "dep_id": ccost_schema.dump(x[3]),
-            "loc_id": loct_schema.dump(x[4]),
-            "desc": x[0].desc,
-            "date_created": PlanSchema(only=["date_creaded"]).dump(x[0])[
-                "date_created"
-            ],
-            "date_planing": PlanSchema(only=["date_planing"]).dump(x[0])[
-                "date_planing"
-            ],
-            "total": x[0].total,
-            "unit": units_schema.dump(x[2]),
-            "material": mat,
-            "product": prod,
-            "mesin": msn,
-        }
-
-        return response(200, "Berhasil", True, final)
+    return PlanningId(id, request)
 
 
 @app.route("/v1/api/batch", methods=["GET", "POST"])
 @token_required
 def batch(self):
-    if request.method == "POST":
-        try:
-            bcode = request.json["bcode"]
-            batch_date = request.json["batch_date"]
-            plan_id = request.json["plan_id"]
-            dep_id = request.json["dep_id"]
-
-            batch = BatchMdb(bcode, batch_date, plan_id, dep_id)
-
-            db.session.add(batch)
-            db.session.commit()
-
-            updateBatch(batch.id, False)
-
-            result = response(200, "Berhasil", True, batch_schema.dump(batch))
-        except IntegrityError:
-            db.session.rollback()
-            result = response(400, "Kode sudah digunakan", False, None)
-        finally:
-            return result
-    else:
-        batch = (
-            db.session.query(
-                BatchMdb, PlanHdb, FprdcHdb, UnitMdb, CcostMdb, LocationMdb
-            )
-            .outerjoin(PlanHdb, PlanHdb.id == BatchMdb.plan_id)
-            .outerjoin(FprdcHdb, FprdcHdb.id == PlanHdb.form_id)
-            .outerjoin(UnitMdb, UnitMdb.id == PlanHdb.unit)
-            .outerjoin(CcostMdb, CcostMdb.id == BatchMdb.dep_id)
-            .outerjoin(LocationMdb, LocationMdb.id == PlanHdb.loc_id)
-            .order_by(BatchMdb.id.desc())
-            .all()
-        )
-
-        product = (
-            db.session.query(FprodDdb, ProdMdb, UnitMdb)
-            .outerjoin(ProdMdb, ProdMdb.id == FprodDdb.prod_id)
-            .outerjoin(UnitMdb, UnitMdb.id == FprodDdb.unit_id)
-            .all()
-        )
-
-        material = (
-            db.session.query(FmtrlDdb, ProdMdb, UnitMdb)
-            .outerjoin(ProdMdb, ProdMdb.id == FmtrlDdb.prod_id)
-            .outerjoin(UnitMdb, UnitMdb.id == FmtrlDdb.unit_id)
-            .all()
-        )
-
-        mesin = (
-            db.session.query(PlmchDdb, MsnMdb)
-            .outerjoin(MsnMdb, MsnMdb.id == PlmchDdb.mch_id)
-            .all()
-        )
-
-        final = []
-        for x in batch:
-            prod = []
-            for y in product:
-                if x[2] and x[2].id == y[0].form_id:
-                    y[0].prod_id = prod_schema.dump(y[1])
-                    y[0].unit_id = unit_schema.dump(y[2])
-                    prod.append(fprod_schema.dump(y[0]))
-
-            mat = []
-            for y in material:
-                if x[2] and x[2].id == y[0].form_id:
-                    y[0].prod_id = prod_schema.dump(y[1])
-                    y[0].unit_id = unit_schema.dump(y[2])
-                    mat.append(fmtrl_schema.dump(y[0]))
-
-            msn = []
-            for y in mesin:
-                if x[1] and x[1].id == y[0].pl_id:
-                    y[0].mch_id = msn_schema.dump(y[1])
-                    msn.append(plmch_schema.dump(y[0]))
-
-            final.append(
-                {
-                    "id": x[0].id,
-                    "bcode": x[0].bcode,
-                    "batch_date": BatchSchema(only=["batch_date"]).dump(x[0])[
-                        "batch_date"
-                    ],
-                    "dep_id": ccost_schema.dump(x[4]),
-                    "plan_id": {
-                        "id": x[1].id,
-                        "pcode": x[1].pcode,
-                        "pname": x[1].pname,
-                        "form_id": fprdc_schema.dump(x[1]),
-                        "loc_id": loct_schema.dump(x[1]),
-                        "desc": x[1].desc,
-                        "date_created": PlanSchema(only=["date_created"]).dump(x[1])[
-                            "date_created"
-                        ],
-                        "date_planing": PlanSchema(only=["date_planing"]).dump(x[1])[
-                            "date_planing"
-                        ],
-                        "total": x[1].total,
-                        "unit": unit_schema.dump(x[3]),
-                        "material": mat,
-                        "product": prod,
-                        "mesin": msn,
-                    }
-                    if x[1]
-                    else None,
-                }
-            )
-
-        return response(200, "Berhasil", True, final)
+    return Batch(self, request)
 
 
 @app.route("/v1/api/batch/<int:id>", methods=["GET", "PUT", "DELETE"])
 @token_required
 def batch_id(self, id):
-    x = BatchMdb.query.filter(BatchMdb.id == id).first()
-    if request.method == "PUT":
-        try:
-            x.bcode = request.json["bcode"]
-            x.batch_date = request.json["batch_date"]
-            x.plan_id = request.json["plan_id"]
-            x.dep_id = request.json["dep_id"]
-
-            db.session.commit()
-
-            result = response(200, "Berhasil", True, batch_schema.dump(x))
-        except IntegrityError:
-            db.session.rollback()
-            result = response(400, "Kode sudah digunakan", False, None)
-        finally:
-            return result
-    elif request.method == "DELETE":
-        updateBatch(x.id, True)
-        db.session.delete(x)
-        db.session.commit()
-
-        return response(200, "Berhasil", True, None)
-    else:
-        batch = (
-            db.session.query(
-                BatchMdb, PlanHdb, FprdcHdb, UnitMdb, CcostMdb, LocationMdb
-            )
-            .outerjoin(PlanHdb, PlanHdb.id == BatchMdb.plan_id)
-            .outerjoin(FprdcHdb, FprdcHdb.id == PlanHdb.form_id)
-            .outerjoin(UnitMdb, UnitMdb.id == PlanHdb.unit)
-            .outerjoin(CcostMdb, CcostMdb.id == BatchMdb.dep_id)
-            .outerjoin(LocationMdb, LocationMdb.id == PlanHdb.loc_id)
-            .order_by(PlanHdb.id.desc())
-            .all()
-        )
-
-        product = (
-            db.session.query(FprodDdb, ProdMdb, UnitMdb)
-            .outerjoin(ProdMdb, ProdMdb.id == FprodDdb.prod_id)
-            .outerjoin(UnitMdb, UnitMdb.id == FprodDdb.unit_id)
-            .all()
-        )
-
-        material = (
-            db.session.query(FmtrlDdb, ProdMdb, UnitMdb)
-            .outerjoin(ProdMdb, ProdMdb.id == FmtrlDdb.prod_id)
-            .outerjoin(UnitMdb, UnitMdb.id == FmtrlDdb.unit_id)
-            .all()
-        )
-
-        mesin = (
-            db.session.query(PlmchDdb, MsnMdb)
-            .outerjoin(MsnMdb, MsnMdb.id == PlmchDdb.mch_id)
-            .all()
-        )
-
-        for x in batch:
-            if x[0].id == id:
-                prod = []
-                for y in product:
-                    if x[2].id == y[0].form_id:
-                        y[0].prod_id = prod_schema.dump(y[1])
-                        y[0].unit_id = unit_schema.dump(y[2])
-                        prod.append(fprod_schema.dump(y[0]))
-
-                mat = []
-                for y in material:
-                    if x[2].id == y[0].form_id:
-                        y[0].prod_id = prod_schema.dump(y[1])
-                        y[0].unit_id = unit_schema.dump(y[2])
-                        mat.append(fmtrl_schema.dump(y[0]))
-
-                msn = []
-                for y in mesin:
-                    if x[1].id == y[0].pl_id:
-                        y[0].mch_id = msn_schema.dump(y[1])
-                        msn.append(plmch_schema.dump(y[0]))
-
-                final = {
-                    "id": x[0].id,
-                    "bcode": x[0].bcode,
-                    "batch_date": BatchSchema(only=["batch_date"]).dump(x[0])[
-                        "batch_date"
-                    ],
-                    "dep_id": ccost_schema.dump(x[4]),
-                    "plan_id": {
-                        "id": x[1].id,
-                        "pcode": x[1].pcode,
-                        "pname": x[1].pname,
-                        "form_id": fprdc_schema.dump(x[1]),
-                        "loc_id": loct_schema.dump(x[1]),
-                        "desc": x[1].desc,
-                        "date_created": PlanSchema(only=["date_created"]).dump(x[1])[
-                            "date_created"
-                        ],
-                        "date_planing": PlanSchema(only=["date_planing"]).dump(x[1])[
-                            "date_planing"
-                        ],
-                        "total": x[1].total,
-                        "unit": unit_schema.dump(x[3]),
-                        "material": mat,
-                        "product": prod,
-                        "mesin": msn,
-                    },
-                }
-
-        return response(200, "Berhasil", True, final)
+    return BatchId(id, request)
 
 
 @app.route("/v1/api/phj", methods=["GET", "POST"])
 @token_required
 def phj(self):
-    if request.method == "POST":
-        try:
-            phj_code = request.json["phj_code"]
-            phj_date = request.json["phj_date"]
-            batch_id = request.json["batch_id"]
-            product = request.json["product"]
-            reject = request.json["reject"]
-
-            phj = PhjHdb(phj_code, phj_date, batch_id)
-
-            db.session.add(phj)
-            db.session.commit()
-
-            new_product = []
-            for x in product:
-                if x["prod_id"] and x["unit_id"] and x["qty"] and int(x["qty"]) > 0:
-                    new_product.append(
-                        PphjDdb(phj.id, x["prod_id"], x["unit_id"], x["qty"])
-                    )
-
-            new_reject = []
-            for x in reject:
-                if x["prod_id"] and x["unit_id"] and x["qty"] and int(x["qty"]) > 0:
-                    new_reject.append(
-                        RphjDdb(phj.id, x["prod_id"], x["unit_id"], x["qty"])
-                    )
-
-            if len(new_product) > 0:
-                db.session.add_all(new_product)
-
-            if len(new_reject) > 0:
-                db.session.add_all(new_reject)
-
-            db.session.commit()
-
-            result = response(200, "Berhasil", True, phj_schema.dump(phj))
-        except IntegrityError:
-            db.session.rollback()
-            result = response(400, "Kode sudah digunakan", False, None)
-        finally:
-            return result
-    else:
-        phj = (
-            db.session.query(PhjHdb, BatchMdb, PlanHdb)
-            .outerjoin(BatchMdb, BatchMdb.id == PhjHdb.batch_id)
-            .outerjoin(PlanHdb, PlanHdb.id == BatchMdb.plan_id)
-            .order_by(PhjHdb.id.desc())
-            .all()
-        )
-
-        product = (
-            db.session.query(PphjDdb, ProdMdb, UnitMdb)
-            .outerjoin(ProdMdb, ProdMdb.id == PphjDdb.prod_id)
-            .outerjoin(UnitMdb, UnitMdb.id == PphjDdb.unit_id)
-            .all()
-        )
-
-        reject = (
-            db.session.query(RphjDdb, ProdMdb, UnitMdb)
-            .outerjoin(ProdMdb, ProdMdb.id == RphjDdb.prod_id)
-            .outerjoin(UnitMdb, UnitMdb.id == RphjDdb.unit_id)
-            .all()
-        )
-
-        final = []
-        for x in phj:
-            prod = []
-            for y in product:
-                if x[0].id == y[0].phj_id:
-                    y[0].prod_id = prod_schema.dump(y[1])
-                    y[0].unit_id = unit_schema.dump(y[2])
-                    prod.append(pphj_schema.dump(y[0]))
-
-            rej = []
-            for y in reject:
-                if x[0].id == y[0].phj_id:
-                    y[0].prod_id = prod_schema.dump(y[1])
-                    y[0].unit_id = unit_schema.dump(y[2])
-                    rej.append(rphj_schema.dump(y[0]))
-
-            if x[1]:
-                x[1].plan_id = plan_schema.dump(x[2])
-
-            final.append(
-                {
-                    "id": x[0].id,
-                    "phj_code": x[0].phj_code,
-                    "phj_date": PhjSchema(only=["phj_date"]).dump(x[0])["phj_date"],
-                    "batch_id": batch_schema.dump(x[1]),
-                    "product": prod,
-                    "reject": rej,
-                }
-            )
-
-        return response(200, "Berhasil", True, final)
+    return PenerimaanHasilJadi(self, request)
 
 
 @app.route("/v1/api/phj/<int:id>", methods=["GET", "PUT", "DELETE"])
 @token_required
 def phj_id(self, id):
-    x = PhjHdb.query.filter(PhjHdb.id == id).first()
-    if request.method == "PUT":
-        try:
-            phj_code = request.json["phj_code"]
-            phj_date = request.json["phj_date"]
-            batch_id = request.json["batch_id"]
-            product = request.json["product"]
-            reject = request.json["reject"]
-
-            x.phj_code = phj_code
-            x.phj_date = phj_date
-            x.batch_id = batch_id
-
-            db.session.commit()
-
-            old_product = PphjDdb.query.filter(PphjDdb.phj_id == id).all()
-            new_product = []
-            for z in product:
-                if z["id"]:
-                    for y in old_product:
-                        if z["id"] == y.id:
-                            if (
-                                z["id"]
-                                and z["prod_id"]
-                                and z["unit_id"]
-                                and z["qty"]
-                                and int(z["qty"]) > 0
-                            ):
-                                y.prod_id = z["prod_id"]
-                                y.unit_id = z["unit_id"]
-                                y.qty = z["qty"]
-                else:
-                    if z["prod_id"] and z["unit_id"] and z["qty"] and int(z["qty"]) > 0:
-                        new_product.append(
-                            PphjDdb(
-                                x.id,
-                                z["prod_id"],
-                                z["unit_id"],
-                                z["qty"],
-                            )
-                        )
-
-            if len(new_product) > 0:
-                db.session.add_all(new_product)
-
-            old_reject = RphjDdb.query.filter(RphjDdb.phj_id == id).all()
-            new_reject = []
-            for z in reject:
-                if z["id"]:
-                    for y in old_reject:
-
-                        if z["id"] == y.id:
-                            if (
-                                z["id"]
-                                and z["prod_id"]
-                                and z["unit_id"]
-                                and z["qty"]
-                                and int(z["qty"]) > 0
-                            ):
-                                y.prod_id = z["prod_id"]
-                                y.unit_id = z["unit_id"]
-                                y.qty = z["qty"]
-                else:
-                    if z["prod_id"] and z["unit_id"] and z["qty"] and int(z["qty"]) > 0:
-                        new_reject.append(
-                            RphjDdb(
-                                x.id,
-                                z["prod_id"],
-                                z["unit_id"],
-                                z["qty"],
-                            )
-                        )
-
-            if len(new_reject) > 0:
-                db.session.add_all(new_reject)
-
-            db.session.commit()
-
-            result = response(200, "Berhasil", True, phj_schema.dump(x))
-        except IntegrityError:
-            db.session.rollback()
-            result = response(400, "Kode sudah digunakan", False, None)
-        finally:
-            return result
-    elif request.method == "DELETE":
-        old_product = PphjDdb.query.filter(PphjDdb.phj_id == id).all()
-        old_reject = RphjDdb.query.filter(RphjDdb.phj_id == id).all()
-
-        if old_product:
-            for y in old_product:
-                db.session.delete(y)
-
-        if old_reject:
-            for y in old_reject:
-                db.session.delete(y)
-
-        db.session.delete(x)
-        db.session.commit()
-
-        return response(200, "Berhasil", True, None)
-    else:
-        phj = (
-            db.session.query(PhjHdb, BatchMdb, PlanHdb)
-            .outerjoin(BatchMdb, BatchMdb.id == PhjHdb.batch_id)
-            .outerjoin(PlanHdb, PlanHdb.id == BatchMdb.plan_id)
-            .order_by(PhjHdb.id.desc())
-            .all()
-        )
-
-        product = (
-            db.session.query(PphjDdb, ProdMdb, UnitMdb)
-            .outerjoin(ProdMdb, ProdMdb.id == PphjDdb.prod_id)
-            .outerjoin(UnitMdb, UnitMdb.id == PphjDdb.unit_id)
-            .all()
-        )
-
-        reject = (
-            db.session.query(RphjDdb, ProdMdb, UnitMdb)
-            .outerjoin(ProdMdb, ProdMdb.id == RphjDdb.prod_id)
-            .outerjoin(UnitMdb, UnitMdb.id == RphjDdb.unit_id)
-            .all()
-        )
-
-        final = []
-        for x in phj:
-            if x[0].id == id:
-                prod = []
-                for y in product:
-                    if x[1].id == y[0].phj_id:
-                        y[0].prod_id = prod_schema.dump(y[1])
-                        y[0].unit_id = unit_schema.dump(y[2])
-                        prod.append(pphj_schema.dump(y[0]))
-
-                rej = []
-                for y in reject:
-                    if x[1].id == y[0].phj_id:
-                        y[0].prod_id = prod_schema.dump(y[1])
-                        y[0].unit_id = unit_schema.dump(y[2])
-                        rej.append(rphj_schema.dump(y[0]))
-
-                x[1].plan_id = plan_schema.dump(x[2])
-                final.append(
-                    {
-                        "id": x[0].id,
-                        "phj_code": x[0].phj_code,
-                        "phj_date": PhjSchema(only=["phj_date"]).dump(x[0])["phj_date"],
-                        "batch_id": batch_schema.dump(x[1]),
-                        "product": prod,
-                        "reject": rej,
-                    }
-                )
-
-        return response(200, "Berhasil", True, final)
+    return PenerimaanHasilJadiId(id, request)
 
 
 @app.route("/v1/api/pbb", methods=["GET", "POST"])
 @token_required
 def pbb(self):
-    if request.method == "POST":
-        try:
-            pbb_code = request.json["pbb_code"]
-            pbb_name = request.json["pbb_name"]
-            pbb_date = request.json["pbb_date"]
-            batch_id = request.json["batch_id"]
-            acc_cred = request.json["acc_cred"]
-            uph = request.json["uph"]
-            ovh = request.json["ovh"]
-
-            p = PbbHdb(pbb_code, pbb_name, pbb_date, batch_id, acc_cred)
-
-            db.session.add(p)
-            db.session.commit()
-
-            new_uph = []
-            for x in uph:
-                if x["acc_id"]:
-                    new_uph.append(
-                        UphDdb(
-                            p.id,
-                            x["acc_id"],
-                        )
-                    )
-
-            new_ovh = []
-            for x in ovh:
-                if x["acc_id"]:
-                    new_ovh.append(
-                        OvhDdb(
-                            p.id,
-                            x["acc_id"],
-                        )
-                    )
-
-            if len(new_uph) > 0:
-                db.session.add_all(new_uph)
-
-            if len(new_ovh) > 0:
-                db.session.add_all(new_ovh)
-
-            db.session.commit()
-
-            result = response(200, "Berhasil", True, pbb_schema.dump(p))
-        except IntegrityError:
-            db.session.rollback()
-            result = response(400, "Kode sudah digunakan", False, None)
-        finally:
-            return result
-    else:
-        pbb = (
-            db.session.query(PbbHdb, BatchMdb, PlanHdb, AccouMdb)
-            .outerjoin(BatchMdb, BatchMdb.id == PbbHdb.batch_id)
-            .outerjoin(PlanHdb, PlanHdb.id == BatchMdb.plan_id)
-            .outerjoin(AccouMdb, AccouMdb.id == PbbHdb.acc_cred)
-            .order_by(PbbHdb.id.desc())
-            .all()
-        )
-
-        uph = (
-            db.session.query(UphDdb, AccouMdb)
-            .outerjoin(AccouMdb, AccouMdb.id == UphDdb.acc_id)
-            .all()
-        )
-
-        ovh = (
-            db.session.query(OvhDdb, AccouMdb)
-            .outerjoin(AccouMdb, AccouMdb.id == OvhDdb.acc_id)
-            .all()
-        )
-
-        final = []
-        for x in pbb:
-            uph = []
-            for y in uph:
-                if y[0].pbb_id == x[0].id:
-                    y[0].acc_id = accou_schema.dump(y[1])
-                    uph.append(uph_schema.dump(y[0]))
-
-            ovh = []
-            for z in ovh:
-                if z[0].pbb_id == x[0].id:
-                    z[0].acc_id = accou_schema.dump(z[1])
-                    ovh.append(ovh_schema.dump(z[0]))
-
-            if x[1]:
-                x[1].plan_id = plan_schema.dump(x[2])
-
-            final.append(
-                {
-                    "id": x[0].id,
-                    "pbb_code": x[0].pbb_code,
-                    "pbb_name": x[0].pbb_name,
-                    "acc_cred": accou_schema.dump(x[3]),
-                    "pbb_date": PbbSchema(only=["pbb_date"]).dump(x[0])["pbb_date"],
-                    "batch_id": batch_schema.dump(x[1]),
-                    "uph": uph,
-                    "ovh": ovh,
-                }
-            )
-
-        return response(200, "Berhasil", True, final)
+    return Pembebanan(self, request)
 
 
 @app.route("/v1/api/pbb/<int:id>", methods=["GET", "PUT", "DELETE"])
 @token_required
 def pbb_id(self, id):
-    p = PbbHdb.query.filter(PbbHdb.id == id).first()
-    if request.method == "PUT":
-        try:
-            pbb_code = request.json["pbb_code"]
-            pbb_date = request.json["pbb_date"]
-            acc_cred = request.json["acc_cred"]
-            batch_id = request.json["batch_id"]
-            uph = request.json["uph"]
-            ovh = request.json["ovh"]
-
-            p.pbb_code = pbb_code
-            p.pbb_date = pbb_date
-            p.batch_id = batch_id
-            p.acc_cred = acc_cred
-
-            upah = UphDdb.query.filter(UphDdb.pbb_id == p.id)
-            overh = OvhDdb.query.filter(OvhDdb.pbb_id == p.id)
-
-            new_uph = []
-            for x in uph:
-                for y in upah:
-                    if x["id"] == y.id:
-                        y.acc_id = x["acc_id"]
-
-                if x["id"] == 0 and x["acc_id"]:
-                    new_uph.append(
-                        UphDdb(
-                            p.id,
-                            x["acc_id"],
-                        )
-                    )
-
-            new_ovh = []
-            for x in ovh:
-                for y in overh:
-                    if x["id"] == y.id:
-                        y.acc_id = x["acc_id"]
-
-                if x["id"] == 0 and x["acc_id"]:
-                    new_ovh.append(
-                        OvhDdb(
-                            p.id,
-                            x["acc_id"],
-                        )
-                    )
-
-            if len(new_uph) > 0:
-                db.session.add_all(new_uph)
-
-            if len(new_ovh) > 0:
-                db.session.add_all(new_ovh)
-
-            db.session.commit()
-
-            result = response(200, "Berhasil", True, pbb_schema.dump(p))
-        except IntegrityError:
-            db.session.rollback()
-            result = response(400, "Kode sudah digunakan", False, None)
-        finally:
-            return result
-    elif request.method == "DELETE":
-        upah = UphDdb.query.filter(UphDdb.pbb_id == p.id)
-        overh = OvhDdb.query.filter(OvhDdb.pbb_id == p.id)
-
-        for x in upah:
-            db.session.delete(x)
-
-        for x in overh:
-            db.session.delete(x)
-
-        db.session.delete(p)
-        db.session.commit()
-
-        return response(200, "Berhasil", True, None)
-    else:
-        pbb = (
-            db.session.query(PbbHdb, BatchMdb, PlanHdb, AccouMdb)
-            .outerjoin(BatchMdb, BatchMdb.id == PbbHdb.batch_id)
-            .outerjoin(PlanHdb, PlanHdb.id == BatchMdb.plan_id)
-            .outerjoin(AccouMdb, AccouMdb.id == PbbHdb.acc_cred)
-            .order_by(PbbHdb.id.desc())
-            .all()
-        )
-
-        uph = (
-            db.session.query(UphDdb, AccouMdb)
-            .outerjoin(AccouMdb, AccouMdb.id == UphDdb.acc_id)
-            .all()
-        )
-
-        ovh = (
-            db.session.query(OvhDdb, AccouMdb)
-            .outerjoin(AccouMdb, AccouMdb.id == OvhDdb.acc_id)
-            .all()
-        )
-
-        final = []
-        for x in pbb:
-            uph = []
-            for y in uph:
-                if y[0].pbb_id == x[0].id:
-                    y[0].acc_id = accou_schema.dump(y[1])
-                    uph.append(uph_schema.dump(y[0]))
-
-            ovh = []
-            for z in ovh:
-                if z[0].pbb_id == x[0].id:
-                    z[0].acc_id = accou_schema.dump(z[1])
-                    ovh.append(ovh_schema.dump(z[0]))
-
-            x[1].plan_id = plan_schema.dump(x[2])
-
-            final.append(
-                {
-                    "id": x[0].id,
-                    "pbb_code": x[0].pbb_code,
-                    "pbb_name": x[0].pbb_name,
-                    "acc_cred": accou_schema.dump(x[3]),
-                    "pbb_date": PbbSchema(only=["pbb_date"]).dump(x[0])["pbb_date"],
-                    "batch_id": batch_schema.dump(x[1]),
-                    "uph": uph,
-                    "ovh": ovh,
-                }
-            )
-
-        return response(200, "Berhasil", True, final)
+    return PembebananId(id, request)
 
 
 @app.route("/v1/api/rpbb", methods=["GET"])
@@ -5427,7 +4292,8 @@ def memorial(self):
                 db.session.add_all(new_memo)
                 db.session.commit()
 
-                old_trans = TransDdb.query.filter(TransDdb.trx_code == m.code).all()
+                old_trans = TransDdb.query.filter(
+                    TransDdb.trx_code == m.code).all()
                 if old_trans:
                     for x in old_trans:
                         db.session.delete(x)
@@ -5482,7 +4348,8 @@ def memorial(self):
                 if x.id == y[0].mcode:
                     y[0].acc_id = accou_schema.dump(y[1])
                     y[0].dep_id = ccost_schema.dump(y[2])
-                    y[0].currency = currency_schema.dump(y[3]) if y[3] else None
+                    y[0].currency = currency_schema.dump(
+                        y[3]) if y[3] else None
                     mm.append(mddb_schema.dump(y[0]))
 
             final.append(
@@ -5554,7 +4421,8 @@ def memorial_id(self, id):
             db.session.commit()
 
             new_memo = MemoDdb.query.filter(MemoDdb.mcode == id).all()
-            old_trans = TransDdb.query.filter(TransDdb.trx_code == x.code).all()
+            old_trans = TransDdb.query.filter(
+                TransDdb.trx_code == x.code).all()
             if old_trans:
                 for y in old_trans:
                     db.session.delete(y)
@@ -5674,7 +4542,8 @@ def memo_import(self):
                 db.session.add_all(new_memo)
                 db.session.commit()
 
-                old_trans = TransDdb.query.filter(TransDdb.trx_code == m.code).all()
+                old_trans = TransDdb.query.filter(
+                    TransDdb.trx_code == m.code).all()
                 if old_trans:
                     for x in old_trans:
                         db.session.delete(x)
@@ -5899,7 +4768,8 @@ def korSto_id(self, id):
 @token_required
 def sto_loc(self, id):
     product = ProdMdb.query.all()
-    sto = StCard.query.filter(and_(StCard.trx_dbcr == "d", StCard.loc_id == id)).all()
+    sto = StCard.query.filter(
+        and_(StCard.trx_dbcr == "d", StCard.loc_id == id)).all()
 
     final = []
     for x in product:

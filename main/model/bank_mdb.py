@@ -18,6 +18,7 @@ class BankMdb(db.Model):
         db.TIMESTAMP(timezone=False), default=datetime.datetime.utcnow()
     )
     user_edit = db.Column(db.Integer)
+    comp_id = db.Column(db.Integer)
     edit_date = db.Column(
         db.TIMESTAMP(timezone=False),
         default=datetime.datetime.utcnow(),
@@ -25,7 +26,7 @@ class BankMdb(db.Model):
     )
 
     def __init__(
-        self, BANK_CODE, BANK_NAME, BANK_DESC, CURRENCY, BANK_ACC, user_entry, user_edit
+        self, BANK_CODE, BANK_NAME, BANK_DESC, CURRENCY, BANK_ACC, user_entry, user_edit, comp_id
     ):
         self.BANK_CODE = BANK_CODE
         self.BANK_NAME = BANK_NAME
@@ -34,3 +35,4 @@ class BankMdb(db.Model):
         self.acc_id = BANK_ACC
         self.user_entry = user_entry
         self.user_edit = user_edit
+        self.comp_id = comp_id
