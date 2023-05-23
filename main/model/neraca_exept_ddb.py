@@ -9,11 +9,11 @@ class NeracaEceptionDdb(db.Model):
     tittle_id = db.Column(db.Integer)
     accounts = db.Column(db.String(255))
     user_id = db.Column(db.Integer)
-    company = db.Column(db.Integer)
+    # company = db.Column(db.Integer)
     
 
-    def __init__(self, tittle_id, accounts, user_id, company):
+    def __init__(self, tittle_id, accounts, user_id):
         self.tittle_id = tittle_id
         self.accounts = accounts
         self.user_id = user_id
-        self.company = company
+        # self.company = company

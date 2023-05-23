@@ -83,7 +83,7 @@ class UpdatePembelian:
                     .outerjoin(SupplierMdb, SupplierMdb.id == OrdpbHdb.sup_id)
                     .outerjoin(PajakMdb, PajakMdb.id == SupplierMdb.sup_ppn)
                     .outerjoin(CurrencyMdb, CurrencyMdb.id == SupplierMdb.sup_curren)
-                    .filter(SupplierMdb.id == x[0].sup_id)
+                    .filter(SupplierMdb.id == x[1].sup_id)
                     .first()
                 )
 

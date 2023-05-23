@@ -165,7 +165,7 @@ class Order:
                 # if do.ns == False:
                 UpdateStock(do.id, False)
 
-                if do.invoice:
+                if invoice:
                     inv = InvpbHdb(
                         ord_code,
                         ord_date,
@@ -179,11 +179,11 @@ class Order:
                     print("=========fk")
 
                     db.session.add(inv)
-                    db.session.commit()
+                    # db.session.commit()
 
-                if do.faktur:
+                if faktur:
                     fk = FkpbHdb(ord_code, ord_date,
-                                 do.sup_id, None, None, None)
+                                 do.sup_id, None, None, None, do.id)
 
                     db.session.add(fk)
                     db.session.commit()
@@ -201,7 +201,7 @@ class Order:
                     )
 
                     db.session.add(new_detail)
-                    db.session.commit()
+                    # db.session.commit()
 
                     print("=========fkkk")
 
@@ -209,7 +209,8 @@ class Order:
 
                 db.session.commit()
 
-            except IntegrityError:
+            except IntegrityError as e:
+                print(e)
                 db.session.rollback()
                 db.session.close()
                 return response(400, "Kode sudah digunakan", False, None)
