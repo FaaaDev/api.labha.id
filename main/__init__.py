@@ -184,7 +184,9 @@ from .model.memo_ddb import MemoDdb
 from .model.memo_hdb import MemoHdb
 from .model.neraca_mdb import NeracaMdb
 from .model.pnl_mdb import PnlMdb
+from .model.prod_supp_ddb import ProdSupDdb
 from .schema.pnl_mdb import pnl_schema, pnls_schema, PnlSchema
+from .schema.prod_sup_ddb import prodsup_schema, prodsups_schema, ProdSupSchema
 from .schema.neraca_mdb import neraca_schema, neracas_schema, NeracaSchema
 from .schema.apcard_mdb import apcard_schema, apcards_schema, APCardSchema
 from .schema.arcard_mdb import ARCardSchema
