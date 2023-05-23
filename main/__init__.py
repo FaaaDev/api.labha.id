@@ -5,6 +5,10 @@ from unicodedata import name
 from flask import Flask, redirect, request, jsonify, send_from_directory
 import requests
 
+from .function.bank.bank import Bank
+from .function.bank.bank_id import BankId
+from .function.currency.currency import Currency
+from .function.currency.currency_id import CurrencyId
 from .function.produksi.batch.batch import Batch
 from .function.produksi.batch.batch_id import BatchId
 from .function.produksi.formula.formula import Formula
@@ -2874,7 +2878,7 @@ def product_id(self, id):
 
             old_sup = []
             new_sup = []
-            for x in suplier:
+            for x in sup:
                 if x["id"] != 0:
                     old_sup.append(x["id"])
                 else:
@@ -2892,7 +2896,7 @@ def product_id(self, id):
                             db.session.delete(y)
                         else:
                             if y.id == x:
-                                for z in suplier:
+                                for z in sup:
                                     if z["id"] == x:
                                         y.su_id = z["su_id"]
 
