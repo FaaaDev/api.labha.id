@@ -1,16 +1,16 @@
 from sqlalchemy import and_
-from main.model.batch_mdb import BatchMdb
-from main.model.plan_hdb import PlanHdb
-from main.model.fprdc_hdb import FprdcHdb
-from main.model.fprod_ddb import FprodDdb
-from main.model.fmtrl_ddb import FmtrlDdb
-from main.model.ccost_mdb import CcostMdb
-from main.model.transddb import TransDdb
-from main.model.stcard_mdb import StCard
-from main.model.group_prod_mdb import GroupProMdb
-from main.model.prod_mdb import ProdMdb
-from main.model.unit_mdb import UnitMdb
-from main.shared.shared import db
+from ..model.batch_mdb import BatchMdb
+from ..model.plan_hdb import PlanHdb
+from ..model.fprdc_hdb import FprdcHdb
+from ..model.fprod_ddb import FprodDdb
+from ..model.fmtrl_ddb import FmtrlDdb
+from ..model.ccost_mdb import CcostMdb
+from ..model.transddb import TransDdb
+from ..model.stcard_mdb import StCard
+from ..model.group_prod_mdb import GroupProMdb
+from ..model.prod_mdb import ProdMdb
+from ..model.unit_mdb import UnitMdb
+from ..shared.shared import db
 
 
 class updateBatch:

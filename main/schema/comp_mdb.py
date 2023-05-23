@@ -1,4 +1,4 @@
-from main.shared.shared import ma
+from ..shared.shared import ma
 
 
 class CompSchema(ma.Schema):
@@ -24,7 +24,9 @@ class CompSchema(ma.Schema):
             "rp",
             "over_po",
             "cutoff",
+            "comp_type",
             "year_co",
+            "user_id",
         )
 
 

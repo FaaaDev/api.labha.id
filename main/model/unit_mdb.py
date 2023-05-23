@@ -1,5 +1,5 @@
 from enum import unique
-from main.shared.shared import db
+from ..shared.shared import db
 
 class UnitMdb(db.Model):
     __table_args__ = {'schema': 'master'}

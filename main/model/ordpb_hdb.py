@@ -1,7 +1,7 @@
 import datetime
 from email.policy import default
 from enum import unique
-from main.shared.shared import db
+from ..shared.shared import db
 
 
 class OrdpbHdb(db.Model):
@@ -19,6 +19,7 @@ class OrdpbHdb(db.Model):
     faktur = db.Column(db.Boolean)
     po_id = db.Column(db.Integer)
     dep_id = db.Column(db.Integer)
+    proj_id = db.Column(db.Integer)
     sup_id = db.Column(db.Integer)
     top = db.Column(db.Integer)
     due_date = db.Column(db.TIMESTAMP)
@@ -45,6 +46,7 @@ class OrdpbHdb(db.Model):
         faktur,
         po_id,
         dep_id,
+        proj_id,
         sup_id,
         top,
         due_date,
@@ -67,6 +69,7 @@ class OrdpbHdb(db.Model):
         self.faktur = faktur
         self.po_id = po_id
         self.dep_id = dep_id
+        self.proj_id = proj_id
         self.sup_id = sup_id
         self.top = top
         self.due_date = due_date

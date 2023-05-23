@@ -1,10 +1,10 @@
-from main.shared.shared import ma
+from ..shared.shared import ma
 
 
 class NeracaExepSchema(ma.Schema):
     class Meta:
         ordered = True
-        fields = ("id", "tittle_id", "accounts", "user_id")
+        fields = ("id", "tittle_id", "accounts", "user_id", )
 
 
 neracaExep_schema = NeracaExepSchema()

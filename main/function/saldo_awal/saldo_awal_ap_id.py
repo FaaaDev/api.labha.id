@@ -1,16 +1,16 @@
-# from main.function.posting.posting_year import GetYearPosting
-from main.model.akhir_mdb import AkhirMdb
-from main.model.comp_mdb import CompMdb
-from main.model.inv_ddb import InvDdb
-from main.model.supplier_mdb import SupplierMdb
-from main.model.apcard_mdb import ApCard
-from main.model.sa_ap_mdb import SaldoAPMdb
-from main.model.currency_mdb import CurrencyMdb
-from main.model.user import User
-from main.schema.sa_ap_mdb import saap_schema, SaldoAPSchema
-from main.schema.supplier_mdb import supplier_schema
-from main.shared.shared import db
-from main.utils.response import response
+# from ...function.posting.posting_year import GetYearPosting
+from ...model.akhir_mdb import AkhirMdb
+from ...model.comp_mdb import CompMdb
+from ...model.inv_ddb import InvDdb
+from ...model.supplier_mdb import SupplierMdb
+from ...model.apcard_mdb import ApCard
+from ...model.sa_ap_mdb import SaldoAPMdb
+from ...model.currency_mdb import CurrencyMdb
+from ...model.user import User
+from ...schema.sa_ap_mdb import saap_schema, SaldoAPSchema
+from ...schema.supplier_mdb import supplier_schema
+from ...shared.shared import db
+from ...utils.response import response
 from datetime import date, datetime, time
 from sqlalchemy.exc import IntegrityError
 

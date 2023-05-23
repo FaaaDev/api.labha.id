@@ -6,6 +6,7 @@ import requests
 
 class UpdateTable:
     def __new__(self, model, request):
+
         updated = []
         db.session.rollback()
 
@@ -75,22 +76,24 @@ class UpdateTable:
 
             db.session.commit()
 
-        print(request.url)
-        print(request.headers)
-        print(request.method)
+        # print(request.url)
+        # print(request.headers)
+        # print(request.method)
 
         if request.method == "POST":
             result = requests.post(
                 url=request.url, headers=request.headers, json=request.json
             ).json()
         elif request.method == "GET":
-            result = requests.get(url=request.url, headers=request.headers).json()
+            result = requests.get(
+                url=request.url, headers=request.headers).json()
         elif request.method == "PUT":
             result = requests.put(
                 url=request.url, headers=request.headers, json=request.json
             ).json()
         elif request.method == "DELETE":
-            result = requests.delete(url=request.url, headers=request.headers).json()
+            result = requests.delete(
+                url=request.url, headers=request.headers).json()
 
         return response(
             200,

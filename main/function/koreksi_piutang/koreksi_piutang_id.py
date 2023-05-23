@@ -1,13 +1,13 @@
-from main.model.koreksi_piutang_hdb import KorPiutangHdb
-from main.model.arcard_mdb import ArCard
-from main.model.transddb import TransDdb
-from main.model.currency_mdb import CurrencyMdb
-from main.model.custom_mdb import CustomerMdb
-from main.shared.shared import db
-from main.utils.response import response
+from ...model.koreksi_piutang_hdb import KorPiutangHdb
+from ...model.arcard_mdb import ArCard
+from ...model.transddb import TransDdb
+from ...model.currency_mdb import CurrencyMdb
+from ...model.custom_mdb import CustomerMdb
+from ...shared.shared import db
+from ...utils.response import response
 from sqlalchemy.exc import IntegrityError
-from main.schema.koreksi_piutang_hdb import KoreksiPiuSchema, korPiut_schema
-from main.schema.custom_mdb import customer_schema
+from ...schema.koreksi_piutang_hdb import KoreksiPiuSchema, korPiut_schema
+from ...schema.custom_mdb import customer_schema
 
 
 class KoreksiPiutangId:

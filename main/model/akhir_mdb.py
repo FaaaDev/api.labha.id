@@ -1,5 +1,5 @@
 import datetime
-from main.shared.shared import db
+from ..shared.shared import db
 
 
 class AkhirMdb(db.Model):

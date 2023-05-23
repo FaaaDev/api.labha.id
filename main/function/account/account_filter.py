@@ -12,7 +12,7 @@ from sqlalchemy import func, cast, case, literal_column, or_
 
 
 class AccountFilter:
-    def __new__(self, page, length, filter):
+    def __new__(self, page, length, filter, request):
         try:
             query = (
                 db.session.query(
@@ -199,7 +199,6 @@ class AccountFilter:
                 )
                 .all()
             )
-
             result = (
                 query
                 .filter(

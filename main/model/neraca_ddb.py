@@ -1,5 +1,5 @@
 from enum import unique
-from main.shared.shared import db
+from ..shared.shared import db
 
 class NeracaDdb(db.Model):
     __table_args__ = {'schema': 'master'}
@@ -9,9 +9,11 @@ class NeracaDdb(db.Model):
     tittle_id = db.Column(db.Integer)
     accounts = db.Column(db.String(255))
     user_id = db.Column(db.Integer)
+    company = db.Column(db.Integer)
     
 
-    def __init__(self, tittle_id, accounts, user_id):
+    def __init__(self, tittle_id, accounts, user_id, company):
         self.tittle_id = tittle_id
         self.accounts = accounts
         self.user_id = user_id
+        self.company = company

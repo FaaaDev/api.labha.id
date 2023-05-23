@@ -4,266 +4,267 @@ from datetime import datetime
 from unicodedata import name
 from flask import Flask, redirect, request, jsonify, send_from_directory
 import requests
-from main.function.update_table import UpdateTable
-from main.function.delete_ap_payment import DeleteApPayment
-from main.function.income.income import Income
-from main.function.income.income_id import IncomeId
-from main.function.koreksi_sto.koreksi_sto import KoreksiPersediaan
-from main.function.koreksi_sto.koreksi_sto_id import KorPersediaanId
-from main.function.menu.menu import Menu
-from main.function.menu.menu_id import MenuId
-from main.function.retur_order.retur_id import ReturOrderId
-from main.function.retur_order.retur_order import ReturOrder
-from main.function.retur_sales.retur_id import ReturSaleId
-from main.function.retur_sales.retur_sales import ReturSale
-from main.function.update_ap_giro import UpdateApGiro
-from main.function.update_ap_payment import UpdateApPayment
-from main.function.update_ar import UpdateAr
-from main.function.update_ar_giro import UpdateArGiro
-from main.function.update_batch import updateBatch
-from main.function.purchase_order.po import PurchaseOrder
-from main.function.purchase_order.po_id import PurchaseOrderId
-from main.function.purchase_order.close_po import PurchaseOrderClose
-from main.function.order.order import Order
-from main.function.order.order_id import OrderId
-from main.function.order.invoice_pb import InvoicePb
-from main.function.order.invoice_pb_id import InvoicePbId
-from main.function.order.faktur_pb import FakturPb
-from main.function.order.faktur_pb_id import FakturPbId
-from main.function.sales_order.so import SalesOrder
-from main.function.sales_order.so_id import SalesOrderId
-from main.function.sales_order.close_so import SalesOrderClose
-from main.function.sale.sale import Sale
-from main.function.sale.sale_id import SaleId
-from main.function.sale.invoice_sl import InvoicePj
-from main.function.sale.invoice_sl_id import InvoicePjId
-from main.function.sale.faktur_sl import FakturPj
-from main.function.sale.faktur_sl_id import FakturPjId
-from main.function.expense.expense import Expense
-from main.function.expense.expense_id import ExpenseId
-from main.function.saldo_awal.saldo_awal import SaldoInv
-from main.function.saldo_awal.saldo_awal_ap import SaldoAP
-from main.function.saldo_awal.saldo_awal_ap_id import SaldoAPId
-from main.function.saldo_awal.saldo_awal_ar import SaldoAR
-from main.function.saldo_awal.saldo_awal_ar_id import SaldoARId
-from main.function.saldo_awal.saldo_awal_gl import SaldoAwalGl
-from main.function.saldo_awal.saldo_awal_gl_sts import SaldoAwalGlStatus
-from main.function.setup.setup_sa import SetupSldAkhir
-from main.function.setup.setup_sa_id import SetupSaId
-from main.function.saldo_akhir.saldo_akhir import SaldoAkhir, SaldoAkhirId
-from main.function.posting.posting_ym import GetYearPosting
-from main.function.posting.posting import Posting
-from main.function.posting.unpost import Unpost
-from main.function.posting.trasfer import TransferGL
-from main.function.posting.closing import Closing
-from main.function.koreksi_hutang.koreksi_hutang import KoreksiHutang
-from main.function.koreksi_hutang.koreksi_hutang_id import KoreksiHutangId
-from main.function.koreksi_piutang.koreksi_piutang import KoreksiPiutang
-from main.function.koreksi_piutang.koreksi_piutang_id import KoreksiPiutangId
-from main.function.group_product.group_product import GroupProduct
-from main.function.group_product.group_product_id import GroupProductId
-from main.function.request_purchase.rp import RequestPurchase
-from main.function.request_purchase.rp_id import RequestPurchaseId
-from main.function.produksi.formula.formula import Formula
-from main.function.produksi.formula.formula_id import FormulaId
-from main.function.produksi.planning.planning import Planning
-from main.function.produksi.planning.planning_id import PlanningId
-from main.function.produksi.batch.batch import Batch
-from main.function.produksi.batch.batch_id import BatchId
-from main.function.produksi.penerimaan_hasil_jadi.phj import PenerimaanHasilJadi
-from main.function.produksi.penerimaan_hasil_jadi.phj_id import PenerimaanHasilJadiId
-from main.function.produksi.pembebanan.pembebanan import Pembebanan
-from main.function.produksi.pembebanan.pembebanan_id import PembebananId
-from main.function.account.account import Account
-from main.function.account.account_id import AccountId
-from main.function.bank.bank import Bank
-from main.function.bank.bank_id import BankId
-from main.function.currency.currency import Currency
-from main.function.currency.currency_id import CurrencyId
-from main.function.kategory.kategory import Kategory
-from main.function.kategory.kategory_id import KategoryId
-from main.function.kategory.kategory_import import KategoryImport
-from main.model.giro_inc_hdb import GiroIncHdb
-from main.model.iacq_ddb import IAcqDdb
-from main.model.inc_hdb import IncHdb
-from main.model.main_menu import MainMenu
-from main.model.neraca_ddb import NeracaDdb
-from main.model.neraca_exept_ddb import NeracaEceptionDdb
-from main.model.neraca_hdb import NeracaHdb
-from main.model.ovh_ddb import OvhDdb
-from main.model.user_menu import UserMenu
-from main.model.user_model import UserModel
-from main.schema.inc_hdb import inc_schema
+
+from .function.produksi.batch.batch import Batch
+from .function.produksi.batch.batch_id import BatchId
+from .function.produksi.formula.formula import Formula
+from .function.produksi.formula.formula_id import FormulaId
+from .function.produksi.pembebanan.pembebanan import Pembebanan
+from .function.produksi.pembebanan.pembebanan_id import PembebananId
+from .function.produksi.penerimaan_hasil_jadi.phj import PenerimaanHasilJadi
+from .function.produksi.penerimaan_hasil_jadi.phj_id import PenerimaanHasilJadiId
+from .function.produksi.planning.planning import Planning
+from .function.produksi.planning.planning_id import PlanningId
+from .function.account.account import Account
+from .function.account.account_id import AccountId
+from .function.update_table import UpdateTable
+from .model.prod_supp_ddb import ProdSupDdb
+from .schema.prod_sup_ddb import *
+from .function.kategory.kategory_import import KategoryImport
+from .function.cost_center.cost_center import CostCenter
+from .function.account.account_filter import AccountFilter
+from .function.cost_center.cost_center_filter import CcostFilter
+from .function.delete_ap_payment import DeleteApPayment
+from .function.income.income import Income
+from .function.income.income_id import IncomeId
+from .function.koreksi_sto.koreksi_sto import KoreksiPersediaan
+from .function.koreksi_sto.koreksi_sto_id import KorPersediaanId
+from .function.menu.menu import Menu
+from .function.menu.menu_id import MenuId
+from .function.kategory.kategory import Kategory
+from .function.kategory.kategory_id import KategoryId
+from .function.retur_order.retur_id import ReturOrderId
+from .function.retur_order.retur_order import ReturOrder
+from .function.retur_sales.retur_id import ReturSaleId
+from .function.retur_sales.retur_sales import ReturSale
+from .function.update_ap_giro import UpdateApGiro
+from .function.update_ap_payment import UpdateApPayment
+from .function.update_ar import UpdateAr
+from .function.update_ar_giro import UpdateArGiro
+from .function.update_batch import updateBatch
+from .function.purchase_order.po import PurchaseOrder
+from .function.purchase_order.po_id import PurchaseOrderId
+from .function.purchase_order.close_po import PurchaseOrderClose
+from .function.order.order import Order
+from .function.order.order_id import OrderId
+from .function.order.invoice_pb import InvoicePb
+from .function.order.invoice_pb_id import InvoicePbId
+from .function.order.faktur_pb import FakturPb
+from .function.order.faktur_pb_id import FakturPbId
+from .function.sales_order.so import SalesOrder
+from .function.sales_order.so_id import SalesOrderId
+from .function.sales_order.close_so import SalesOrderClose
+from .function.sale.sale import Sale
+from .function.sale.sale_id import SaleId
+from .function.sale.invoice_sl import InvoicePj
+from .function.sale.invoice_sl_id import InvoicePjId
+from .function.sale.faktur_sl import FakturPj
+from .function.sale.faktur_sl_id import FakturPjId
+from .function.expense.expense import Expense
+from .function.expense.expense_id import ExpenseId
+from .function.saldo_awal.saldo_awal import SaldoInv
+from .function.saldo_awal.saldo_awal_ap import SaldoAP
+from .function.saldo_awal.saldo_awal_ap_id import SaldoAPId
+from .function.saldo_awal.saldo_awal_ar import SaldoAR
+from .function.saldo_awal.saldo_awal_ar_id import SaldoARId
+from .function.saldo_awal.saldo_awal_gl import SaldoAwalGl
+from .function.saldo_awal.saldo_awal_gl_sts import SaldoAwalGlStatus
+from .function.setup.setup_sa import SetupSldAkhir
+from .function.setup.setup_sa_id import SetupSaId
+from .function.saldo_akhir.saldo_akhir import SaldoAkhir, SaldoAkhirId
+from .function.posting.posting_ym import GetYearPosting
+from .function.posting.posting import Posting
+from .function.posting.unpost import Unpost
+from .function.posting.trasfer import TransferGL
+from .function.posting.closing import Closing
+from .function.koreksi_hutang.koreksi_hutang import KoreksiHutang
+from .function.koreksi_hutang.koreksi_hutang_id import KoreksiHutangId
+from .function.koreksi_piutang.koreksi_piutang import KoreksiPiutang
+from .function.koreksi_piutang.koreksi_piutang_id import KoreksiPiutangId
+from .function.group_product.group_product import GroupProduct
+from .function.group_product.group_product_id import GroupProductId
+from .function.request_purchase.rp import RequestPurchase
+from .function.request_purchase.rp_id import RequestPurchaseId
+from .model.giro_inc_hdb import GiroIncHdb
+from .model.iacq_ddb import IAcqDdb
+from .model.inc_hdb import IncHdb
+from .model.main_menu import MainMenu
+from .model.neraca_ddb import NeracaDdb
+from .model.neraca_exept_ddb import NeracaEceptionDdb
+from .model.neraca_hdb import NeracaHdb
+from .model.ovh_ddb import OvhDdb
+from .model.user_menu import UserMenu
+from .model.user_model import UserModel
+from .schema.inc_hdb import inc_schema
 from .function.update_mutasi import UpdateMutasi
-from main.function.update_pembelian import UpdatePembelian
-from main.function.update_rpbb import UpdateRpbb
-from main.function.update_stock import UpdateStock
-from main.model.accou_mdb import AccouMdb
-from main.model.acq_ddb import AcqDdb
-from main.model.adm_user_menu import AdmUserMenu
-from main.model.apcard_mdb import ApCard
-from main.model.arcard_mdb import ArCard
-from main.model.bank_mdb import BankMdb
-from main.model.batch_mdb import BatchMdb
-from main.model.ccost_mdb import CcostMdb
-from main.model.comp_mdb import CompMdb
-from main.model.djasa_ddb import DjasaDdb
-from main.model.exp_ddb import ExpDdb
-from main.model.exp_hdb import ExpHdb
-from main.model.fkpb_hdb import FkpbHdb
-from main.model.fmtrl_ddb import FmtrlDdb
-from main.model.fprdc_hdb import FprdcHdb
-from main.model.fprod_ddb import FprodDdb
-from main.model.giro_hdb import GiroHdb
-from main.model.hrgbl_mdb import HrgBlMdb
-from main.model.jjasa_ddb import JjasaDdb
-from main.model.jprod_ddb import JprodDdb
-from main.model.msn_mdb import MsnMdb
+from .function.update_pembelian import UpdatePembelian
+from .function.update_rpbb import UpdateRpbb
+from .function.update_stock import UpdateStock
+from .model.accou_mdb import AccouMdb
+from .model.acq_ddb import AcqDdb
+from .model.adm_user_menu import AdmUserMenu
+from .model.adm_menu import AdmMenu
+from .model.apcard_mdb import ApCard
+from .model.arcard_mdb import ArCard
+from .model.bank_mdb import BankMdb
+from .model.batch_mdb import BatchMdb
+from .model.ccost_mdb import CcostMdb
+from .model.comp_mdb import CompMdb
+from .model.djasa_ddb import DjasaDdb
+from .model.exp_ddb import ExpDdb
+from .model.exp_hdb import ExpHdb
+from .model.fkpb_hdb import FkpbHdb
+from .model.fmtrl_ddb import FmtrlDdb
+from .model.fprdc_hdb import FprdcHdb
+from .model.fprod_ddb import FprodDdb
+from .model.giro_hdb import GiroHdb
+from .model.hrgbl_mdb import HrgBlMdb
+from .model.jjasa_ddb import JjasaDdb
+from .model.jprod_ddb import JprodDdb
+from .model.msn_mdb import MsnMdb
 from .model.mtsi_ddb import MtsiDdb
 from .model.mtsi_hdb import MtsiHdb
-from main.model.ordpb_hdb import OrdpbHdb
-from main.model.dprod_ddb import DprodDdb
-from main.model.group_prod_mdb import GroupProMdb
-from main.model.jasa_mdb import JasaMdb
-from main.model.jpel_mdb import JpelMdb
-from main.model.jpem_mdb import JpemMdb
-from main.model.ordpj_hdb import OrdpjHdb
-from main.model.phj_hdb import PhjHdb
-from main.model.pbb_hdb import PbbHdb
-from main.model.pjasa_ddb import PjasaDdb
-from main.model.plan_hdb import PlanHdb
-from main.model.plmch_ddb import PlmchDdb
-from main.model.po_mdb import PoMdb
-from main.model.po_sup_ddb import PoSupDdb
-from main.model.uph_ddb import UphDdb
-from main.model.pphj_ddb import PphjDdb
-from main.model.pprod_ddb import PprodDdb
-from main.model.preq_mdb import PreqMdb
-from main.model.prod_mdb import ProdMdb
-from main.model.reprod_ddb import ReprodDdb
-from main.model.retord_hdb import RetordHdb
-from main.model.rjasa_mdb import RjasaMdb
+from .model.ordpb_hdb import OrdpbHdb
+from .model.dprod_ddb import DprodDdb
+from .model.group_prod_mdb import GroupProMdb
+from .model.jasa_mdb import JasaMdb
+from .model.jpel_mdb import JpelMdb
+from .model.jpem_mdb import JpemMdb
+from .model.ordpj_hdb import OrdpjHdb
+from .model.phj_hdb import PhjHdb
+from .model.pbb_hdb import PbbHdb
+from .model.pjasa_ddb import PjasaDdb
+from .model.plan_hdb import PlanHdb
+from .model.plmch_ddb import PlmchDdb
+from .model.po_mdb import PoMdb
+from .model.po_sup_ddb import PoSupDdb
+from .model.uph_ddb import UphDdb
+from .model.pphj_ddb import PphjDdb
+from .model.pprod_ddb import PprodDdb
+from .model.preq_mdb import PreqMdb
+from .model.prod_mdb import ProdMdb
+from .model.reprod_ddb import ReprodDdb
+from .model.retord_hdb import RetordHdb
+from .model.rjasa_mdb import RjasaMdb
 
-# from main.model.rpbb_ddb import RpbbDdb
-from main.model.rpbb_ddb import RpbbDdb
-from main.model.rpbb_mdb import RpbbMdb
-from main.model.rphj_ddb import RphjDdb
-from main.model.rprod_mdb import RprodMdb
-from main.model.sales_mdb import SalesMdb
-from main.model.area_penjualan_mdb import AreaPenjualanMdb
-from main.model.setup_mdb import SetupMdb
-from main.model.sjasa_ddb import SjasaDdb
-from main.model.sord_hdb import SordHdb
-from main.model.sprod_ddb import SprodDdb
-from main.model.stcard_mdb import StCard
-from main.model.sub_area_mdb import SubAreaMdb
-from main.model.klasi_mdb import KlasiMdb
-from main.model.kateg_mdb import KategMdb
-from main.model.proj_mdb import ProjMdb
-from main.model.currency_mdb import CurrencyMdb
-from main.model.syarat_bayar_mdb import RulesPayMdb
-from main.model.lokasi_mdb import LocationMdb
-from main.model.custom_mdb import CustomerMdb
-from main.model.supplier_mdb import SupplierMdb
-from main.model.unit_mdb import UnitMdb
-from main.model.divisi_mdb import DivisionMdb
-from main.model.group_prod_mdb import GroupProMdb
-from main.model.pajak_mdb import PajakMdb
-from main.model.retsale_hdb import RetSaleHdb
-from main.model.apcard_mdb import ApCard
-from main.model.transddb import TransDdb
-from main.model.po_sup_ddb import PoSupDdb
-from main.model.memo_ddb import MemoDdb
-from main.model.memo_hdb import MemoHdb
-from main.model.neraca_mdb import NeracaMdb
-from main.model.pnl_mdb import PnlMdb
-from main.model.prod_supp_ddb import ProdSupDdb
-from main.schema.prod_sup_ddb import prodsup_schema, prodsups_schema, ProdSupSchema
-from main.schema.pnl_mdb import pnl_schema, pnls_schema, PnlSchema
-from main.schema.neraca_mdb import neraca_schema, neracas_schema, NeracaSchema
-from main.schema.apcard_mdb import apcard_schema, apcards_schema, APCardSchema
-from main.schema.arcard_mdb import ARCardSchema
-from main.schema.ccost_mdb import ccost_schema, ccosts_schema, CcostSchema
-from main.schema.proj_mdb import proj_schema, projs_schema, ProjSchema
-from main.schema.rpbb_mdb import rpbb_schema
-from main.shared.shared import db
-from main.model.user import User
-from main.schema.user import user_schema, users_schema
-from main.schema.bank_mdb import bank_schema
-from main.schema.unit_mdb import unit_schema, units_schema, UnitSchema
-from main.schema.prod_mdb import prod_schema
-from main.schema.po_sup_ddb import poSup_schema
-from main.schema.fprdc_hdb import fprdc_schema, FprdcSchema
-from main.schema.fprod_ddb import fprod_schema
-from main.schema.fmtrl_ddb import fmtrl_schema
-from main.schema.memo_ddb import mddb_schema
-from main.schema.memo_hdb import mhdb_schema, MhdbSchema
-from main.schema.adm_user_menu import (
+# from .model.rpbb_ddb import RpbbDdb
+from .model.rpbb_ddb import RpbbDdb
+from .model.rpbb_mdb import RpbbMdb
+from .model.rphj_ddb import RphjDdb
+from .model.rprod_mdb import RprodMdb
+from .model.sales_mdb import SalesMdb
+from .model.area_penjualan_mdb import AreaPenjualanMdb
+from .model.setup_mdb import SetupMdb
+from .model.sjasa_ddb import SjasaDdb
+from .model.sord_hdb import SordHdb
+from .model.sprod_ddb import SprodDdb
+from .model.stcard_mdb import StCard
+from .model.sub_area_mdb import SubAreaMdb
+from .model.klasi_mdb import KlasiMdb
+from .model.kateg_mdb import KategMdb
+from .model.proj_mdb import ProjMdb
+from .model.currency_mdb import CurrencyMdb
+from .model.syarat_bayar_mdb import RulesPayMdb
+from .model.lokasi_mdb import LocationMdb
+from .model.custom_mdb import CustomerMdb
+from .model.supplier_mdb import SupplierMdb
+from .model.unit_mdb import UnitMdb
+from .model.divisi_mdb import DivisionMdb
+from .model.group_prod_mdb import GroupProMdb
+from .model.pajak_mdb import PajakMdb
+from .model.retsale_hdb import RetSaleHdb
+from .model.apcard_mdb import ApCard
+from .model.transddb import TransDdb
+from .model.po_sup_ddb import PoSupDdb
+from .model.memo_ddb import MemoDdb
+from .model.memo_hdb import MemoHdb
+from .model.neraca_mdb import NeracaMdb
+from .model.pnl_mdb import PnlMdb
+from .schema.pnl_mdb import pnl_schema, pnls_schema, PnlSchema
+from .schema.neraca_mdb import neraca_schema, neracas_schema, NeracaSchema
+from .schema.apcard_mdb import apcard_schema, apcards_schema, APCardSchema
+from .schema.arcard_mdb import ARCardSchema
+from .schema.ccost_mdb import ccost_schema, ccosts_schema, CcostSchema
+from .schema.proj_mdb import proj_schema, projs_schema, ProjSchema
+from .schema.rpbb_mdb import rpbb_schema
+from .shared.shared import db
+from .model.user import User
+from .schema.user import user_schema, users_schema
+from .schema.bank_mdb import bank_schema
+from .schema.unit_mdb import unit_schema, units_schema, UnitSchema
+from .schema.prod_mdb import prod_schema
+from .schema.po_sup_ddb import poSup_schema
+from .schema.fprdc_hdb import fprdc_schema, FprdcSchema
+from .schema.fprod_ddb import fprod_schema
+from .schema.fmtrl_ddb import fmtrl_schema
+from .schema.memo_ddb import mddb_schema
+from .schema.memo_hdb import mhdb_schema, MhdbSchema
+from .schema.adm_user_menu import (
     AdmUserMenuSchema,
 )
-from main.schema.klasi_mdb import klasi_schema, klasies_schema, KlasiMdb as KlasiSchema
-from main.schema.kateg_mdb import kateg_schema, kategs_schema, KategMdb as KategSchema
-from main.schema.accou_mdb import accou_schema, accous_schema, AccouSchema
-from main.schema.jpel_mdb import jpels_schema, jpel_schema
-from main.schema.jpem_mdb import jpems_schema, jpem_schema
-from main.schema.sales_mdb import saless_schema, sales_schema
-from main.schema.area_penjualan_mdb import area_penjualans_schema, area_penjualan_schema
-from main.schema.sub_area_mdb import sub_areas_schema, sub_area_schema
-from main.schema.currency_mdb import currencys_schema, currency_schema
-from main.schema.syarat_bayar_mdb import rpays_schema, rpay_schema
-from main.schema.lokasi_mdb import locts_schema, loct_schema
-from main.schema.comp_mdb import comp_shcema, comps_schema, CompSchema
-from main.schema.custom_mdb import customer_schema, customers_schema
-from main.schema.supplier_mdb import supplier_schema, suppliers_schema
-from main.schema.divisi_mdb import division_schema, divisions_schema
-from main.schema.group_prod_mdb import groupPro_schema, groupPros_schema
-from main.schema.pajak_mdb import pajk_schema, pajks_schema
-from main.schema.jasa_mdb import jasa_schema, jasas_schema
-from main.schema.preq_mdb import preq_schema, preqs_schema, PreqSchema
-from main.schema.rprod_mdb import rprod_schema, rprods_schema, RprodSchema
-from main.schema.rjasa_mdb import rjasa_schema, rjasas_schema, RjasaSchema
-from main.schema.pprod_ddb import pprod_schema, pprods_schema, PprodSchema
-from main.schema.pjasa_ddb import pjasa_schema, pjasas_schema, PjasaSchema
-from main.schema.sprod_ddb import sprod_schema, sprods_schema, SprodSchema
-from main.schema.sjasa_ddb import sjasa_schema, sjasas_schema, SjasaSchema
-from main.schema.po_mdb import po_schema, pos_schema, PoSchema
-from main.schema.sord_hdb import sord_schema, sords_schema, SordSchema
-from main.schema.dord_hdb import dord_schema, dords_schema, DordSchema
-from main.schema.dprod_ddb import dprod_schema, dprods_schema, DprodSchema
-from main.schema.djasa_ddb import djasa_schema, djasas_schema, DjasaSchema
-from main.schema.fkpb_hdb import fkpbs_schema, fkpb_schema, FkpbSchema
-from main.schema.retord_hdb import retord_schema, retords_schema, RetordSchema
-from main.schema.reprod_ddb import reprod_schema, reprods_schema, ReprodSchema
-from main.schema.ordpj_hdb import ordpj_schema, ordpjs_schema, OrdpjSchema
-from main.schema.jprod_ddb import jprod_schema, jprods_schema, JprodSchema
-from main.schema.jjasa_ddb import jjasa_schema, jjasas_schema, JjasaSchema
-from main.schema.exp_hdb import exp_schema, exps_schema, ExpSchema
-from main.schema.dexp_ddb import dexp_schema, dexps_schema, DexpSchema
-from main.schema.dacq_ddb import dacq_schema, dacqs_schema, DacqSchema
-from main.schema.iacq_ddb import iacq_schema, iacqs_schema, IacqSchema
-from main.schema.acq_ddb import acq_schema, acqs_schema, AcqSchema
-from main.schema.giro_hdb import giro_schema, giros_schema, GiroSchema
-from main.schema.giro_inc_hdb import grinc_schema, grincs_schema, GiroIncSchema
-from main.schema.apcard_mdb import apcard_schema, apcards_schema, APCardSchema
-from main.schema.retsale_hdb import retsale_schema, retsales_schema, RetSaleSchema
-from main.schema.transddb import trans_schema, transs_schema, TransDDB
-from main.schema.stcard_mdb import st_card_schema, st_cards_schema, StCardSchema
-from main.schema.msn_mdb import msns_schema, msn_schema, MsnSchema
-from main.schema.plan_hdb import plan_schema, plans_schema, PlanSchema
-from main.schema.plmch_ddb import plmch_schema, plmchs_schema, PlmchSchema
-from main.schema.batch_mdb import batch_schema, batchs_schema, BatchSchema
-from main.schema.phj_hdb import phj_schema, phjs_schema, PhjSchema
-from main.schema.pbb_hdb import pbb_schema, pbbs_schema, PbbSchema
-from main.schema.pphj_ddb import pphj_schema, pphjs_schema, PphjSchema
-from main.schema.uph_ddb import uph_schema, uphs_schema, UphSchema
-from main.schema.ovh_ddb import ovh_schema, ovhs_schema, OvhSchema
-from main.schema.rphj_ddb import rphj_schema, rphjs_schema, RphjSchema
-from main.schema.mtsi_hdb import mtsi_schema, mtsis_schema, MtsiSchema
-from main.schema.mtsi_ddb import mtsiddb_schema, mtsiddbs_schema, MtsiddbSchema
-from main.schema.setup_mdb import *
+from .schema.klasi_mdb import klasi_schema, klasies_schema, KlasiMdb as KlasiSchema
+from .schema.kateg_mdb import kateg_schema, kategs_schema, KategMdb as KategSchema
+from .schema.accou_mdb import accou_schema, accous_schema, AccouSchema
+from .schema.jpel_mdb import jpels_schema, jpel_schema
+from .schema.jpem_mdb import jpems_schema, jpem_schema
+from .schema.sales_mdb import saless_schema, sales_schema
+from .schema.area_penjualan_mdb import area_penjualans_schema, area_penjualan_schema
+from .schema.sub_area_mdb import sub_areas_schema, sub_area_schema
+from .schema.currency_mdb import currencys_schema, currency_schema
+from .schema.syarat_bayar_mdb import rpays_schema, rpay_schema
+from .schema.lokasi_mdb import locts_schema, loct_schema
+from .schema.comp_mdb import comp_shcema, comps_schema, CompSchema
+from .schema.custom_mdb import customer_schema, customers_schema
+from .schema.supplier_mdb import supplier_schema, suppliers_schema
+from .schema.divisi_mdb import division_schema, divisions_schema
+from .schema.group_prod_mdb import groupPro_schema, groupPros_schema
+from .schema.pajak_mdb import pajk_schema, pajks_schema
+from .schema.jasa_mdb import jasa_schema, jasas_schema
+from .schema.preq_mdb import preq_schema, preqs_schema, PreqSchema
+from .schema.rprod_mdb import rprod_schema, rprods_schema, RprodSchema
+from .schema.rjasa_mdb import rjasa_schema, rjasas_schema, RjasaSchema
+from .schema.pprod_ddb import pprod_schema, pprods_schema, PprodSchema
+from .schema.pjasa_ddb import pjasa_schema, pjasas_schema, PjasaSchema
+from .schema.sprod_ddb import sprod_schema, sprods_schema, SprodSchema
+from .schema.sjasa_ddb import sjasa_schema, sjasas_schema, SjasaSchema
+from .schema.po_mdb import po_schema, pos_schema, PoSchema
+from .schema.sord_hdb import sord_schema, sords_schema, SordSchema
+from .schema.dord_hdb import dord_schema, dords_schema, DordSchema
+from .schema.dprod_ddb import dprod_schema, dprods_schema, DprodSchema
+from .schema.djasa_ddb import djasa_schema, djasas_schema, DjasaSchema
+from .schema.fkpb_hdb import fkpbs_schema, fkpb_schema, FkpbSchema
+from .schema.retord_hdb import retord_schema, retords_schema, RetordSchema
+from .schema.reprod_ddb import reprod_schema, reprods_schema, ReprodSchema
+from .schema.ordpj_hdb import ordpj_schema, ordpjs_schema, OrdpjSchema
+from .schema.jprod_ddb import jprod_schema, jprods_schema, JprodSchema
+from .schema.jjasa_ddb import jjasa_schema, jjasas_schema, JjasaSchema
+from .schema.exp_hdb import exp_schema, exps_schema, ExpSchema
+from .schema.dexp_ddb import dexp_schema, dexps_schema, DexpSchema
+from .schema.dacq_ddb import dacq_schema, dacqs_schema, DacqSchema
+from .schema.iacq_ddb import iacq_schema, iacqs_schema, IacqSchema
+from .schema.acq_ddb import acq_schema, acqs_schema, AcqSchema
+from .schema.giro_hdb import giro_schema, giros_schema, GiroSchema
+from .schema.giro_inc_hdb import grinc_schema, grincs_schema, GiroIncSchema
+from .schema.apcard_mdb import apcard_schema, apcards_schema, APCardSchema
+from .schema.retsale_hdb import retsale_schema, retsales_schema, RetSaleSchema
+from .schema.transddb import trans_schema, transs_schema, TransDDB
+from .schema.stcard_mdb import st_card_schema, st_cards_schema, StCardSchema
+from .schema.msn_mdb import msns_schema, msn_schema, MsnSchema
+from .schema.plan_hdb import plan_schema, plans_schema, PlanSchema
+from .schema.plmch_ddb import plmch_schema, plmchs_schema, PlmchSchema
+from .schema.batch_mdb import batch_schema, batchs_schema, BatchSchema
+from .schema.phj_hdb import phj_schema, phjs_schema, PhjSchema
+from .schema.pbb_hdb import pbb_schema, pbbs_schema, PbbSchema
+from .schema.pphj_ddb import pphj_schema, pphjs_schema, PphjSchema
+from .schema.uph_ddb import uph_schema, uphs_schema, UphSchema
+from .schema.ovh_ddb import ovh_schema, ovhs_schema, OvhSchema
+from .schema.rphj_ddb import rphj_schema, rphjs_schema, RphjSchema
+from .schema.mtsi_hdb import mtsi_schema, mtsis_schema, MtsiSchema
+from .schema.mtsi_ddb import mtsiddb_schema, mtsiddbs_schema, MtsiddbSchema
+from .schema.setup_mdb import *
 from sqlalchemy.exc import *
 from sqlalchemy import and_, extract, func, or_, cast
-from main.shared.shared import server_name
+from .shared.shared import server_name
 
 import jwt
 from datetime import datetime, timedelta
@@ -271,6 +272,9 @@ from functools import wraps
 import os
 from werkzeug.utils import secure_filename
 import bcrypt
+from dotenv import load_dotenv, find_dotenv
+
+load_dotenv(find_dotenv())
 
 
 app = Flask(__name__)
@@ -289,7 +293,7 @@ def cityUrl():
 
 
 def authHelper():
-    return "http://116.193.191.236:8889/v1/auth"
+    return os.getenv("AUTH_HELPER_URL")
 
 
 def response(code, message, status, data):
@@ -511,73 +515,29 @@ def user_id(self, id):
 @token_required
 def profil(self):
     user = (
-        db.session.query(UserMenu, MainMenu)
-        .outerjoin(MainMenu, MainMenu.id == UserMenu.menu_id)
-        .filter(and_(UserMenu.user_id == self.id, MainMenu.visible == True))
-        .order_by(MainMenu.category.asc(), MainMenu.id.asc())
+        db.session.query(User, AdmUserMenu, AdmMenu)
+        .outerjoin(AdmUserMenu, AdmUserMenu.id_adm_user == User.id)
+        .outerjoin(AdmMenu, AdmMenu.id == AdmUserMenu.id_adm_menu)
+        .filter(User.id == self.id)
         .all()
     )
 
-    menu = []
-    for x in user:
-        sub_menu = []
-        for y in user:
-            last_menu = []
-            for z in user:
-                if z[1].parent_id == y[1].id:
-                    last_menu.append(
-                        {
-                            "id": z[1].id,
-                            "name": z[1].name,
-                            "route_name": z[1].route_name,
-                            "icon_file": z[1].icon_file,
-                            "parent_id": z[1].parent_id,
-                            "visible": z[1].visible,
-                            "category": z[1].category,
-                            "view": z[0].view,
-                            "edit": z[0].edit,
-                            "delete": z[0].delete,
-                        }
-                    )
-            if y[1].parent_id == x[1].id:
-                sub_menu.append(
-                    {
-                        "id": y[1].id,
-                        "name": y[1].name,
-                        "route_name": y[1].route_name,
-                        "icon_file": y[1].icon_file,
-                        "visible": y[1].visible,
-                        "parent_id": y[1].parent_id,
-                        "category": y[1].category,
-                        "view": y[0].view,
-                        "edit": y[0].edit,
-                        "delete": y[0].delete,
-                        "lastmenu": last_menu,
-                    }
-                )
-        if not x[1].parent_id:
-            menu.append(
-                {
-                    "id": x[1].id,
-                    "name": x[1].name,
-                    "route_name": x[1].route_name,
-                    "icon_file": x[1].icon_file,
-                    "visible": x[1].visible,
-                    "parent_id": x[1].parent_id,
-                    "category": x[1].category,
-                    "view": x[0].view,
-                    "edit": x[0].edit,
-                    "delete": x[0].delete,
-                    "submenu": sub_menu,
-                }
-            )
-
     menu = {
-        "id": self.id,
-        "email": self.email,
-        "username": self.username,
-        "name": self.name,
-        "menu": menu,
+        "id": user[0][0].id,
+        "email": user[0][0].email,
+        "username": user[0][0].username,
+        "name": user[0][0].name,
+        "menu": [
+            {
+                "name": x[2].name,
+                "sequence_no": x[2].sequence_no,
+                "page_name": x[2].page_name,
+                "route_name": x[2].route_name,
+                "icon_file": x[2].icon_file,
+                "akses": AdmUserMenuSchema(only=["view", "edit", "delete"]).dump(x[1]),
+            }
+            for x in user
+        ],
     }
 
     return response(200, "Berhasil", True, menu)
@@ -933,6 +893,12 @@ def account(self):
     #     return response(200, "Berhasil", True, data)
 
 
+@app.route("/v1/api/account/<int:page>/<int:length>/<string:filter>", methods=["GET"])
+@token_required
+def account_filter(self, page, length, filter):
+    return AccountFilter(page, length, filter, request)
+
+
 @app.route("/v1/api/import/account", methods=["POST"])
 @token_required
 def account_import(self):
@@ -1174,24 +1140,13 @@ def account_id(self, id):
 @app.route("/v1/api/cost-center", methods=["POST", "GET"])
 @token_required
 def ccost(self):
-    if request.method == "POST":
-        try:
-            code = request.json["ccost_code"]
-            name = request.json["ccost_name"]
-            keterangan = request.json["ccost_ket"]
-            cost = CcostMdb(code, name, keterangan)
-            db.session.add(cost)
-            db.session.commit()
-            result = response(200, "Berhasil", True, ccost_schema.dump(cost))
-        except IntegrityError:
-            db.session.rollback()
-            result = response(400, "Kode sudah digunakan", False, None)
-        finally:
-            return result
-    else:
-        result = CcostMdb.query.all()
+    return CostCenter(request)
 
-        return response(200, "Berhasil", True, ccosts_schema.dump(result))
+
+@app.route("/v1/api/cost-center/<int:page>/<int:length>/<string:filter>", methods=["GET"])
+@token_required
+def cost_center_filter(self, page, length, filter):
+    return CcostFilter(page, length, filter)
 
 
 @app.route("/v1/api/cost-center/<int:id>", methods=["PUT", "GET", "DELETE"])
@@ -1882,11 +1837,11 @@ def customer(self):
                               customer_schema.dump(customer))
         except IntegrityError:
             db.session.rollback()
-            result = response(
+            return response(
                 400, "Kode akun " + cus_code + " sudah digunakan", False, None
             )
         finally:
-            return result
+            return response(200, "Berhasil", True, customer_schema.dump(customer))
     else:
         result = (
             db.session.query(CustomerMdb, JpelMdb, SubAreaMdb,
@@ -1896,7 +1851,7 @@ def customer(self):
             .outerjoin(CurrencyMdb, CurrencyMdb.id == CustomerMdb.cus_curren)
             .outerjoin(PajakMdb, PajakMdb.id == CustomerMdb.cus_pjk)
             .order_by(JpelMdb.id.asc())
-            .order_by(CurrencyMdb.id.asc())
+            # .order_by(CurrencyMdb.id.asc())
             .order_by(CustomerMdb.cus_code.asc())
             .all()
         )
@@ -2301,6 +2256,9 @@ def setup_account_id(self, id):
 @token_required
 def setup_neraca(self):
     user = User.query.filter(User.id == self.id).first()
+    if user is None:
+        return response(404, "User not found", False, None)
+
     if request.method == "POST":
         try:
             cp_id = user.company
@@ -2864,8 +2822,8 @@ def product(self):
             return UpdateTable([ProdMdb, ProdSupDdb], request)
 
 
-@ app.route("/v1/api/product/<int:id>", methods=["PUT", "GET", "DELETE"])
-@ token_required
+@app.route("/v1/api/product/<int:id>", methods=["PUT", "GET", "DELETE"])
+@token_required
 def product_id(self, id):
     prod = ProdMdb.query.filter(ProdMdb.id == id).first()
     if request.method == "PUT":
@@ -2963,8 +2921,8 @@ def product_id(self, id):
         return response(200, "Berhasil", True, prod_schema.dump(prod))
 
 
-@ app.route("/v1/api/import/prod", methods=["POST"])
-@ token_required
+@app.route("/v1/api/import/prod", methods=["POST"])
+@token_required
 def prod_import(self):
 
     prod = request.json["prod"]
@@ -3022,8 +2980,8 @@ def prod_import(self):
 
 
 # Divisi
-@ app.route("/v1/api/divisi", methods=["POST", "GET"])
-@ token_required
+@app.route("/v1/api/divisi", methods=["POST", "GET"])
+@token_required
 def divisi(self):
     if request.method == "POST":
         try:
@@ -3047,8 +3005,8 @@ def divisi(self):
         return response(200, "Berhasil", True, divisions_schema.dump(result))
 
 
-@ app.route("/v1/api/divisi/<int:id>", methods=["PUT", "GET", "DELETE"])
-@ token_required
+@app.route("/v1/api/divisi/<int:id>", methods=["PUT", "GET", "DELETE"])
+@token_required
 def divisi_id(self, id):
     divisi = DivisionMdb.query.filter(DivisionMdb.id == id).first()
     if request.method == "PUT":
@@ -3073,21 +3031,21 @@ def divisi_id(self, id):
         return response(200, "Berhasil", True, division_schema.dump(divisi))
 
 
-@ app.route("/v1/api/group-product", methods=["POST", "GET"])
-@ token_required
+@app.route("/v1/api/group-product", methods=["POST", "GET"])
+@token_required
 def groupPro(self):
     return GroupProduct(self, request)
 
 
-@ app.route("/v1/api/group-product/<int:id>", methods=["PUT", "GET", "DELETE"])
-@ token_required
+@app.route("/v1/api/group-product/<int:id>", methods=["PUT", "GET", "DELETE"])
+@token_required
 def groupPro_id(self, id):
     return GroupProductId(id, request)
 
 
 # Pajak
-@ app.route("/v1/api/pajak", methods=["POST", "GET"])
-@ token_required
+@app.route("/v1/api/pajak", methods=["POST", "GET"])
+@token_required
 def pajak(self):
     if request.method == "POST":
         try:
@@ -3113,8 +3071,8 @@ def pajak(self):
         return response(200, "Berhasil", True, pajks_schema.dump(result))
 
 
-@ app.route("/v1/api/pajak/<int:id>", methods=["PUT", "GET", "DELETE"])
-@ token_required
+@app.route("/v1/api/pajak/<int:id>", methods=["PUT", "GET", "DELETE"])
+@token_required
 def pajak_id(self, id):
     pajak = PajakMdb.query.filter(PajakMdb.id == id).first()
     if request.method == "PUT":
@@ -3140,8 +3098,8 @@ def pajak_id(self, id):
 
 
 # Jasa
-@ app.route("/v1/api/jasa", methods=["POST", "GET"])
-@ token_required
+@app.route("/v1/api/jasa", methods=["POST", "GET"])
+@token_required
 def jasa(self):
     if request.method == "POST":
         try:
@@ -3178,8 +3136,8 @@ def jasa(self):
         return response(200, "Berhasil", True, data)
 
 
-@ app.route("/v1/api/jasa/<int:id>", methods=["PUT", "GET", "DELETE"])
-@ token_required
+@app.route("/v1/api/jasa/<int:id>", methods=["PUT", "GET", "DELETE"])
+@token_required
 def jasa_id(self, id):
     jasa = JasaMdb.query.filter(JasaMdb.id == id).first()
     if request.method == "PUT":
@@ -3217,68 +3175,68 @@ def jasa_id(self, id):
         return response(200, "Berhasil", True, data)
 
 
-@ app.route("/v1/api/rp", methods=["POST", "GET"])
-@ token_required
+@app.route("/v1/api/rp", methods=["POST", "GET"])
+@token_required
 def rp(self):
     return RequestPurchase(self, request)
 
 
-@ app.route("/v1/api/rp/<int:id>", methods=["GET", "PUT", "DELETE"])
-@ token_required
+@app.route("/v1/api/rp/<int:id>", methods=["GET", "PUT", "DELETE"])
+@token_required
 def rp_id(self, id):
     return RequestPurchaseId(id, request)
 
 
-@ app.route("/v1/api/po", methods=["POST", "GET"])
-@ token_required
+@app.route("/v1/api/po", methods=["POST", "GET"])
+@token_required
 def po(self):
     return PurchaseOrder(self, request)
 
 
-@ app.route("/v1/api/po/<int:id>", methods=["PUT", "GET", "DELETE"])
-@ token_required
+@app.route("/v1/api/po/<int:id>", methods=["PUT", "GET", "DELETE"])
+@token_required
 def po_id(self, id):
     return PurchaseOrderId(id, request)
 
 
-@ app.route("/v1/api/po-close/<int:id>", methods=["PUT"])
-@ token_required
+@app.route("/v1/api/po-close/<int:id>", methods=["PUT"])
+@token_required
 def po_close_id(self, id):
     return PurchaseOrderClose(id, request)
 
 
-@ app.route("/v1/api/so", methods=["POST", "GET"])
-@ token_required
+@app.route("/v1/api/so", methods=["POST", "GET"])
+@token_required
 def so(self):
     return SalesOrder(self, request)
 
 
-@ app.route("/v1/api/so/<int:id>", methods=["PUT", "GET", "DELETE"])
-@ token_required
+@app.route("/v1/api/so/<int:id>", methods=["PUT", "GET", "DELETE"])
+@token_required
 def so_id(self, id):
     return SalesOrderId(id, request)
 
 
-@ app.route("/v1/api/so-close/<int:id>", methods=["PUT"])
-@ token_required
+@app.route("/v1/api/so-close/<int:id>", methods=["PUT"])
+@token_required
 def so_close_id(self, id):
     return SalesOrderClose(id, request)
 
 
-@ app.route("/v1/api/order", methods=["POST", "GET"])
-@ token_required
+@app.route("/v1/api/order", methods=["POST", "GET"])
+@token_required
 def order(self):
     return Order(self, request)
 
 
-@ app.route("/v1/api/order/<int:id>", methods=["PUT", "GET", "DELETE"])
-@ token_required
+@app.route("/v1/api/order/<int:id>", methods=["PUT", "GET", "DELETE"])
+@token_required
 def ord_id(self, id):
     return OrderId(id, request)
 
 
-@ app.route("/v1/api/order/date", methods=["POST"])
-@ token_required
+@app.route("/v1/api/order/date", methods=["POST"])
+@token_required
 def order_date(self):
     start_date = request.json["start_date"]
     end_date = request.json["end_date"]
@@ -3351,58 +3309,58 @@ def order_date(self):
     return response(200, "Berhasil", True, final)
 
 
-@ app.route("/v1/api/faktur/code", methods=["POST", "GET"])
-@ token_required
+@app.route("/v1/api/faktur/code", methods=["POST", "GET"])
+@token_required
 def faktur_code(self):
     now = datetime.now().strftime("%d%m%y")
     fk = "FK/" + now + "/" + str(round(time.time() * 10000))[-6:]
     return response(200, "success", True, fk)
 
 
-@ app.route("/v1/api/invoice-pb", methods=["POST", "GET"])
-@ token_required
+@app.route("/v1/api/invoice-pb", methods=["POST", "GET"])
+@token_required
 def invoice_pb(self):
     return InvoicePb(self, request)
 
 
-@ app.route("/v1/api/invoice-pb/<int:id>", methods=["PUT", "GET", "DELETE"])
-@ token_required
+@app.route("/v1/api/invoice-pb/<int:id>", methods=["PUT", "GET", "DELETE"])
+@token_required
 def invoice_pb_id(self, id):
     return InvoicePbId(id, request)
 
 
-@ app.route("/v1/api/faktur-pb", methods=["POST", "GET"])
-@ token_required
+@app.route("/v1/api/faktur-pb", methods=["POST", "GET"])
+@token_required
 def faktur(self):
     return FakturPb(self, request)
 
 
-@ app.route("/v1/api/faktur-pb/<int:id>", methods=["PUT", "GET", "DELETE"])
-@ token_required
+@app.route("/v1/api/faktur-pb/<int:id>", methods=["PUT", "GET", "DELETE"])
+@token_required
 def faktur_id(self, id):
     return FakturPbId(id, request)
 
 
-@ app.route("/v1/api/retur-order", methods=["POST", "GET"])
-@ token_required
+@app.route("/v1/api/retur-order", methods=["POST", "GET"])
+@token_required
 def retur_order(self):
     return ReturOrder(self, request)
 
 
-@ app.route("/v1/api/retur-order/<int:id>", methods=["PUT", "DELETE", "GET"])
-@ token_required
+@app.route("/v1/api/retur-order/<int:id>", methods=["PUT", "DELETE", "GET"])
+@token_required
 def retur_order_id(self, id):
     return ReturOrderId(id, request)
 
 
-@ app.route("/v1/api/retur-sales", methods=["POST", "GET"])
-@ token_required
+@app.route("/v1/api/retur-sales", methods=["POST", "GET"])
+@token_required
 def retur_sales(self):
     return ReturSale(self, request)
 
 
-@ app.route("/v1/api/retur-sales/<int:id>", methods=["PUT", "DELETE", "GET"])
-@ token_required
+@app.route("/v1/api/retur-sales/<int:id>", methods=["PUT", "DELETE", "GET"])
+@token_required
 def retur_sale_id(self, id):
     return ReturSaleId(id, request)
 
@@ -3418,68 +3376,68 @@ def retur_sale_id(self, id):
 #     else:
 
 
-@ app.route("/v1/api/sales", methods=["POST", "GET"])
-@ token_required
+@app.route("/v1/api/sales", methods=["POST", "GET"])
+@token_required
 def sls(self):
     return Sale(self, request)
 
 
-@ app.route("/v1/api/sales/<int:id>", methods=["PUT", "GET", "DELETE"])
-@ token_required
+@app.route("/v1/api/sales/<int:id>", methods=["PUT", "GET", "DELETE"])
+@token_required
 def sls_id(self, id):
     return SaleId(id, request)
 
 
-@ app.route("/v1/api/invoice-pj", methods=["POST", "GET"])
-@ token_required
+@app.route("/v1/api/invoice-pj", methods=["POST", "GET"])
+@token_required
 def invoice_pj(self):
     return InvoicePj(self, request)
 
 
-@ app.route("/v1/api/invoice-pj/<int:id>", methods=["PUT", "GET", "DELETE"])
-@ token_required
+@app.route("/v1/api/invoice-pj/<int:id>", methods=["PUT", "GET", "DELETE"])
+@token_required
 def invoice_pj_id(self, id):
     return InvoicePjId(id, request)
 
 
-@ app.route("/v1/api/faktur-pj", methods=["POST", "GET"])
-@ token_required
+@app.route("/v1/api/faktur-pj", methods=["POST", "GET"])
+@token_required
 def faktur_pj(self):
     return FakturPj(self, request)
 
 
-@ app.route("/v1/api/faktur-pj/<int:id>", methods=["PUT", "GET", "DELETE"])
-@ token_required
+@app.route("/v1/api/faktur-pj/<int:id>", methods=["PUT", "GET", "DELETE"])
+@token_required
 def faktur_pj_id(self, id):
     return FakturPjId(id, request)
 
 
-@ app.route("/v1/api/expense", methods=["POST", "GET"])
-@ token_required
+@app.route("/v1/api/expense", methods=["POST", "GET"])
+@token_required
 def expense(self):
     return Expense(self, request)
 
 
-@ app.route("/v1/api/expense/<int:id>", methods=["PUT", "GET", "DELETE"])
-@ token_required
+@app.route("/v1/api/expense/<int:id>", methods=["PUT", "GET", "DELETE"])
+@token_required
 def expense_id(self, id):
     return ExpenseId(id, request)
 
 
-@ app.route("/v1/api/income", methods=["POST", "GET"])
-@ token_required
+@app.route("/v1/api/income", methods=["POST", "GET"])
+@token_required
 def income(self):
     return Income(self, request)
 
 
-@ app.route("/v1/api/income/<int:id>", methods=["PUT", "GET", "DELETE"])
-@ token_required
+@app.route("/v1/api/income/<int:id>", methods=["PUT", "GET", "DELETE"])
+@token_required
 def income_id(self, id):
     return IncomeId(id, request)
 
 
-@ app.route("/v1/api/apcard", methods=["GET"])
-@ token_required
+@app.route("/v1/api/apcard", methods=["GET"])
+@token_required
 def apcard(self):
     ap = (
         db.session.query(ApCard, AcqDdb, PoMdb, SupplierMdb, OrdpbHdb, GiroHdb)
@@ -3532,8 +3490,8 @@ def apcard(self):
     return response(200, "Berhasil", True, final)
 
 
-@ app.route("/v1/api/arcard", methods=["GET"])
-@ token_required
+@app.route("/v1/api/arcard", methods=["GET"])
+@token_required
 def arcard(self):
     ar = (
         db.session.query(ArCard, IAcqDdb, OrdpjHdb,
@@ -3594,8 +3552,8 @@ def arcard(self):
     return response(200, "Berhasil", True, final)
 
 
-@ app.route("/v1/api/dashboard-info", methods=["GET"])
-@ token_required
+@app.route("/v1/api/dashboard-info", methods=["GET"])
+@token_required
 def dashboard_info(self):
     po = PoMdb.query.filter(PoMdb.status == 0).all()
     so = SordHdb.query.filter(SordHdb.status == 0).all()
@@ -3702,8 +3660,8 @@ def dashboard_info(self):
     return response(200, "Berhasil", True, result)
 
 
-@ app.route("/v1/api/trans", methods=["GET"])
-@ token_required
+@app.route("/v1/api/trans", methods=["GET"])
+@token_required
 def trans(self):
     trn = (
         db.session.query(TransDdb, AccouMdb, CcostMdb, ProjMdb, CurrencyMdb)
@@ -3742,8 +3700,8 @@ def trans(self):
     return response(200, "Berhasil", True, final)
 
 
-@ app.route("/v1/api/giro", methods=["GET"])
-@ token_required
+@app.route("/v1/api/giro", methods=["GET"])
+@token_required
 def giro(self):
     giro = (
         db.session.query(GiroHdb, BankMdb, SupplierMdb, ExpHdb)
@@ -3776,8 +3734,8 @@ def giro(self):
     return response(200, "Berhasil", True, final)
 
 
-@ app.route("/v1/api/giro/<int:id>", methods=["PUT", "GET", "DELETE"])
-@ token_required
+@app.route("/v1/api/giro/<int:id>", methods=["PUT", "GET", "DELETE"])
+@token_required
 def giro_id(self, id):
     giro = GiroHdb.query.filter(GiroHdb.id == id).first()
     if request.method == "PUT":
@@ -3835,8 +3793,8 @@ def giro_id(self, id):
         return response(200, "Berhasil", True, data)
 
 
-@ app.route("/v1/api/giro-inc", methods=["GET"])
-@ token_required
+@app.route("/v1/api/giro-inc", methods=["GET"])
+@token_required
 def giro_inc(self):
     giro = (
         db.session.query(GiroIncHdb, BankMdb, CustomerMdb, IncHdb)
@@ -3872,8 +3830,8 @@ def giro_inc(self):
     return response(200, "Berhasil", True, final)
 
 
-@ app.route("/v1/api/giro-inc/<int:id>", methods=["PUT", "GET"])
-@ token_required
+@app.route("/v1/api/giro-inc/<int:id>", methods=["PUT", "GET"])
+@token_required
 def giro_inc_id(self, id):
     gr = GiroIncHdb.query.filter(GiroIncHdb.id == id).first()
     if request.method == "PUT":
@@ -3943,8 +3901,8 @@ def giro_inc_id(self, id):
         return response(200, "Berhasil", True, final)
 
 
-@ app.route("/v1/api/approval", methods=["GET"])
-@ token_required
+@app.route("/v1/api/approval", methods=["GET"])
+@token_required
 def approval(self):
     po = (
         db.session.query(PoMdb, PreqMdb, CcostMdb, SupplierMdb, RulesPayMdb)
@@ -4023,8 +3981,8 @@ def approval(self):
     return response(200, "Berhasil", True, final)
 
 
-@ app.route("/v1/api/approval/<int:id>", methods=["GET"])
-@ token_required
+@app.route("/v1/api/approval/<int:id>", methods=["GET"])
+@token_required
 def update_approval(self, id):
     po = PoMdb.query.filter(PoMdb.id == id).first()
 
@@ -4035,8 +3993,8 @@ def update_approval(self, id):
     return response(200, "Berhasil", True, None)
 
 
-@ app.route("/v1/api/balance", methods=["GET"])
-@ token_required
+@app.route("/v1/api/balance", methods=["GET"])
+@token_required
 def balance(self):
     cash = AccouMdb.query.filter(AccouMdb.kat_code == 1).all()
 
@@ -4047,8 +4005,8 @@ def balance(self):
     return response(200, "Berhasil", True, {"cash": saldo_cash})
 
 
-@ app.route("/v1/api/stcard", methods=["GET"])
-@ token_required
+@app.route("/v1/api/stcard", methods=["GET"])
+@token_required
 def st_card(self):
     st = (
         db.session.query(StCard, ProdMdb, LocationMdb)
@@ -4067,8 +4025,8 @@ def st_card(self):
     return response(200, "Berhasil", True, final)
 
 
-@ app.route("/v1/api/price-history", methods=["GET"])
-@ token_required
+@app.route("/v1/api/price-history", methods=["GET"])
+@token_required
 def price_history(self):
     history = (
         db.session.query(HrgBlMdb, OrdpbHdb, SupplierMdb, ProdMdb)
@@ -4092,8 +4050,8 @@ def price_history(self):
     return response(200, "Berhasil", True, final)
 
 
-@ app.route("/v1/api/mesin", methods=["GET", "POST"])
-@ token_required
+@app.route("/v1/api/mesin", methods=["GET", "POST"])
+@token_required
 def mesin(self):
     if request.method == "POST":
         try:
@@ -4118,8 +4076,8 @@ def mesin(self):
         return response(200, "Berhasil", True, msns_schema.dump(mesin))
 
 
-@ app.route("/v1/api/mesin/<int:id>", methods=["GET", "PUT", "DELETE"])
-@ token_required
+@app.route("/v1/api/mesin/<int:id>", methods=["GET", "PUT", "DELETE"])
+@token_required
 def mesin_id(self, id):
     mesin = MsnMdb.query.filter(MsnMdb.id == id).first()
     if request.method == "PUT":
@@ -4152,68 +4110,68 @@ def mesin_id(self, id):
         return response(200, "Berhasil", True, msn_schema.dump(mesin))
 
 
-@ app.route("/v1/api/formula", methods=["GET", "POST"])
-@ token_required
+@app.route("/v1/api/formula", methods=["GET", "POST"])
+@token_required
 def formula(self):
     return Formula(self, request)
 
 
-@ app.route("/v1/api/formula/<int:id>", methods=["GET", "PUT", "DELETE"])
-@ token_required
+@app.route("/v1/api/formula/<int:id>", methods=["GET", "PUT", "DELETE"])
+@token_required
 def formula_id(self, id):
     return FormulaId(self, id, request)
 
 
-@ app.route("/v1/api/planning", methods=["GET", "POST"])
-@ token_required
+@app.route("/v1/api/planning", methods=["GET", "POST"])
+@token_required
 def planning(self):
     return Planning(self, request)
 
 
-@ app.route("/v1/api/planning/<int:id>", methods=["GET", "PUT", "DELETE"])
-@ token_required
+@app.route("/v1/api/planning/<int:id>", methods=["GET", "PUT", "DELETE"])
+@token_required
 def planning_id(self, id):
     return PlanningId(id, request)
 
 
-@ app.route("/v1/api/batch", methods=["GET", "POST"])
-@ token_required
+@app.route("/v1/api/batch", methods=["GET", "POST"])
+@token_required
 def batch(self):
     return Batch(self, request)
 
 
-@ app.route("/v1/api/batch/<int:id>", methods=["GET", "PUT", "DELETE"])
-@ token_required
+@app.route("/v1/api/batch/<int:id>", methods=["GET", "PUT", "DELETE"])
+@token_required
 def batch_id(self, id):
     return BatchId(id, request)
 
 
-@ app.route("/v1/api/phj", methods=["GET", "POST"])
-@ token_required
+@app.route("/v1/api/phj", methods=["GET", "POST"])
+@token_required
 def phj(self):
     return PenerimaanHasilJadi(self, request)
 
 
-@ app.route("/v1/api/phj/<int:id>", methods=["GET", "PUT", "DELETE"])
-@ token_required
+@app.route("/v1/api/phj/<int:id>", methods=["GET", "PUT", "DELETE"])
+@token_required
 def phj_id(self, id):
     return PenerimaanHasilJadiId(id, request)
 
 
-@ app.route("/v1/api/pbb", methods=["GET", "POST"])
-@ token_required
+@app.route("/v1/api/pbb", methods=["GET", "POST"])
+@token_required
 def pbb(self):
     return Pembebanan(self, request)
 
 
-@ app.route("/v1/api/pbb/<int:id>", methods=["GET", "PUT", "DELETE"])
-@ token_required
+@app.route("/v1/api/pbb/<int:id>", methods=["GET", "PUT", "DELETE"])
+@token_required
 def pbb_id(self, id):
     return PembebananId(id, request)
 
 
-@ app.route("/v1/api/rpbb", methods=["GET"])
-@ token_required
+@app.route("/v1/api/rpbb", methods=["GET"])
+@token_required
 def rpbb(self):
     rpbb = (
         db.session.query(RpbbMdb, PlanHdb, FprdcHdb, ProdMdb, LocationMdb)
@@ -4235,8 +4193,8 @@ def rpbb(self):
     return response(200, "Berhasil", True, final)
 
 
-@ app.route("/v1/api/apprv-bnk", methods=["GET"])
-@ token_required
+@app.route("/v1/api/apprv-bnk", methods=["GET"])
+@token_required
 def approve_bank(self):
     company = (
         db.session.query(User, CompMdb)
@@ -4321,8 +4279,8 @@ def approve_bank(self):
     return response(200, "Berhasil", True, final)
 
 
-@ app.route("/v1/api/apprv-bnk/<int:id>", methods=["GET"])
-@ token_required
+@app.route("/v1/api/apprv-bnk/<int:id>", methods=["GET"])
+@token_required
 def approve_bank_id(self, id):
     exps = ExpHdb.query.filter(ExpHdb.id == id).first()
 
@@ -4361,8 +4319,8 @@ def approve_bank_id(self, id):
     return response(200, "Berhasil", True, None)
 
 
-@ app.route("/v1/api/memorial", methods=["GET", "POST"])
-@ token_required
+@app.route("/v1/api/memorial", methods=["GET", "POST"])
+@token_required
 def memorial(self):
     if request.method == "POST":
         try:
@@ -4473,8 +4431,8 @@ def memorial(self):
         return response(200, "Berhasil", True, final)
 
 
-@ app.route("/v1/api/memorial/<int:id>", methods=["GET", "PUT", "DELETE"])
-@ token_required
+@app.route("/v1/api/memorial/<int:id>", methods=["GET", "PUT", "DELETE"])
+@token_required
 def memorial_id(self, id):
     x = MemoHdb.query.filter(MemoHdb.id == id).first()
     if request.method == "PUT":
@@ -4609,8 +4567,8 @@ def memorial_id(self, id):
         return response(200, "Berhasil", True, final)
 
 
-@ app.route("/v1/api/import/memorial", methods=["POST"])
-@ token_required
+@app.route("/v1/api/import/memorial", methods=["POST"])
+@token_required
 def memo_import(self):
     mem = request.json["memo"]
 
@@ -4686,8 +4644,8 @@ def memo_import(self):
     return response(200, "Berhasil", True, None)
 
 
-@ app.route("/v1/api/mutasi", methods=["GET", "POST"])
-@ token_required
+@app.route("/v1/api/mutasi", methods=["GET", "POST"])
+@token_required
 def mutasi(self):
     if request.method == "POST":
         try:
@@ -4784,8 +4742,8 @@ def mutasi(self):
         return response(200, "Berhasil", True, final)
 
 
-@ app.route("/v1/api/mutasi/<int:id>", methods=["PUT", "DELETE"])
-@ token_required
+@app.route("/v1/api/mutasi/<int:id>", methods=["PUT", "DELETE"])
+@token_required
 def mutasi_id(self, id):
     x = MtsiHdb.query.filter(MtsiHdb.id == id).first()
     if request.method == "PUT":
@@ -4858,20 +4816,20 @@ def mutasi_id(self, id):
         return response(200, "Berhasil", True, None)
 
 
-@ app.route("/v1/api/koreksi-sto", methods=["POST", "GET"])
-@ token_required
+@app.route("/v1/api/koreksi-sto", methods=["POST", "GET"])
+@token_required
 def korSto(self):
     return KoreksiPersediaan(self, request)
 
 
-@ app.route("/v1/api/koreksi-sto/<int:id>", methods=["PUT", "GET", "DELETE"])
-@ token_required
+@app.route("/v1/api/koreksi-sto/<int:id>", methods=["PUT", "GET", "DELETE"])
+@token_required
 def korSto_id(self, id):
     return KorPersediaanId(id, request)
 
 
-@ app.route("/v1/api/sto/<int:id>", methods=["GET"])
-@ token_required
+@app.route("/v1/api/sto/<int:id>", methods=["GET"])
+@token_required
 def sto_loc(self, id):
     product = ProdMdb.query.all()
     sto = StCard.query.filter(
@@ -4915,8 +4873,8 @@ def sto_loc(self, id):
     return response(200, "Berhasil", True, final)
 
 
-@ app.route("/v1/api/sto", methods=["GET"])
-@ token_required
+@app.route("/v1/api/sto", methods=["GET"])
+@token_required
 def sto(self):
     product = ProdMdb.query.all()
     sto = StCard.query.all()
@@ -4979,8 +4937,8 @@ def sto(self):
     return response(200, "Berhasil", True, final)
 
 
-@ app.route("/v1/api/sisa-exp", methods=["GET"])
-@ token_required
+@app.route("/v1/api/sisa-exp", methods=["GET"])
+@token_required
 def sisa_exp(self):
     # sld = SaldoAPMdb.query.filter(SaldoAPMdb.id == ApCard.sa_id).all()
     fk = OrdpbHdb.query.all()
@@ -5020,8 +4978,8 @@ def sisa_exp(self):
     return response(200, "Berhasil", True, final)
 
 
-@ app.route("/v1/api/sisa-inc", methods=["GET"])
-@ token_required
+@app.route("/v1/api/sisa-inc", methods=["GET"])
+@token_required
 def sisa_inc(self):
     sl = OrdpjHdb.query.all()
     # sld = SaldoARMdb.query.all()
@@ -5078,121 +5036,121 @@ def sisa_inc(self):
     return response(200, "Berhasil", True, final)
 
 
-@ app.route("/v1/api/koreksi-hut", methods=["POST", "GET"])
-@ token_required
+@app.route("/v1/api/koreksi-hut", methods=["POST", "GET"])
+@token_required
 def korHut(self):
     return KoreksiHutang(self, request)
 
 
-@ app.route("/v1/api/koreksi-hut/<int:id>", methods=["PUT", "GET", "DELETE"])
-@ token_required
+@app.route("/v1/api/koreksi-hut/<int:id>", methods=["PUT", "GET", "DELETE"])
+@token_required
 def korHut_id(self, id):
     return KoreksiHutangId(id, request)
 
 
-@ app.route("/v1/api/koreksi-piu", methods=["POST", "GET"])
-@ token_required
+@app.route("/v1/api/koreksi-piu", methods=["POST", "GET"])
+@token_required
 def korPiu(self):
     return KoreksiPiutang(self, request)
 
 
-@ app.route("/v1/api/koreksi-piu/<int:id>", methods=["PUT", "GET", "DELETE"])
-@ token_required
+@app.route("/v1/api/koreksi-piu/<int:id>", methods=["PUT", "GET", "DELETE"])
+@token_required
 def korPiu_id(self, id):
     return KoreksiPiutangId(id, request)
 
 
-@ app.route("/v1/api/saldo-awal-inv", methods=["GET", "POST"])
-@ token_required
+@app.route("/v1/api/saldo-awal-inv", methods=["GET", "POST"])
+@token_required
 def saldo_awal_inv(self):
     return SaldoInv(self, request)
 
 
-@ app.route("/v1/api/saldo-awal-ap", methods=["GET", "POST"])
-@ token_required
+@app.route("/v1/api/saldo-awal-ap", methods=["GET", "POST"])
+@token_required
 def saldo_awal_ap(self):
     return SaldoAP(self, request)
 
 
-@ app.route("/v1/api/saldo-awal-ap/<int:id>", methods=["PUT", "DELETE"])
-@ token_required
+@app.route("/v1/api/saldo-awal-ap/<int:id>", methods=["PUT", "DELETE"])
+@token_required
 def sa_ap_id(self, id):
     return SaldoAPId(id, request)
 
 
-@ app.route("/v1/api/saldo-awal-ar", methods=["GET", "POST"])
-@ token_required
+@app.route("/v1/api/saldo-awal-ar", methods=["GET", "POST"])
+@token_required
 def saldo_awal_ar(self):
     return SaldoAR(self, request)
 
 
-@ app.route("/v1/api/saldo-awal-ar/<int:id>", methods=["PUT", "DELETE"])
-@ token_required
+@app.route("/v1/api/saldo-awal-ar/<int:id>", methods=["PUT", "DELETE"])
+@token_required
 def sa_ar_id(self, id):
     return SaldoARId(id, request)
 
 
-@ app.route("/v1/api/saldo-awal-gl", methods=["POST", "PUT", "GET"])
-@ token_required
+@app.route("/v1/api/saldo-awal-gl", methods=["POST", "PUT", "GET"])
+@token_required
 def saldo_awal_gl(self):
     return SaldoAwalGl(self, request)
 
 
-@ app.route("/v1/api/saldo-awal-gl/status", methods=["GET"])
-@ token_required
+@app.route("/v1/api/saldo-awal-gl/status", methods=["GET"])
+@token_required
 def saldo_awal_status(self):
     return SaldoAwalGlStatus(self, request)
 
 
-@ app.route("/v1/api/setup/saldo-akhir", methods=["POST", "GET"])
-@ token_required
+@app.route("/v1/api/setup/saldo-akhir", methods=["POST", "GET"])
+@token_required
 def setup_sa(self):
     return SetupSldAkhir(self, request)
 
 
-@ app.route("/v1/api/setup/saldo-akhir/<int:id>", methods=["PUT", "GET", "DELETE"])
-@ token_required
+@app.route("/v1/api/setup/saldo-akhir/<int:id>", methods=["PUT", "GET", "DELETE"])
+@token_required
 def setup_sa_id(self, id):
     return SetupSaId(id, request, self)
 
 
-@ app.route("/v1/api/saldo-akhir", methods=["POST", "GET"])
-@ token_required
+@app.route("/v1/api/saldo-akhir", methods=["POST", "GET"])
+@token_required
 def saldo_akhir(self):
     return SaldoAkhir(request, self.id, self.company)
 
 
-@ app.route("/v1/api/saldo-akhir/<int:id>", methods=["PUT"])
-@ token_required
+@app.route("/v1/api/saldo-akhir/<int:id>", methods=["PUT"])
+@token_required
 def saldo_akhir_id(self, id):
     return SaldoAkhirId(request, id)
 
 
-@ app.route("/v1/api/posting/ym", methods=["GET"])
-@ token_required
+@app.route("/v1/api/posting/ym", methods=["GET"])
+@token_required
 def get_year(self):
     return GetYearPosting(self, request)
 
 
-@ app.route("/v1/api/posting", methods=["POST", "GET"])
-@ token_required
+@app.route("/v1/api/posting", methods=["POST", "GET"])
+@token_required
 def posting(self):
     return Posting(self, request)
 
 
-@ app.route("/v1/api/unpost/<int:month>/<int:year>", methods=["GET"])
-@ token_required
+@app.route("/v1/api/unpost/<int:month>/<int:year>", methods=["GET"])
+@token_required
 def unpost(self, month, year):
     return Unpost(self, month, year, request)
 
 
-@ app.route("/v1/api/posting/transfer", methods=["POST"])
-@ token_required
+@app.route("/v1/api/posting/transfer", methods=["POST"])
+@token_required
 def tf(self):
     return TransferGL(self, request)
 
 
-@ app.route("/v1/api/closing/<int:month>/<int:year>", methods=["GET"])
-@ token_required
+@app.route("/v1/api/closing/<int:month>/<int:year>", methods=["GET"])
+@token_required
 def closing(self, month, year):
     return Closing(self, month, year, request)

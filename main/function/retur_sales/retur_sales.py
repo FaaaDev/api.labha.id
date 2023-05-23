@@ -1,22 +1,22 @@
-from main.function.update_table import UpdateTable
-from main.model.ordpj_hdb import OrdpjHdb
-from main.model.prod_mdb import ProdMdb
-from main.model.rsprod_ddb import RsprodDdb
-from main.model.retsale_hdb import RetSaleHdb
-from main.model.sord_hdb import SordHdb
-from main.model.stcard_mdb import StCard
-from main.model.unit_mdb import UnitMdb
-from main.model.lokasi_mdb import LocationMdb
-from main.schema.retsale_hdb import RetSaleSchema, retsale_schema
-from main.shared.shared import db
-from main.utils.response import response
+from ...function.update_table import UpdateTable
+from ...model.ordpj_hdb import OrdpjHdb
+from ...model.prod_mdb import ProdMdb
+from ...model.rsprod_ddb import RsprodDdb
+from ...model.retsale_hdb import RetSaleHdb
+from ...model.sord_hdb import SordHdb
+from ...model.stcard_mdb import StCard
+from ...model.unit_mdb import UnitMdb
+from ...model.lokasi_mdb import LocationMdb
+from ...schema.retsale_hdb import RetSaleSchema, retsale_schema
+from ...shared.shared import db
+from ...utils.response import response
 from sqlalchemy.exc import *
-from main.schema.prod_mdb import prod_schema
-from main.schema.rsprod_ddb import rsprod_schema
-from main.schema.unit_mdb import unit_schema
-from main.schema.lokasi_mdb import loct_schema
-from main.schema.ordpj_hdb import ordpj_schema
-from main.schema.sord_hdb import sord_schema
+from ...schema.prod_mdb import prod_schema
+from ...schema.rsprod_ddb import rsprod_schema
+from ...schema.unit_mdb import unit_schema
+from ...schema.lokasi_mdb import loct_schema
+from ...schema.ordpj_hdb import ordpj_schema
+from ...schema.sord_hdb import sord_schema
 
 
 class ReturSale:

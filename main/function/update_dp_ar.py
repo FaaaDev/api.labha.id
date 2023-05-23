@@ -1,15 +1,15 @@
-from main.model.arcard_mdb import ArCard
-from main.model.inc_hdb import IncHdb
-from main.model.mukar_ddb import MukarDdb
-from main.model.sord_hdb import SordHdb
-from main.model.prod_mdb import ProdMdb
-from main.model.custom_mdb import CustomerMdb
-from main.model.transddb import TransDdb
-from main.model.bank_mdb import BankMdb
-from main.model.currency_mdb import CurrencyMdb
-from main.model.user import User
-from main.model.setup_mdb import SetupMdb
-from main.shared.shared import db
+from ..model.arcard_mdb import ArCard
+from ..model.inc_hdb import IncHdb
+from ..model.mukar_ddb import MukarDdb
+from ..model.sord_hdb import SordHdb
+from ..model.prod_mdb import ProdMdb
+from ..model.custom_mdb import CustomerMdb
+from ..model.transddb import TransDdb
+from ..model.bank_mdb import BankMdb
+from ..model.currency_mdb import CurrencyMdb
+from ..model.user import User
+from ..model.setup_mdb import SetupMdb
+from ..shared.shared import db
 import requests
 import json
 from sqlalchemy import and_, extract, func, or_, cast, case, literal_column

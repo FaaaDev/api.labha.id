@@ -1,5 +1,5 @@
 import datetime
-from main.shared.shared import db
+from ..shared.shared import db
 
 
 class MtsiHdb(db.Model):
@@ -19,8 +19,24 @@ class MtsiHdb(db.Model):
     doc_date = db.Column(
         db.TIMESTAMP(timezone=False), default=datetime.datetime.utcnow()
     )
+    desc = db.Column(db.Text)
+    approve = db.Column(db.Boolean)
+    post = db.Column(db.Boolean, default=False)
+    closing = db.Column(db.Boolean, default=False)
 
-    def __init__(self, mtsi_code, mtsi_date, loc_from, loc_to, dep_id, prj_id, doc, doc_date):
+    def __init__(
+        self,
+        mtsi_code,
+        mtsi_date,
+        loc_from,
+        loc_to,
+        dep_id,
+        prj_id,
+        doc,
+        doc_date,
+        desc,
+        approve,
+    ):
         self.mtsi_code = mtsi_code
         self.mtsi_date = mtsi_date
         self.loc_from = loc_from
@@ -29,3 +45,5 @@ class MtsiHdb(db.Model):
         self.prj_id = prj_id
         self.doc = doc
         self.doc_date = doc_date
+        self.desc = desc
+        self.approve = approve

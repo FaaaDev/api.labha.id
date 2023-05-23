@@ -1,4 +1,4 @@
-from main.shared.shared import ma
+from ..shared.shared import ma
 
 
 class DordSchema(ma.Schema):
@@ -13,6 +13,7 @@ class DordSchema(ma.Schema):
                   'faktur',
                   'po_id',
                   'dep_id',
+                  'proj_id',
                   'sup_id',
                   'top',
                   'due_date',

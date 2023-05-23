@@ -1,23 +1,23 @@
 from operator import or_
 from sqlalchemy import and_
-from main.model.apcard_mdb import ApCard
-from main.model.djasa_ddb import DjasaDdb
-from main.model.dprod_ddb import DprodDdb
-from main.model.fkpb_det_ddb import FkpbDetDdb
-from main.model.fkpb_hdb import FkpbHdb
-from main.model.jasa_mdb import JasaMdb
-from main.model.lokasi_mdb import LocationMdb
-from main.model.ordpb_hdb import OrdpbHdb
-from main.model.pajak_mdb import PajakMdb
-from main.model.prod_mdb import ProdMdb
-from main.model.group_prod_mdb import GroupProMdb
-from main.model.setup_mdb import SetupMdb
-from main.model.supplier_mdb import SupplierMdb
-from main.model.transddb import TransDdb
-from main.model.unit_mdb import UnitMdb
-from main.model.currency_mdb import CurrencyMdb
-from main.model.user import User
-from main.shared.shared import db, ma
+from ..model.apcard_mdb import ApCard
+from ..model.djasa_ddb import DjasaDdb
+from ..model.dprod_ddb import DprodDdb
+from ..model.fkpb_det_ddb import FkpbDetDdb
+from ..model.fkpb_hdb import FkpbHdb
+from ..model.jasa_mdb import JasaMdb
+from ..model.lokasi_mdb import LocationMdb
+from ..model.ordpb_hdb import OrdpbHdb
+from ..model.pajak_mdb import PajakMdb
+from ..model.prod_mdb import ProdMdb
+from ..model.group_prod_mdb import GroupProMdb
+from ..model.setup_mdb import SetupMdb
+from ..model.supplier_mdb import SupplierMdb
+from ..model.transddb import TransDdb
+from ..model.unit_mdb import UnitMdb
+from ..model.currency_mdb import CurrencyMdb
+from ..model.user import User
+from ..shared.shared import db, ma
 
 
 class UpdatePembelian:
@@ -58,11 +58,14 @@ class UpdatePembelian:
                         db.session.delete(x)
 
             else:
-                dprod = DprodDdb.query.filter(DprodDdb.ord_id == x[2].ord_id).all()
+                dprod = DprodDdb.query.filter(
+                    DprodDdb.ord_id == x[2].ord_id).all()
 
-                djasa = DjasaDdb.query.filter(DjasaDdb.ord_id == x[2].ord_id).all()
+                djasa = DjasaDdb.query.filter(
+                    DjasaDdb.ord_id == x[2].ord_id).all()
 
-                sup = SupplierMdb.query.filter(SupplierMdb.id == x[1].sup_id).first()
+                sup = SupplierMdb.query.filter(
+                    SupplierMdb.id == x[1].sup_id).first()
 
                 gprod = (
                     db.session.query(ProdMdb, GroupProMdb)
@@ -75,11 +78,12 @@ class UpdatePembelian:
                 # setup = SetupMdb.query.filter(SetupMdb.cp_id == user_company).first()
 
                 ppn = (
-                    db.session.query(OrdpbHdb, SupplierMdb, PajakMdb, CurrencyMdb)
+                    db.session.query(OrdpbHdb, SupplierMdb,
+                                     PajakMdb, CurrencyMdb)
                     .outerjoin(SupplierMdb, SupplierMdb.id == OrdpbHdb.sup_id)
                     .outerjoin(PajakMdb, PajakMdb.id == SupplierMdb.sup_ppn)
                     .outerjoin(CurrencyMdb, CurrencyMdb.id == SupplierMdb.sup_curren)
-                    .filter(SupplierMdb.id == x[0].sup_id)
+                    .filter(SupplierMdb.id == x[1].sup_id)
                     .first()
                 )
 
@@ -87,10 +91,6 @@ class UpdatePembelian:
                 total_fc = 0
                 acc_ns = None
                 for y in dprod:
-                    if x[1].ns:
-                        for z in gprod:
-                            if y.prod_id == z[0].id:
-                                acc_ns = z[1].biaya
 
                     if y.nett_price and y.nett_price > 0:
                         total_product += y.nett_price
@@ -130,9 +130,11 @@ class UpdatePembelian:
                             (100 + ppn[2].nilai) / 100
                         )
 
-                        trx_amnv = (total_fc + jtotal_fc) * ((100 + ppn[2].nilai) / 100)
+                        trx_amnv = (total_fc + jtotal_fc) * \
+                            ((100 + ppn[2].nilai) / 100)
                     else:
-                        trx_amnh = (total_product + total_jasa) * ((100 + 0) / 100)
+                        trx_amnh = (total_product + total_jasa) * \
+                            ((100 + 0) / 100)
 
                         trx_amnv = (total_fc + jtotal_fc) * ((100 + 0) / 100)
 
@@ -177,7 +179,8 @@ class UpdatePembelian:
                 old_hut = TransDdb.query.filter(
                     and_(
                         TransDdb.trx_code == x[0].fk_code,
-                        TransDdb.trx_desc == "JURNAL HUTANG %s" % (x[0].fk_code),
+                        TransDdb.trx_desc == "JURNAL HUTANG %s" % (
+                            x[0].fk_code),
                     )
                 ).first()
 
@@ -207,7 +210,8 @@ class UpdatePembelian:
                 old_ppn = TransDdb.query.filter(
                     and_(
                         TransDdb.trx_code == x[0].fk_code,
-                        TransDdb.trx_desc == "JURNAL PPN KELUARAN %s" % (x[0].fk_code),
+                        TransDdb.trx_desc == "JURNAL PPN KELUARAN %s" % (
+                            x[0].fk_code),
                     )
                 ).first()
 
@@ -235,28 +239,6 @@ class UpdatePembelian:
                     )
 
                     db.session.add(trans_ppn)
-
-                # Insert Jurnal Biaya
-                # if user_product == "inv+gl":
-                if x[1].ns:
-                    trans_biaya = TransDdb(
-                        x[0].fk_code,
-                        x[0].fk_date,
-                        acc_ns,
-                        x[1].dep_id,
-                        None,
-                        None,
-                        sup.sup_curren,
-                        ppn[3].rate if sup.sup_curren else 0,
-                        total_fc,
-                        total_product,
-                        "D",
-                        "JURNAL BIAYA %s" % (x[0].fk_code),
-                        None,
-                        None,
-                    )
-
-                    db.session.add(trans_biaya)
 
             db.session.commit()
 

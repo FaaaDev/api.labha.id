@@ -1,39 +1,39 @@
-from main.function.update_table import UpdateTable
-from main.function.update_ap_giro import UpdateApGiro
-from main.function.update_ap_payment import UpdateApPayment
-from main.function.update_dp_ap import UpdateApDP
-from main.model.acq_ddb import AcqDdb
-from main.model.bank_mdb import BankMdb
-from main.model.comp_mdb import CompMdb
-from main.model.exp_ddb import ExpDdb
-from main.model.exp_hdb import ExpHdb
-from main.model.mukap_ddb import MukapDdb
-from main.model.fkpb_hdb import FkpbHdb
-from main.model.fkpb_det_ddb import FkpbDetDdb
+from ...function.update_table import UpdateTable
+from ...function.update_ap_giro import UpdateApGiro
+from ...function.update_ap_payment import UpdateApPayment
+from ...function.update_dp_ap import UpdateApDP
+from ...model.acq_ddb import AcqDdb
+from ...model.bank_mdb import BankMdb
+from ...model.comp_mdb import CompMdb
+from ...model.exp_ddb import ExpDdb
+from ...model.exp_hdb import ExpHdb
+from ...model.mukap_ddb import MukapDdb
+from ...model.fkpb_hdb import FkpbHdb
+from ...model.fkpb_det_ddb import FkpbDetDdb
 
-# from main.model.sa_ap_mdb import SaldoAPMdb
-from main.model.giro_hdb import GiroHdb
-from main.model.supplier_mdb import SupplierMdb
-from main.model.ordpb_hdb import OrdpbHdb
-from main.model.po_mdb import PoMdb
-from main.model.user import User
-from main.schema.exp_hdb import ExpSchema
-from main.model.accou_mdb import AccouMdb
-from main.shared.shared import db
-from main.utils.response import response
+# from ...model.sa_ap_mdb import SaldoAPMdb
+from ...model.giro_hdb import GiroHdb
+from ...model.supplier_mdb import SupplierMdb
+from ...model.ordpb_hdb import OrdpbHdb
+from ...model.po_mdb import PoMdb
+from ...model.user import User
+from ...schema.exp_hdb import ExpSchema
+from ...model.accou_mdb import AccouMdb
+from ...shared.shared import db
+from ...utils.response import response
 from sqlalchemy.exc import *
-from main.schema.bank_mdb import bank_schema
-from main.schema.accou_mdb import accou_schema
-from main.schema.exp_hdb import exp_schema
-from main.schema.supplier_mdb import supplier_schema
-from main.schema.dexp_ddb import dexp_schema
-from main.schema.dacq_ddb import dacq_schema
-from main.schema.mukap_ddb import mukap_schema
-from main.schema.fkpb_hdb import fkpb_schema
-from main.schema.dord_hdb import dord_schema
-from main.schema.po_mdb import po_schema
+from ...schema.bank_mdb import bank_schema
+from ...schema.accou_mdb import accou_schema
+from ...schema.exp_hdb import exp_schema
+from ...schema.supplier_mdb import supplier_schema
+from ...schema.dexp_ddb import dexp_schema
+from ...schema.dacq_ddb import dacq_schema
+from ...schema.mukap_ddb import mukap_schema
+from ...schema.fkpb_hdb import fkpb_schema
+from ...schema.dord_hdb import dord_schema
+from ...schema.po_mdb import po_schema
 
-# from main.schema.sa_ap_mdb import saap_schema
+# from ...schema.sa_ap_mdb import saap_schema
 
 
 class Expense:

@@ -1,24 +1,24 @@
-from main.function.update_table import UpdateTable
-from main.model.ccost_mdb import CcostMdb
-from main.model.djasa_ddb import DjasaDdb
-from main.model.dprod_ddb import DprodDdb
-from main.model.inv_pb_hdb import InvpbHdb
-from main.model.lokasi_mdb import LocationMdb
-from main.model.ordpb_hdb import OrdpbHdb
-from main.model.prod_mdb import ProdMdb
-from main.model.jasa_mdb import JasaMdb
-from main.model.unit_mdb import UnitMdb
-from main.schema.dord_hdb import DordSchema, dord_schema
-from main.shared.shared import db
-from main.utils.response import response
+from ...function.update_table import UpdateTable
+from ...model.ccost_mdb import CcostMdb
+from ...model.djasa_ddb import DjasaDdb
+from ...model.dprod_ddb import DprodDdb
+from ...model.inv_pb_hdb import InvpbHdb
+from ...model.lokasi_mdb import LocationMdb
+from ...model.ordpb_hdb import OrdpbHdb
+from ...model.prod_mdb import ProdMdb
+from ...model.jasa_mdb import JasaMdb
+from ...model.unit_mdb import UnitMdb
+from ...schema.dord_hdb import DordSchema, dord_schema
+from ...shared.shared import db
+from ...utils.response import response
 from sqlalchemy.exc import *
-from main.schema.prod_mdb import prod_schema
-from main.schema.jasa_mdb import jasa_schema
-from main.schema.unit_mdb import unit_schema
-from main.schema.inv_pb_hdb import InvpbSchema, invpb_schema
-from main.schema.dprod_ddb import dprod_schema
-from main.schema.djasa_ddb import djasa_schema
-from main.schema.lokasi_mdb import loct_schema
+from ...schema.prod_mdb import prod_schema
+from ...schema.jasa_mdb import jasa_schema
+from ...schema.unit_mdb import unit_schema
+from ...schema.inv_pb_hdb import InvpbSchema, invpb_schema
+from ...schema.dprod_ddb import dprod_schema
+from ...schema.djasa_ddb import djasa_schema
+from ...schema.lokasi_mdb import loct_schema
 
 
 class InvoicePb:

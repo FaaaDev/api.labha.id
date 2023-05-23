@@ -1,4 +1,4 @@
-from main.shared.shared import ma
+from ..shared.shared import ma
 
 
 class FkpbSchema(ma.Schema):
@@ -13,6 +13,7 @@ class FkpbSchema(ma.Schema):
             "fk_ppn",
             "fk_lunas",
             "fk_desc",
+            "ord_id",
         )
 
 

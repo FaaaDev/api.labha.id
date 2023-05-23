@@ -1,5 +1,5 @@
 
-from main.shared.shared import db
+from ..shared.shared import db
 
 
 class AccouMdb(db.Model):

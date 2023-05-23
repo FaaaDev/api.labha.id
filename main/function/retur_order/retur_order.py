@@ -1,24 +1,27 @@
-from main.function.update_table import UpdateTable
-from main.model.fkpb_hdb import FkpbHdb
-from main.model.stcard_mdb import StCard
-from main.model.lokasi_mdb import LocationMdb
-from main.model.ordpb_hdb import OrdpbHdb
-from main.model.prod_mdb import ProdMdb
-from main.model.supplier_mdb import SupplierMdb
-from main.model.reprod_ddb import ReprodDdb
-from main.model.retord_hdb import RetordHdb
-from main.model.unit_mdb import UnitMdb
-from main.schema.dord_hdb import DordSchema, dord_schema
-from main.schema.retord_hdb import RetordSchema, retord_schema
-from main.shared.shared import db
-from main.utils.response import response
+from ...function.update_table import UpdateTable
+from ...function.update_retur_beli import UpdateReturOrd
+from ...model.fkpb_hdb import FkpbHdb
+from ...model.inv_pb_hdb import InvpbHdb
+from ...model.stcard_mdb import StCard
+from ...model.lokasi_mdb import LocationMdb
+from ...model.ordpb_hdb import OrdpbHdb
+from ...model.prod_mdb import ProdMdb
+from ...model.supplier_mdb import SupplierMdb
+from ...model.reprod_ddb import ReprodDdb
+from ...model.retord_hdb import RetordHdb
+from ...model.unit_mdb import UnitMdb
+from ...schema.dord_hdb import DordSchema, dord_schema
+from ...schema.retord_hdb import RetordSchema, retord_schema
+from ...shared.shared import db
+from ...utils.response import response
 from sqlalchemy.exc import *
-from main.schema.prod_mdb import prod_schema
-from main.schema.reprod_ddb import reprod_schema
-from main.schema.unit_mdb import unit_schema
-from main.schema.lokasi_mdb import loct_schema
-from main.schema.supplier_mdb import supplier_schema
-from main.schema.fkpb_hdb import FkpbSchema, fkpb_schema
+from ...schema.prod_mdb import prod_schema
+from ...schema.reprod_ddb import reprod_schema
+from ...schema.unit_mdb import unit_schema
+from ...schema.lokasi_mdb import loct_schema
+from ...schema.supplier_mdb import supplier_schema
+from ...schema.fkpb_hdb import FkpbSchema, fkpb_schema
+from ...schema.inv_pb_hdb import InvpbSchema, invpb_schema
 
 
 class ReturOrder:
@@ -28,9 +31,10 @@ class ReturOrder:
                 ret_code = request.json["ret_code"]
                 ret_date = request.json["ret_date"]
                 fk_id = request.json["fk_id"]
+                inv_id = request.json["inv_id"]
                 product = request.json["product"]
 
-                retur = RetordHdb(ret_code, ret_date, fk_id)
+                retur = RetordHdb(ret_code, ret_date, None, inv_id)
 
                 db.session.add(retur)
                 db.session.commit()
@@ -54,6 +58,7 @@ class ReturOrder:
                                 x["nett_price"],
                                 x["totl"],
                                 x["location"],
+                                x["totl_fc"],
                             )
                         )
 
@@ -62,42 +67,7 @@ class ReturOrder:
                     db.session.add_all(new_prod)
                     db.session.commit()
 
-                    old_sto = StCard.query.filter(
-                        StCard.trx_code == retur.ret_code
-                    ).all()
-                    if old_sto:
-                        for x in old_sto:
-                            db.session.delete(x)
-                            db.session.commit()
-
-                    all_sto = []
-                    for x in new_prod:
-                        all_sto.append(
-                            StCard(
-                                retur.ret_code,
-                                retur.ret_date,
-                                "k",
-                                "RTB",
-                                None,
-                                x.retur,
-                                x.price,
-                                x.nett_price
-                                if x.nett_price and x.nett_price > 0
-                                else x.totl,
-                                None,
-                                None,
-                                x.disc,
-                                x.prod_id,
-                                x.location,
-                                None,
-                                0,
-                                None,
-                            )
-                        )
-
-                        if len(all_sto) > 0:
-                            db.session.add_all(all_sto)
-                            db.session.commit()
+                UpdateReturOrd(retur.id, user.id, False)
 
             except IntegrityError:
                 db.session.rollback()
@@ -107,10 +77,8 @@ class ReturOrder:
         else:
             try:
                 retur = (
-                    db.session.query(RetordHdb, FkpbHdb, OrdpbHdb, SupplierMdb)
-                    .outerjoin(FkpbHdb, FkpbHdb.id == RetordHdb.fk_id)
-                    .outerjoin(OrdpbHdb, OrdpbHdb.id == FkpbHdb.ord_id)
-                    .outerjoin(SupplierMdb, SupplierMdb.id == OrdpbHdb.sup_id)
+                    db.session.query(RetordHdb, InvpbHdb)
+                    .outerjoin(InvpbHdb, InvpbHdb.id == RetordHdb.inv_id)
                     .all()
                 )
 
@@ -132,8 +100,9 @@ class ReturOrder:
                             y[0].location = loct_schema.dump(y[3])
                             prod.append(reprod_schema.dump(y[0]))
 
-                    if x[1]:
-                        x[1].ord_id = dord_schema.dump(x[2])
+                    # if x[1]:
+                    #     x[1].ord_id = dord_schema.dump(x[2])
+
                     result.append(
                         {
                             "id": x[0].id,
@@ -143,7 +112,9 @@ class ReturOrder:
                             ]
                             if x[0].ret_date
                             else None,
-                            "fk_id": fkpb_schema.dump(x[1]),
+                            "inv_id": invpb_schema.dump(x[1]),
+                            "post": x[0].post,
+                            "closing": x[0].closing,
                             "product": prod,
                         }
                     )

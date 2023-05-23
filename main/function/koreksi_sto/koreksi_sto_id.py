@@ -1,21 +1,21 @@
-from main.function.update_koreksi_sto import UpdateKoreksiSto
-from main.model.koreksi_sto_hdb import KorStoHdb
-from main.model.koreksi_sto_ddb import KorStoDdb
-from main.model.ccost_mdb import CcostMdb
-from main.model.prod_mdb import ProdMdb
-from main.model.proj_mdb import ProjMdb
-from main.model.unit_mdb import UnitMdb
-from main.model.lokasi_mdb import LocationMdb
-from main.shared.shared import db
-from main.utils.response import response
+from ...function.update_koreksi_sto import UpdateKoreksiSto
+from ...model.koreksi_sto_hdb import KorStoHdb
+from ...model.koreksi_sto_ddb import KorStoDdb
+from ...model.ccost_mdb import CcostMdb
+from ...model.prod_mdb import ProdMdb
+from ...model.proj_mdb import ProjMdb
+from ...model.unit_mdb import UnitMdb
+from ...model.lokasi_mdb import LocationMdb
+from ...shared.shared import db
+from ...utils.response import response
 from sqlalchemy.exc import IntegrityError
-from main.schema.koreksi_sto_hdb import KorStoSchema, korSto_schema
-from main.schema.koreksi_sto_ddb import korStoddb_schema
-from main.schema.ccost_mdb import ccost_schema
-from main.schema.proj_mdb import proj_schema
-from main.schema.prod_mdb import prod_schema
-from main.schema.unit_mdb import unit_schema
-from main.schema.lokasi_mdb import loct_schema
+from ...schema.koreksi_sto_hdb import KorStoSchema, korSto_schema
+from ...schema.koreksi_sto_ddb import korStoddb_schema
+from ...schema.ccost_mdb import ccost_schema
+from ...schema.proj_mdb import proj_schema
+from ...schema.prod_mdb import prod_schema
+from ...schema.unit_mdb import unit_schema
+from ...schema.lokasi_mdb import loct_schema
 
 
 class KorPersediaanId:

@@ -1,26 +1,26 @@
-from main.model.apcard_mdb import ApCard
-from main.model.dprod_ddb import DprodDdb
-from main.model.exp_hdb import ExpHdb
-from main.model.mukap_ddb import MukapDdb
-from main.model.fkpb_hdb import FkpbHdb
-from main.model.po_mdb import PoMdb
-from main.model.group_prod_mdb import GroupProMdb
-from main.model.lokasi_mdb import LocationMdb
-from main.model.ordpb_hdb import OrdpbHdb
-from main.model.pajak_mdb import PajakMdb
-from main.model.prod_mdb import ProdMdb
-from main.model.stcard_mdb import StCard
-from main.model.supplier_mdb import SupplierMdb
-from main.model.transddb import TransDdb
-# from main.model.trans_bank import TransBank
-from main.model.unit_mdb import UnitMdb
-from main.model.bank_mdb import BankMdb
-from main.model.currency_mdb import CurrencyMdb
-from main.model.user import User
-from main.model.setup_mdb import SetupMdb
-# from main.model.sa_ap_mdb import SaldoAPMdb
-from main.model.prod_mdb import ProdMdb
-from main.shared.shared import db
+from ..model.apcard_mdb import ApCard
+from ..model.dprod_ddb import DprodDdb
+from ..model.exp_hdb import ExpHdb
+from ..model.mukap_ddb import MukapDdb
+from ..model.fkpb_hdb import FkpbHdb
+from ..model.po_mdb import PoMdb
+from ..model.group_prod_mdb import GroupProMdb
+from ..model.lokasi_mdb import LocationMdb
+from ..model.ordpb_hdb import OrdpbHdb
+from ..model.pajak_mdb import PajakMdb
+from ..model.prod_mdb import ProdMdb
+from ..model.stcard_mdb import StCard
+from ..model.supplier_mdb import SupplierMdb
+from ..model.transddb import TransDdb
+# from ..model.trans_bank import TransBank
+from ..model.unit_mdb import UnitMdb
+from ..model.bank_mdb import BankMdb
+from ..model.currency_mdb import CurrencyMdb
+from ..model.user import User
+from ..model.setup_mdb import SetupMdb
+# from ..model.sa_ap_mdb import SaldoAPMdb
+from ..model.prod_mdb import ProdMdb
+from ..shared.shared import db
 import requests
 import json
 from sqlalchemy import and_, extract, func, or_, cast, case, literal_column

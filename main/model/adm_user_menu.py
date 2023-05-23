@@ -1,7 +1,7 @@
 from email.policy import default
 from enum import unique
 from flask_sqlalchemy import SQLAlchemy
-from main.shared.shared import db
+from ..shared.shared import db
 import datetime
 
 

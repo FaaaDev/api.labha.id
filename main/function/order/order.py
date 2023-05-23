@@ -1,36 +1,38 @@
-from main.function.update_table import UpdateTable
-from main.function.update_pembelian import UpdatePembelian
-from main.function.update_stock import UpdateStock
-from main.model.ccost_mdb import CcostMdb
-from main.model.djasa_ddb import DjasaDdb
-from main.model.dprod_ddb import DprodDdb
-from main.model.inv_pb_hdb import InvpbHdb
-from main.model.fkpb_hdb import FkpbHdb
-from main.model.fkpb_det_ddb import FkpbDetDdb
-from main.model.lokasi_mdb import LocationMdb
-from main.model.ordpb_hdb import OrdpbHdb
-from main.model.pjasa_ddb import PjasaDdb
-from main.model.po_mdb import PoMdb
-from main.model.pprod_ddb import PprodDdb
-from main.model.prod_mdb import ProdMdb
-from main.model.jasa_mdb import JasaMdb
-from main.model.supplier_mdb import SupplierMdb
-from main.model.unit_mdb import UnitMdb
-from main.model.syarat_bayar_mdb import RulesPayMdb
-from main.schema.dord_hdb import DordSchema, dord_schema
-from main.shared.shared import db
-from main.utils.response import response
+from ...function.update_table import UpdateTable
+from ...function.update_pembelian import UpdatePembelian
+from ...function.update_stock import UpdateStock
+from ...model.ccost_mdb import CcostMdb
+from ...model.proj_mdb import ProjMdb
+from ...model.djasa_ddb import DjasaDdb
+from ...model.dprod_ddb import DprodDdb
+from ...model.inv_pb_hdb import InvpbHdb
+from ...model.fkpb_hdb import FkpbHdb
+from ...model.fkpb_det_ddb import FkpbDetDdb
+from ...model.lokasi_mdb import LocationMdb
+from ...model.ordpb_hdb import OrdpbHdb
+from ...model.pjasa_ddb import PjasaDdb
+from ...model.po_mdb import PoMdb
+from ...model.pprod_ddb import PprodDdb
+from ...model.prod_mdb import ProdMdb
+from ...model.jasa_mdb import JasaMdb
+from ...model.supplier_mdb import SupplierMdb
+from ...model.unit_mdb import UnitMdb
+from ...model.syarat_bayar_mdb import RulesPayMdb
+from ...schema.dord_hdb import DordSchema, dord_schema
+from ...shared.shared import db
+from ...utils.response import response
 from sqlalchemy.exc import *
-from main.schema.prod_mdb import prod_schema
-from main.schema.jasa_mdb import jasa_schema
-from main.schema.unit_mdb import unit_schema
-from main.schema.syarat_bayar_mdb import rpay_schema
-from main.schema.dprod_ddb import dprod_schema
-from main.schema.djasa_ddb import djasa_schema
-from main.schema.supplier_mdb import supplier_schema
-from main.schema.lokasi_mdb import loct_schema
-from main.schema.po_mdb import po_schema
-from main.schema.ccost_mdb import ccost_schema
+from ...schema.prod_mdb import prod_schema
+from ...schema.jasa_mdb import jasa_schema
+from ...schema.unit_mdb import unit_schema
+from ...schema.syarat_bayar_mdb import rpay_schema
+from ...schema.dprod_ddb import dprod_schema
+from ...schema.djasa_ddb import djasa_schema
+from ...schema.supplier_mdb import supplier_schema
+from ...schema.lokasi_mdb import loct_schema
+from ...schema.po_mdb import po_schema
+from ...schema.ccost_mdb import ccost_schema
+from ...schema.proj_mdb import proj_schema
 
 
 class Order:
@@ -45,6 +47,7 @@ class Order:
                 faktur = request.json["faktur"]
                 po_id = request.json["po_id"]
                 dep_id = request.json["dep_id"]
+                proj_id = request.json["proj_id"]
                 sup_id = request.json["sup_id"]
                 top = request.json["top"]
                 due_date = request.json["due_date"]
@@ -68,6 +71,7 @@ class Order:
                     faktur,
                     po_id,
                     dep_id,
+                    proj_id,
                     sup_id,
                     top,
                     due_date,
@@ -158,10 +162,10 @@ class Order:
 
                     db.session.commit()
 
-                if do.ns == False:
-                    UpdateStock(do.id, False)
+                # if do.ns == False:
+                UpdateStock(do.id, False)
 
-                if do.invoice:
+                if invoice:
                     inv = InvpbHdb(
                         ord_code,
                         ord_date,
@@ -175,17 +179,17 @@ class Order:
                     print("=========fk")
 
                     db.session.add(inv)
-                    db.session.commit()
+                    # db.session.commit()
 
-
-                if do.faktur:
-                    fk = FkpbHdb(ord_code, ord_date, do.sup_id, None, None, None)
+                if faktur:
+                    fk = FkpbHdb(ord_code, ord_date,
+                                 do.sup_id, None, None, None, do.id)
 
                     db.session.add(fk)
                     db.session.commit()
 
-                    invo = InvpbHdb.query.filter(InvpbHdb.ord_id == do.id).first()
-
+                    invo = InvpbHdb.query.filter(
+                        InvpbHdb.ord_id == do.id).first()
 
                     new_detail = FkpbDetDdb(
                         fk.id,
@@ -197,17 +201,16 @@ class Order:
                     )
 
                     db.session.add(new_detail)
-                    db.session.commit()
+                    # db.session.commit()
 
                     print("=========fkkk")
 
-                
                     UpdatePembelian(fk.id, user.id, False)
-
 
                 db.session.commit()
 
-            except IntegrityError:
+            except IntegrityError as e:
+                print(e)
                 db.session.rollback()
                 db.session.close()
                 return response(400, "Kode sudah digunakan", False, None)
@@ -217,12 +220,13 @@ class Order:
             try:
                 do = (
                     db.session.query(
-                        OrdpbHdb, CcostMdb, SupplierMdb, RulesPayMdb, PoMdb
+                        OrdpbHdb, CcostMdb, SupplierMdb, RulesPayMdb, PoMdb, ProjMdb
                     )
                     .outerjoin(CcostMdb, CcostMdb.id == OrdpbHdb.dep_id)
                     .outerjoin(SupplierMdb, SupplierMdb.id == OrdpbHdb.sup_id)
                     .outerjoin(RulesPayMdb, RulesPayMdb.id == OrdpbHdb.top)
                     .outerjoin(PoMdb, PoMdb.id == OrdpbHdb.po_id)
+                    .outerjoin(ProjMdb, ProjMdb.id == OrdpbHdb.proj_id)
                     .order_by(OrdpbHdb.id.desc())
                     .all()
                 )
@@ -250,7 +254,8 @@ class Order:
                             y[0].prod_id = prod_schema.dump(y[1])
                             y[0].unit_id = unit_schema.dump(y[2])
                             y[0].location = (
-                                loct_schema.dump(y[3]) if y[0].location else None
+                                loct_schema.dump(
+                                    y[3]) if y[0].location else None
                             )
                             product.append(dprod_schema.dump(y[0]))
 
@@ -276,6 +281,7 @@ class Order:
                             "faktur": x[0].faktur,
                             "po_id": po_schema.dump(x[4]),
                             "dep_id": ccost_schema.dump(x[1]),
+                            "proj_id": proj_schema.dump(x[5]),
                             "sup_id": supplier_schema.dump(x[2]),
                             "top": rpay_schema.dump(x[3]),
                             "due_date": DordSchema(only=["due_date"]).dump(x[0])[

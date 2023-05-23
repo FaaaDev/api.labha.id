@@ -1,22 +1,22 @@
-from main.model.custom_mdb import CustomerMdb
-from main.model.sjasa_ddb import SjasaDdb
-from main.model.sord_hdb import SordHdb
-from main.model.sprod_ddb import SprodDdb
-from main.model.prod_mdb import ProdMdb
-from main.model.jasa_mdb import JasaMdb
-from main.model.unit_mdb import UnitMdb
-from main.model.syarat_bayar_mdb import RulesPayMdb
-from main.schema.sord_hdb import SordSchema, sord_schema
-from main.shared.shared import db
-from main.utils.response import response
+from ...model.custom_mdb import CustomerMdb
+from ...model.sjasa_ddb import SjasaDdb
+from ...model.sord_hdb import SordHdb
+from ...model.sprod_ddb import SprodDdb
+from ...model.prod_mdb import ProdMdb
+from ...model.jasa_mdb import JasaMdb
+from ...model.unit_mdb import UnitMdb
+from ...model.syarat_bayar_mdb import RulesPayMdb
+from ...schema.sord_hdb import SordSchema, sord_schema
+from ...shared.shared import db
+from ...utils.response import response
 from sqlalchemy.exc import IntegrityError
-from main.schema.prod_mdb import prod_schema
-from main.schema.jasa_mdb import jasa_schema
-from main.schema.unit_mdb import unit_schema
-from main.schema.syarat_bayar_mdb import rpay_schema
-from main.schema.sprod_ddb import sprod_schema
-from main.schema.sjasa_ddb import sjasa_schema
-from main.schema.custom_mdb import customer_schema
+from ...schema.prod_mdb import prod_schema
+from ...schema.jasa_mdb import jasa_schema
+from ...schema.unit_mdb import unit_schema
+from ...schema.syarat_bayar_mdb import rpay_schema
+from ...schema.sprod_ddb import sprod_schema
+from ...schema.sjasa_ddb import sjasa_schema
+from ...schema.custom_mdb import customer_schema
 
 
 class SalesOrderId:

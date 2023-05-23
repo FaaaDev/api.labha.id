@@ -1,10 +1,10 @@
-from main.model.group_prod_mdb import GroupProMdb
-from main.shared.shared import db
-from main.utils.response import response
+from ...model.group_prod_mdb import GroupProMdb
+from ...shared.shared import db
+from ...utils.response import response
 from sqlalchemy.exc import IntegrityError
-from main.schema.group_prod_mdb import groupPro_schema
-from main.schema.divisi_mdb import division_schema
-from main.model.divisi_mdb import DivisionMdb
+from ...schema.group_prod_mdb import groupPro_schema
+from ...schema.divisi_mdb import division_schema
+from ...model.divisi_mdb import DivisionMdb
 
 
 class GroupProductId:

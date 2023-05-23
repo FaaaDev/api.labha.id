@@ -1,6 +1,6 @@
 from email.policy import default
 from enum import unique
-from main.shared.shared import db
+from ..shared.shared import db
 
 
 class TransBank(db.Model):

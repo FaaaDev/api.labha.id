@@ -1,23 +1,23 @@
-from main.function.update_table import UpdateTable
-from main.model.preq_mdb import PreqMdb
-from main.model.rprod_mdb import RprodMdb
-from main.model.rjasa_mdb import RjasaMdb
-from main.model.supplier_mdb import SupplierMdb
-from main.model.ccost_mdb import CcostMdb
-from main.model.prod_mdb import ProdMdb
-from main.model.jasa_mdb import JasaMdb
-from main.model.unit_mdb import UnitMdb
-from main.shared.shared import db
-from main.utils.response import response
+from ...function.update_table import UpdateTable
+from ...model.preq_mdb import PreqMdb
+from ...model.rprod_mdb import RprodMdb
+from ...model.rjasa_mdb import RjasaMdb
+from ...model.supplier_mdb import SupplierMdb
+from ...model.ccost_mdb import CcostMdb
+from ...model.prod_mdb import ProdMdb
+from ...model.jasa_mdb import JasaMdb
+from ...model.unit_mdb import UnitMdb
+from ...shared.shared import db
+from ...utils.response import response
 from sqlalchemy.exc import *
-from main.schema.preq_mdb import PreqSchema, preq_schema
-from main.schema.rprod_mdb import rprod_schema
-from main.schema.rjasa_mdb import rjasa_schema
-from main.schema.supplier_mdb import supplier_schema
-from main.schema.ccost_mdb import ccost_schema
-from main.schema.prod_mdb import prod_schema
-from main.schema.jasa_mdb import jasa_schema
-from main.schema.unit_mdb import unit_schema
+from ...schema.preq_mdb import PreqSchema, preq_schema
+from ...schema.rprod_mdb import rprod_schema
+from ...schema.rjasa_mdb import rjasa_schema
+from ...schema.supplier_mdb import supplier_schema
+from ...schema.ccost_mdb import ccost_schema
+from ...schema.prod_mdb import prod_schema
+from ...schema.jasa_mdb import jasa_schema
+from ...schema.unit_mdb import unit_schema
 
 
 class RequestPurchase:
