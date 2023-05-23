@@ -9,12 +9,13 @@ from ...model.klasi_mdb import KlasiMdb
 
 
 class Kategory:
-    def __new__(self, user_id, request):
+    def __new__(self, user, request):
         if request.method == "POST":
             name = request.json["name"]
             kode_klasi = request.json["kode_klasi"]
             kode_saldo = request.json["kode_saldo"]
-            kategory = KategMdb(None, name, kode_klasi, kode_saldo, user_id)
+            kategory = KategMdb(None, name, kode_klasi,
+                                kode_saldo, False, user.id, user.company)
             db.session.add(kategory)
             db.session.commit()
 

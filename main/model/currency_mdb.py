@@ -12,10 +12,12 @@ class CurrencyMdb(db.Model):
     name = db.Column(db.String(100))
     date = db.Column(db.DATE)
     rate = db.Column(db.Integer)
+    comp_id = db.Column(db.Integer)
     
 
-    def __init__(self, code, name, date, rate):
+    def __init__(self, code, name, date, rate, comp_id):
         self.code = code
         self.name = name
         self.date = date
         self.rate = rate
+        self.comp_id = comp_id

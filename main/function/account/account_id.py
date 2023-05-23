@@ -1,12 +1,12 @@
-from main.shared.shared import db
-from main.utils.response import response
+from ...shared.shared import db
+from ...utils.response import response
 from sqlalchemy.exc import IntegrityError
-from main.model.accou_mdb import AccouMdb
-from main.schema.accou_mdb import accou_schema
-from main.schema.kateg_mdb import kateg_schema
-from main.model.kateg_mdb import KategMdb
-from main.schema.klasi_mdb import klasi_schema
-from main.model.klasi_mdb import KlasiMdb
+from ...model.accou_mdb import AccouMdb
+from ...schema.accou_mdb import accou_schema
+from ...schema.kateg_mdb import kateg_schema
+from ...model.kateg_mdb import KategMdb
+from ...schema.klasi_mdb import klasi_schema
+from ...model.klasi_mdb import KlasiMdb
 
 class AccountId:
     def __new__(self, id, request):
