@@ -4,6 +4,7 @@ from datetime import datetime
 from unicodedata import name
 from flask import Flask, redirect, request, jsonify, send_from_directory
 import requests
+from main.function.update_table import UpdateTable
 from main.function.delete_ap_payment import DeleteApPayment
 from main.function.income.income import Income
 from main.function.income.income_id import IncomeId
@@ -176,6 +177,8 @@ from main.model.memo_ddb import MemoDdb
 from main.model.memo_hdb import MemoHdb
 from main.model.neraca_mdb import NeracaMdb
 from main.model.pnl_mdb import PnlMdb
+from main.model.prod_supp_ddb import ProdSupDdb
+from main.schema.prod_sup_ddb import prodsup_schema, prodsups_schema, ProdSupSchema
 from main.schema.pnl_mdb import pnl_schema, pnls_schema, PnlSchema
 from main.schema.neraca_mdb import neraca_schema, neracas_schema, NeracaSchema
 from main.schema.apcard_mdb import apcard_schema, apcards_schema, APCardSchema
@@ -258,7 +261,7 @@ from main.schema.rphj_ddb import rphj_schema, rphjs_schema, RphjSchema
 from main.schema.mtsi_hdb import mtsi_schema, mtsis_schema, MtsiSchema
 from main.schema.mtsi_ddb import mtsiddb_schema, mtsiddbs_schema, MtsiddbSchema
 from main.schema.setup_mdb import *
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import *
 from sqlalchemy import and_, extract, func, or_, cast
 from main.shared.shared import server_name
 
@@ -2708,12 +2711,14 @@ def satuan_id(self, id):
 
         return response(200, "Berhasil", True, unit_schema.dump(units))
 
+
 @app.route("/v1/api/product/code", methods=["POST", "GET"])
 @token_required
 def product_code(self):
     now = datetime.now().strftime("%d%m%y")
     prd = "PRD/" + now + "/" + str(round(time.time() * 10000))[-6:]
     return response(200, "success", True, prd)
+
 
 @app.route("/v1/api/product", methods=["POST", "GET"])
 @token_required
@@ -2726,7 +2731,10 @@ def product(self):
             type = request.json["type"]
             codeb = request.json["codeb"]
             unit = request.json["unit"]
-            suplier = request.json["suplier"]
+            weight = request.json["weight"]
+            dm_panjang = request.json["dm_panjang"]
+            dm_lebar = request.json["dm_lebar"]
+            dm_tinggi = request.json["dm_tinggi"]
             b_price = request.json["b_price"]
             s_price = request.json["s_price"]
             barcode = request.json["barcode"]
@@ -2738,6 +2746,8 @@ def product(self):
             max_order = request.json["max_order"]
             image = request.json["image"]
             ns = request.json["ns"]
+            ket = request.json["ket"]
+            suplier = request.json["suplier"]
 
             prod = ProdMdb(
                 code,
@@ -2746,7 +2756,11 @@ def product(self):
                 type,
                 codeb,
                 unit,
-                suplier,
+                weight,
+                dm_panjang,
+                dm_lebar,
+                dm_tinggi,
+                None,
                 b_price,
                 s_price,
                 barcode,
@@ -2758,46 +2772,100 @@ def product(self):
                 max_order,
                 image,
                 ns,
+                ket,
                 False,
             )
             db.session.add(prod)
             db.session.commit()
 
-            result = response(200, "Berhasil", True, prod_schema.dump(prod))
+            new_supp = []
+            for x in suplier:
+                if prod.id:
+                    new_supp.append(ProdSupMdb(prod.id, x["sup_id"]))
+
+            if len(new_supp) > 0:
+                db.session.add_all(new_supp)
+
+            db.session.commit()
+
         except IntegrityError:
             db.session.rollback()
-            result = response(400, "Kode sudah digunakan", False, None)
+            return response(400, "Kode sudah digunakan", False, None)
         finally:
-            return result
+            return response(200, "Berhasil", True, prod_schema.dump(prod))
     else:
-        result = (
-            db.session.query(ProdMdb, SupplierMdb, UnitMdb, GroupProMdb)
-            .outerjoin(SupplierMdb, SupplierMdb.id == ProdMdb.suplier)
-            .outerjoin(UnitMdb, UnitMdb.id == ProdMdb.unit)
-            .outerjoin(GroupProMdb, GroupProMdb.id == ProdMdb.group)
-            .order_by(ProdMdb.id.asc())
-            .all()
-        )
+        try:
+            result = (
+                db.session.query(ProdMdb, UnitMdb, GroupProMdb)
+                .outerjoin(UnitMdb, UnitMdb.id == ProdMdb.unit)
+                .outerjoin(GroupProMdb, GroupProMdb.id == ProdMdb.group)
+                .order_by(ProdMdb.id.asc())
+                .all()
+            )
 
-        data = []
+            sup = (
+                db.session.query(ProdSupDdb, SupplierMdb)
+                .outerjoin(SupplierMdb, SupplierMdb.id == ProdSupDdb.sup_id)
+                .order_by(ProdSupDdb.id.asc())
+                .all()
+            )
 
-        if result:
-            for x in result:
-                x[0].image = (
-                    request.host_url + "static/upload/" + x[0].image
-                    if x[0].image and x[0].image != ""
-                    else None
-                )
-                x[0].suplier = supplier_schema.dump(x[1]) if x[1] else None
-                x[0].unit = unit_schema.dump(x[2]) if x[2] else None
-                x[0].group = groupPro_schema.dump(x[3]) if x[3] else None
-                data.append(prod_schema.dump(x[0]))
+            data = []
 
-        return response(200, "Berhasil", True, data)
+            if result:
+                for x in result:
+                    supp = []
+                    for y in sup:
+                        if x[0].id == y[0].prod_id:
+                            y[0].sup_id = supplier_schema.dump(
+                                y[1]) if y[1] else None
+                            sup.append(prodsup_schema.dump(y[0]))
+
+                    # x[0].image = (
+                    #     request.host_url + "static/upload/" + x[0].image
+                    #     if x[0].image and x[0].image != ""
+                    #     else None
+                    # )
+
+                    data.append(
+                        {
+                            "id": x[0].id,
+                            "code": x[0].code,
+                            "name": x[0].name,
+                            "group": groupPro_schema.dump(
+                                x[2]) if x[2] else None,
+                            "type": x[0].type,
+                            "codeb": x[0].codeb,
+                            "unit": unit_schema.dump(x[1]) if x[1] else None,
+                            "weight": x[0].weight,
+                            "dm_panjang": x[0].dm_panjang,
+                            "dm_lebar": x[0].dm_lebar,
+                            "dm_tinggi": x[0].dm_tinggi,
+                            "s_price": x[0].s_price,
+                            "barcode": x[0].barcode,
+                            "metode": x[0].metode,
+                            "max_stock": x[0].max_stock,
+                            "min_stock": x[0].min_stock,
+                            "re_stock": x[0].re_stock,
+                            "lt_stock": x[0].lt_stock,
+                            "max_order": x[0].max_order,
+                            "ns": x[0].ns,
+                            "ket": x[0].ket,
+                            "image": request.host_url + "static/upload/" + x[0].image
+                            if x[0].image and x[0].image != ""
+                            else None,
+                            "suplier": supp,
+                        }
+                    )
+
+            return response(200, "Berhasil", True, data)
+        except ProgrammingError as e:
+            print(e)
+            return UpdateTable([ProdMdb, ProdSupDdb], request)
 
 
-@app.route("/v1/api/product/<int:id>", methods=["PUT", "GET", "DELETE"])
-@token_required
+@ app.route("/v1/api/product/<int:id>", methods=["PUT", "GET", "DELETE"])
+@ token_required
 def product_id(self, id):
     prod = ProdMdb.query.filter(ProdMdb.id == id).first()
     if request.method == "PUT":
@@ -2808,7 +2876,10 @@ def product_id(self, id):
             prod.type = request.json["type"]
             prod.codeb = request.json["codeb"]
             prod.unit = request.json["unit"]
-            prod.suplier = request.json["suplier"]
+            prod.weight = request.json["weight"]
+            prod.dm_panjang = request.json["dm_panjang"]
+            prod.dm_lebar = request.json["dm_lebar"]
+            prod.dm_tinggi = request.json["dm_tinggi"]
             prod.b_price = request.json["b_price"]
             prod.s_price = request.json["s_price"]
             prod.barcode = request.json["barcode"]
@@ -2819,6 +2890,8 @@ def product_id(self, id):
             prod.lt_stock = request.json["lt_stock"]
             prod.max_order = request.json["max_order"]
             prod.ns = request.json["ns"]
+            prod.ket = request.json["ket"]
+            prod.suplier = request.json["suplier"]
 
             if request.host_url + "static/upload/" in request.json["image"]:
                 image = request.json["image"].replace(
@@ -2836,6 +2909,37 @@ def product_id(self, id):
                             app.config["UPLOAD_FOLDER"], prod.image))
 
             prod.image = image
+
+            db.session.commit()
+
+            sup = ProdSupDdb.query.filter(ProdSupDdb.prod_id == prod.id).all()
+
+            old_sup = []
+            new_sup = []
+            for x in suplier:
+                if x["id"] != 0:
+                    old_sup.append(x["id"])
+                else:
+                    new_sup.append(
+                        ProdSupDdb(
+                            x.id,
+                            x["sup_id"],
+                        )
+                    )
+
+            if len(old_sup) > 0:
+                for x in old_sup:
+                    for y in sup:
+                        if y.id not in old_sup:
+                            db.session.delete(y)
+                        else:
+                            if y.id == x:
+                                for z in suplier:
+                                    if z["id"] == x:
+                                        y.su_id = z["su_id"]
+
+            if len(new_sup) > 0:
+                db.session.add_all(new_sup)
 
             db.session.commit()
 
@@ -2859,8 +2963,8 @@ def product_id(self, id):
         return response(200, "Berhasil", True, prod_schema.dump(prod))
 
 
-@app.route("/v1/api/import/prod", methods=["POST"])
-@token_required
+@ app.route("/v1/api/import/prod", methods=["POST"])
+@ token_required
 def prod_import(self):
 
     prod = request.json["prod"]
@@ -2918,8 +3022,8 @@ def prod_import(self):
 
 
 # Divisi
-@app.route("/v1/api/divisi", methods=["POST", "GET"])
-@token_required
+@ app.route("/v1/api/divisi", methods=["POST", "GET"])
+@ token_required
 def divisi(self):
     if request.method == "POST":
         try:
@@ -2943,8 +3047,8 @@ def divisi(self):
         return response(200, "Berhasil", True, divisions_schema.dump(result))
 
 
-@app.route("/v1/api/divisi/<int:id>", methods=["PUT", "GET", "DELETE"])
-@token_required
+@ app.route("/v1/api/divisi/<int:id>", methods=["PUT", "GET", "DELETE"])
+@ token_required
 def divisi_id(self, id):
     divisi = DivisionMdb.query.filter(DivisionMdb.id == id).first()
     if request.method == "PUT":
@@ -2969,21 +3073,21 @@ def divisi_id(self, id):
         return response(200, "Berhasil", True, division_schema.dump(divisi))
 
 
-@app.route("/v1/api/group-product", methods=["POST", "GET"])
-@token_required
+@ app.route("/v1/api/group-product", methods=["POST", "GET"])
+@ token_required
 def groupPro(self):
     return GroupProduct(self, request)
 
 
-@app.route("/v1/api/group-product/<int:id>", methods=["PUT", "GET", "DELETE"])
-@token_required
+@ app.route("/v1/api/group-product/<int:id>", methods=["PUT", "GET", "DELETE"])
+@ token_required
 def groupPro_id(self, id):
     return GroupProductId(id, request)
 
 
 # Pajak
-@app.route("/v1/api/pajak", methods=["POST", "GET"])
-@token_required
+@ app.route("/v1/api/pajak", methods=["POST", "GET"])
+@ token_required
 def pajak(self):
     if request.method == "POST":
         try:
@@ -3009,8 +3113,8 @@ def pajak(self):
         return response(200, "Berhasil", True, pajks_schema.dump(result))
 
 
-@app.route("/v1/api/pajak/<int:id>", methods=["PUT", "GET", "DELETE"])
-@token_required
+@ app.route("/v1/api/pajak/<int:id>", methods=["PUT", "GET", "DELETE"])
+@ token_required
 def pajak_id(self, id):
     pajak = PajakMdb.query.filter(PajakMdb.id == id).first()
     if request.method == "PUT":
@@ -3036,8 +3140,8 @@ def pajak_id(self, id):
 
 
 # Jasa
-@app.route("/v1/api/jasa", methods=["POST", "GET"])
-@token_required
+@ app.route("/v1/api/jasa", methods=["POST", "GET"])
+@ token_required
 def jasa(self):
     if request.method == "POST":
         try:
@@ -3074,8 +3178,8 @@ def jasa(self):
         return response(200, "Berhasil", True, data)
 
 
-@app.route("/v1/api/jasa/<int:id>", methods=["PUT", "GET", "DELETE"])
-@token_required
+@ app.route("/v1/api/jasa/<int:id>", methods=["PUT", "GET", "DELETE"])
+@ token_required
 def jasa_id(self, id):
     jasa = JasaMdb.query.filter(JasaMdb.id == id).first()
     if request.method == "PUT":
@@ -3113,68 +3217,68 @@ def jasa_id(self, id):
         return response(200, "Berhasil", True, data)
 
 
-@app.route("/v1/api/rp", methods=["POST", "GET"])
-@token_required
+@ app.route("/v1/api/rp", methods=["POST", "GET"])
+@ token_required
 def rp(self):
     return RequestPurchase(self, request)
 
 
-@app.route("/v1/api/rp/<int:id>", methods=["GET", "PUT", "DELETE"])
-@token_required
+@ app.route("/v1/api/rp/<int:id>", methods=["GET", "PUT", "DELETE"])
+@ token_required
 def rp_id(self, id):
     return RequestPurchaseId(id, request)
 
 
-@app.route("/v1/api/po", methods=["POST", "GET"])
-@token_required
+@ app.route("/v1/api/po", methods=["POST", "GET"])
+@ token_required
 def po(self):
     return PurchaseOrder(self, request)
 
 
-@app.route("/v1/api/po/<int:id>", methods=["PUT", "GET", "DELETE"])
-@token_required
+@ app.route("/v1/api/po/<int:id>", methods=["PUT", "GET", "DELETE"])
+@ token_required
 def po_id(self, id):
     return PurchaseOrderId(id, request)
 
 
-@app.route("/v1/api/po-close/<int:id>", methods=["PUT"])
-@token_required
+@ app.route("/v1/api/po-close/<int:id>", methods=["PUT"])
+@ token_required
 def po_close_id(self, id):
     return PurchaseOrderClose(id, request)
 
 
-@app.route("/v1/api/so", methods=["POST", "GET"])
-@token_required
+@ app.route("/v1/api/so", methods=["POST", "GET"])
+@ token_required
 def so(self):
     return SalesOrder(self, request)
 
 
-@app.route("/v1/api/so/<int:id>", methods=["PUT", "GET", "DELETE"])
-@token_required
+@ app.route("/v1/api/so/<int:id>", methods=["PUT", "GET", "DELETE"])
+@ token_required
 def so_id(self, id):
     return SalesOrderId(id, request)
 
 
-@app.route("/v1/api/so-close/<int:id>", methods=["PUT"])
-@token_required
+@ app.route("/v1/api/so-close/<int:id>", methods=["PUT"])
+@ token_required
 def so_close_id(self, id):
     return SalesOrderClose(id, request)
 
 
-@app.route("/v1/api/order", methods=["POST", "GET"])
-@token_required
+@ app.route("/v1/api/order", methods=["POST", "GET"])
+@ token_required
 def order(self):
     return Order(self, request)
 
 
-@app.route("/v1/api/order/<int:id>", methods=["PUT", "GET", "DELETE"])
-@token_required
+@ app.route("/v1/api/order/<int:id>", methods=["PUT", "GET", "DELETE"])
+@ token_required
 def ord_id(self, id):
     return OrderId(id, request)
 
 
-@app.route("/v1/api/order/date", methods=["POST"])
-@token_required
+@ app.route("/v1/api/order/date", methods=["POST"])
+@ token_required
 def order_date(self):
     start_date = request.json["start_date"]
     end_date = request.json["end_date"]
@@ -3247,58 +3351,58 @@ def order_date(self):
     return response(200, "Berhasil", True, final)
 
 
-@app.route("/v1/api/faktur/code", methods=["POST", "GET"])
-@token_required
+@ app.route("/v1/api/faktur/code", methods=["POST", "GET"])
+@ token_required
 def faktur_code(self):
     now = datetime.now().strftime("%d%m%y")
     fk = "FK/" + now + "/" + str(round(time.time() * 10000))[-6:]
     return response(200, "success", True, fk)
 
 
-@app.route("/v1/api/invoice-pb", methods=["POST", "GET"])
-@token_required
+@ app.route("/v1/api/invoice-pb", methods=["POST", "GET"])
+@ token_required
 def invoice_pb(self):
     return InvoicePb(self, request)
 
 
-@app.route("/v1/api/invoice-pb/<int:id>", methods=["PUT", "GET", "DELETE"])
-@token_required
+@ app.route("/v1/api/invoice-pb/<int:id>", methods=["PUT", "GET", "DELETE"])
+@ token_required
 def invoice_pb_id(self, id):
     return InvoicePbId(id, request)
 
 
-@app.route("/v1/api/faktur-pb", methods=["POST", "GET"])
-@token_required
+@ app.route("/v1/api/faktur-pb", methods=["POST", "GET"])
+@ token_required
 def faktur(self):
     return FakturPb(self, request)
 
 
-@app.route("/v1/api/faktur-pb/<int:id>", methods=["PUT", "GET", "DELETE"])
-@token_required
+@ app.route("/v1/api/faktur-pb/<int:id>", methods=["PUT", "GET", "DELETE"])
+@ token_required
 def faktur_id(self, id):
     return FakturPbId(id, request)
 
 
-@app.route("/v1/api/retur-order", methods=["POST", "GET"])
-@token_required
+@ app.route("/v1/api/retur-order", methods=["POST", "GET"])
+@ token_required
 def retur_order(self):
     return ReturOrder(self, request)
 
 
-@app.route("/v1/api/retur-order/<int:id>", methods=["PUT", "DELETE", "GET"])
-@token_required
+@ app.route("/v1/api/retur-order/<int:id>", methods=["PUT", "DELETE", "GET"])
+@ token_required
 def retur_order_id(self, id):
     return ReturOrderId(id, request)
 
 
-@app.route("/v1/api/retur-sales", methods=["POST", "GET"])
-@token_required
+@ app.route("/v1/api/retur-sales", methods=["POST", "GET"])
+@ token_required
 def retur_sales(self):
     return ReturSale(self, request)
 
 
-@app.route("/v1/api/retur-sales/<int:id>", methods=["PUT", "DELETE", "GET"])
-@token_required
+@ app.route("/v1/api/retur-sales/<int:id>", methods=["PUT", "DELETE", "GET"])
+@ token_required
 def retur_sale_id(self, id):
     return ReturSaleId(id, request)
 
@@ -3314,68 +3418,68 @@ def retur_sale_id(self, id):
 #     else:
 
 
-@app.route("/v1/api/sales", methods=["POST", "GET"])
-@token_required
+@ app.route("/v1/api/sales", methods=["POST", "GET"])
+@ token_required
 def sls(self):
     return Sale(self, request)
 
 
-@app.route("/v1/api/sales/<int:id>", methods=["PUT", "GET", "DELETE"])
-@token_required
+@ app.route("/v1/api/sales/<int:id>", methods=["PUT", "GET", "DELETE"])
+@ token_required
 def sls_id(self, id):
     return SaleId(id, request)
 
 
-@app.route("/v1/api/invoice-pj", methods=["POST", "GET"])
-@token_required
+@ app.route("/v1/api/invoice-pj", methods=["POST", "GET"])
+@ token_required
 def invoice_pj(self):
     return InvoicePj(self, request)
 
 
-@app.route("/v1/api/invoice-pj/<int:id>", methods=["PUT", "GET", "DELETE"])
-@token_required
+@ app.route("/v1/api/invoice-pj/<int:id>", methods=["PUT", "GET", "DELETE"])
+@ token_required
 def invoice_pj_id(self, id):
     return InvoicePjId(id, request)
 
 
-@app.route("/v1/api/faktur-pj", methods=["POST", "GET"])
-@token_required
+@ app.route("/v1/api/faktur-pj", methods=["POST", "GET"])
+@ token_required
 def faktur_pj(self):
     return FakturPj(self, request)
 
 
-@app.route("/v1/api/faktur-pj/<int:id>", methods=["PUT", "GET", "DELETE"])
-@token_required
+@ app.route("/v1/api/faktur-pj/<int:id>", methods=["PUT", "GET", "DELETE"])
+@ token_required
 def faktur_pj_id(self, id):
     return FakturPjId(id, request)
 
 
-@app.route("/v1/api/expense", methods=["POST", "GET"])
-@token_required
+@ app.route("/v1/api/expense", methods=["POST", "GET"])
+@ token_required
 def expense(self):
     return Expense(self, request)
 
 
-@app.route("/v1/api/expense/<int:id>", methods=["PUT", "GET", "DELETE"])
-@token_required
+@ app.route("/v1/api/expense/<int:id>", methods=["PUT", "GET", "DELETE"])
+@ token_required
 def expense_id(self, id):
     return ExpenseId(id, request)
 
 
-@app.route("/v1/api/income", methods=["POST", "GET"])
-@token_required
+@ app.route("/v1/api/income", methods=["POST", "GET"])
+@ token_required
 def income(self):
     return Income(self, request)
 
 
-@app.route("/v1/api/income/<int:id>", methods=["PUT", "GET", "DELETE"])
-@token_required
+@ app.route("/v1/api/income/<int:id>", methods=["PUT", "GET", "DELETE"])
+@ token_required
 def income_id(self, id):
     return IncomeId(id, request)
 
 
-@app.route("/v1/api/apcard", methods=["GET"])
-@token_required
+@ app.route("/v1/api/apcard", methods=["GET"])
+@ token_required
 def apcard(self):
     ap = (
         db.session.query(ApCard, AcqDdb, PoMdb, SupplierMdb, OrdpbHdb, GiroHdb)
@@ -3428,8 +3532,8 @@ def apcard(self):
     return response(200, "Berhasil", True, final)
 
 
-@app.route("/v1/api/arcard", methods=["GET"])
-@token_required
+@ app.route("/v1/api/arcard", methods=["GET"])
+@ token_required
 def arcard(self):
     ar = (
         db.session.query(ArCard, IAcqDdb, OrdpjHdb,
@@ -3490,8 +3594,8 @@ def arcard(self):
     return response(200, "Berhasil", True, final)
 
 
-@app.route("/v1/api/dashboard-info", methods=["GET"])
-@token_required
+@ app.route("/v1/api/dashboard-info", methods=["GET"])
+@ token_required
 def dashboard_info(self):
     po = PoMdb.query.filter(PoMdb.status == 0).all()
     so = SordHdb.query.filter(SordHdb.status == 0).all()
@@ -3598,8 +3702,8 @@ def dashboard_info(self):
     return response(200, "Berhasil", True, result)
 
 
-@app.route("/v1/api/trans", methods=["GET"])
-@token_required
+@ app.route("/v1/api/trans", methods=["GET"])
+@ token_required
 def trans(self):
     trn = (
         db.session.query(TransDdb, AccouMdb, CcostMdb, ProjMdb, CurrencyMdb)
@@ -3638,8 +3742,8 @@ def trans(self):
     return response(200, "Berhasil", True, final)
 
 
-@app.route("/v1/api/giro", methods=["GET"])
-@token_required
+@ app.route("/v1/api/giro", methods=["GET"])
+@ token_required
 def giro(self):
     giro = (
         db.session.query(GiroHdb, BankMdb, SupplierMdb, ExpHdb)
@@ -3672,8 +3776,8 @@ def giro(self):
     return response(200, "Berhasil", True, final)
 
 
-@app.route("/v1/api/giro/<int:id>", methods=["PUT", "GET", "DELETE"])
-@token_required
+@ app.route("/v1/api/giro/<int:id>", methods=["PUT", "GET", "DELETE"])
+@ token_required
 def giro_id(self, id):
     giro = GiroHdb.query.filter(GiroHdb.id == id).first()
     if request.method == "PUT":
@@ -3731,8 +3835,8 @@ def giro_id(self, id):
         return response(200, "Berhasil", True, data)
 
 
-@app.route("/v1/api/giro-inc", methods=["GET"])
-@token_required
+@ app.route("/v1/api/giro-inc", methods=["GET"])
+@ token_required
 def giro_inc(self):
     giro = (
         db.session.query(GiroIncHdb, BankMdb, CustomerMdb, IncHdb)
@@ -3768,8 +3872,8 @@ def giro_inc(self):
     return response(200, "Berhasil", True, final)
 
 
-@app.route("/v1/api/giro-inc/<int:id>", methods=["PUT", "GET"])
-@token_required
+@ app.route("/v1/api/giro-inc/<int:id>", methods=["PUT", "GET"])
+@ token_required
 def giro_inc_id(self, id):
     gr = GiroIncHdb.query.filter(GiroIncHdb.id == id).first()
     if request.method == "PUT":
@@ -3839,8 +3943,8 @@ def giro_inc_id(self, id):
         return response(200, "Berhasil", True, final)
 
 
-@app.route("/v1/api/approval", methods=["GET"])
-@token_required
+@ app.route("/v1/api/approval", methods=["GET"])
+@ token_required
 def approval(self):
     po = (
         db.session.query(PoMdb, PreqMdb, CcostMdb, SupplierMdb, RulesPayMdb)
@@ -3919,8 +4023,8 @@ def approval(self):
     return response(200, "Berhasil", True, final)
 
 
-@app.route("/v1/api/approval/<int:id>", methods=["GET"])
-@token_required
+@ app.route("/v1/api/approval/<int:id>", methods=["GET"])
+@ token_required
 def update_approval(self, id):
     po = PoMdb.query.filter(PoMdb.id == id).first()
 
@@ -3931,8 +4035,8 @@ def update_approval(self, id):
     return response(200, "Berhasil", True, None)
 
 
-@app.route("/v1/api/balance", methods=["GET"])
-@token_required
+@ app.route("/v1/api/balance", methods=["GET"])
+@ token_required
 def balance(self):
     cash = AccouMdb.query.filter(AccouMdb.kat_code == 1).all()
 
@@ -3943,8 +4047,8 @@ def balance(self):
     return response(200, "Berhasil", True, {"cash": saldo_cash})
 
 
-@app.route("/v1/api/stcard", methods=["GET"])
-@token_required
+@ app.route("/v1/api/stcard", methods=["GET"])
+@ token_required
 def st_card(self):
     st = (
         db.session.query(StCard, ProdMdb, LocationMdb)
@@ -3963,8 +4067,8 @@ def st_card(self):
     return response(200, "Berhasil", True, final)
 
 
-@app.route("/v1/api/price-history", methods=["GET"])
-@token_required
+@ app.route("/v1/api/price-history", methods=["GET"])
+@ token_required
 def price_history(self):
     history = (
         db.session.query(HrgBlMdb, OrdpbHdb, SupplierMdb, ProdMdb)
@@ -3988,8 +4092,8 @@ def price_history(self):
     return response(200, "Berhasil", True, final)
 
 
-@app.route("/v1/api/mesin", methods=["GET", "POST"])
-@token_required
+@ app.route("/v1/api/mesin", methods=["GET", "POST"])
+@ token_required
 def mesin(self):
     if request.method == "POST":
         try:
@@ -4014,8 +4118,8 @@ def mesin(self):
         return response(200, "Berhasil", True, msns_schema.dump(mesin))
 
 
-@app.route("/v1/api/mesin/<int:id>", methods=["GET", "PUT", "DELETE"])
-@token_required
+@ app.route("/v1/api/mesin/<int:id>", methods=["GET", "PUT", "DELETE"])
+@ token_required
 def mesin_id(self, id):
     mesin = MsnMdb.query.filter(MsnMdb.id == id).first()
     if request.method == "PUT":
@@ -4048,66 +4152,68 @@ def mesin_id(self, id):
         return response(200, "Berhasil", True, msn_schema.dump(mesin))
 
 
-@app.route("/v1/api/formula", methods=["GET", "POST"])
-@token_required
+@ app.route("/v1/api/formula", methods=["GET", "POST"])
+@ token_required
 def formula(self):
-   return Formula(self, request)
+    return Formula(self, request)
 
-@app.route("/v1/api/formula/<int:id>", methods=["GET", "PUT", "DELETE"])
-@token_required
+
+@ app.route("/v1/api/formula/<int:id>", methods=["GET", "PUT", "DELETE"])
+@ token_required
 def formula_id(self, id):
     return FormulaId(self, id, request)
 
-@app.route("/v1/api/planning", methods=["GET", "POST"])
-@token_required
+
+@ app.route("/v1/api/planning", methods=["GET", "POST"])
+@ token_required
 def planning(self):
     return Planning(self, request)
 
 
-@app.route("/v1/api/planning/<int:id>", methods=["GET", "PUT", "DELETE"])
-@token_required
+@ app.route("/v1/api/planning/<int:id>", methods=["GET", "PUT", "DELETE"])
+@ token_required
 def planning_id(self, id):
     return PlanningId(id, request)
 
 
-@app.route("/v1/api/batch", methods=["GET", "POST"])
-@token_required
+@ app.route("/v1/api/batch", methods=["GET", "POST"])
+@ token_required
 def batch(self):
     return Batch(self, request)
 
 
-@app.route("/v1/api/batch/<int:id>", methods=["GET", "PUT", "DELETE"])
-@token_required
+@ app.route("/v1/api/batch/<int:id>", methods=["GET", "PUT", "DELETE"])
+@ token_required
 def batch_id(self, id):
     return BatchId(id, request)
 
 
-@app.route("/v1/api/phj", methods=["GET", "POST"])
-@token_required
+@ app.route("/v1/api/phj", methods=["GET", "POST"])
+@ token_required
 def phj(self):
     return PenerimaanHasilJadi(self, request)
 
 
-@app.route("/v1/api/phj/<int:id>", methods=["GET", "PUT", "DELETE"])
-@token_required
+@ app.route("/v1/api/phj/<int:id>", methods=["GET", "PUT", "DELETE"])
+@ token_required
 def phj_id(self, id):
     return PenerimaanHasilJadiId(id, request)
 
 
-@app.route("/v1/api/pbb", methods=["GET", "POST"])
-@token_required
+@ app.route("/v1/api/pbb", methods=["GET", "POST"])
+@ token_required
 def pbb(self):
     return Pembebanan(self, request)
 
 
-@app.route("/v1/api/pbb/<int:id>", methods=["GET", "PUT", "DELETE"])
-@token_required
+@ app.route("/v1/api/pbb/<int:id>", methods=["GET", "PUT", "DELETE"])
+@ token_required
 def pbb_id(self, id):
     return PembebananId(id, request)
 
 
-@app.route("/v1/api/rpbb", methods=["GET"])
-@token_required
+@ app.route("/v1/api/rpbb", methods=["GET"])
+@ token_required
 def rpbb(self):
     rpbb = (
         db.session.query(RpbbMdb, PlanHdb, FprdcHdb, ProdMdb, LocationMdb)
@@ -4129,8 +4235,8 @@ def rpbb(self):
     return response(200, "Berhasil", True, final)
 
 
-@app.route("/v1/api/apprv-bnk", methods=["GET"])
-@token_required
+@ app.route("/v1/api/apprv-bnk", methods=["GET"])
+@ token_required
 def approve_bank(self):
     company = (
         db.session.query(User, CompMdb)
@@ -4215,8 +4321,8 @@ def approve_bank(self):
     return response(200, "Berhasil", True, final)
 
 
-@app.route("/v1/api/apprv-bnk/<int:id>", methods=["GET"])
-@token_required
+@ app.route("/v1/api/apprv-bnk/<int:id>", methods=["GET"])
+@ token_required
 def approve_bank_id(self, id):
     exps = ExpHdb.query.filter(ExpHdb.id == id).first()
 
@@ -4255,8 +4361,8 @@ def approve_bank_id(self, id):
     return response(200, "Berhasil", True, None)
 
 
-@app.route("/v1/api/memorial", methods=["GET", "POST"])
-@token_required
+@ app.route("/v1/api/memorial", methods=["GET", "POST"])
+@ token_required
 def memorial(self):
     if request.method == "POST":
         try:
@@ -4367,8 +4473,8 @@ def memorial(self):
         return response(200, "Berhasil", True, final)
 
 
-@app.route("/v1/api/memorial/<int:id>", methods=["GET", "PUT", "DELETE"])
-@token_required
+@ app.route("/v1/api/memorial/<int:id>", methods=["GET", "PUT", "DELETE"])
+@ token_required
 def memorial_id(self, id):
     x = MemoHdb.query.filter(MemoHdb.id == id).first()
     if request.method == "PUT":
@@ -4503,8 +4609,8 @@ def memorial_id(self, id):
         return response(200, "Berhasil", True, final)
 
 
-@app.route("/v1/api/import/memorial", methods=["POST"])
-@token_required
+@ app.route("/v1/api/import/memorial", methods=["POST"])
+@ token_required
 def memo_import(self):
     mem = request.json["memo"]
 
@@ -4580,8 +4686,8 @@ def memo_import(self):
     return response(200, "Berhasil", True, None)
 
 
-@app.route("/v1/api/mutasi", methods=["GET", "POST"])
-@token_required
+@ app.route("/v1/api/mutasi", methods=["GET", "POST"])
+@ token_required
 def mutasi(self):
     if request.method == "POST":
         try:
@@ -4678,8 +4784,8 @@ def mutasi(self):
         return response(200, "Berhasil", True, final)
 
 
-@app.route("/v1/api/mutasi/<int:id>", methods=["PUT", "DELETE"])
-@token_required
+@ app.route("/v1/api/mutasi/<int:id>", methods=["PUT", "DELETE"])
+@ token_required
 def mutasi_id(self, id):
     x = MtsiHdb.query.filter(MtsiHdb.id == id).first()
     if request.method == "PUT":
@@ -4752,20 +4858,20 @@ def mutasi_id(self, id):
         return response(200, "Berhasil", True, None)
 
 
-@app.route("/v1/api/koreksi-sto", methods=["POST", "GET"])
-@token_required
+@ app.route("/v1/api/koreksi-sto", methods=["POST", "GET"])
+@ token_required
 def korSto(self):
     return KoreksiPersediaan(self, request)
 
 
-@app.route("/v1/api/koreksi-sto/<int:id>", methods=["PUT", "GET", "DELETE"])
-@token_required
+@ app.route("/v1/api/koreksi-sto/<int:id>", methods=["PUT", "GET", "DELETE"])
+@ token_required
 def korSto_id(self, id):
     return KorPersediaanId(id, request)
 
 
-@app.route("/v1/api/sto/<int:id>", methods=["GET"])
-@token_required
+@ app.route("/v1/api/sto/<int:id>", methods=["GET"])
+@ token_required
 def sto_loc(self, id):
     product = ProdMdb.query.all()
     sto = StCard.query.filter(
@@ -4809,8 +4915,8 @@ def sto_loc(self, id):
     return response(200, "Berhasil", True, final)
 
 
-@app.route("/v1/api/sto", methods=["GET"])
-@token_required
+@ app.route("/v1/api/sto", methods=["GET"])
+@ token_required
 def sto(self):
     product = ProdMdb.query.all()
     sto = StCard.query.all()
@@ -4873,8 +4979,8 @@ def sto(self):
     return response(200, "Berhasil", True, final)
 
 
-@app.route("/v1/api/sisa-exp", methods=["GET"])
-@token_required
+@ app.route("/v1/api/sisa-exp", methods=["GET"])
+@ token_required
 def sisa_exp(self):
     # sld = SaldoAPMdb.query.filter(SaldoAPMdb.id == ApCard.sa_id).all()
     fk = OrdpbHdb.query.all()
@@ -4914,8 +5020,8 @@ def sisa_exp(self):
     return response(200, "Berhasil", True, final)
 
 
-@app.route("/v1/api/sisa-inc", methods=["GET"])
-@token_required
+@ app.route("/v1/api/sisa-inc", methods=["GET"])
+@ token_required
 def sisa_inc(self):
     sl = OrdpjHdb.query.all()
     # sld = SaldoARMdb.query.all()
@@ -4972,121 +5078,121 @@ def sisa_inc(self):
     return response(200, "Berhasil", True, final)
 
 
-@app.route("/v1/api/koreksi-hut", methods=["POST", "GET"])
-@token_required
+@ app.route("/v1/api/koreksi-hut", methods=["POST", "GET"])
+@ token_required
 def korHut(self):
     return KoreksiHutang(self, request)
 
 
-@app.route("/v1/api/koreksi-hut/<int:id>", methods=["PUT", "GET", "DELETE"])
-@token_required
+@ app.route("/v1/api/koreksi-hut/<int:id>", methods=["PUT", "GET", "DELETE"])
+@ token_required
 def korHut_id(self, id):
     return KoreksiHutangId(id, request)
 
 
-@app.route("/v1/api/koreksi-piu", methods=["POST", "GET"])
-@token_required
+@ app.route("/v1/api/koreksi-piu", methods=["POST", "GET"])
+@ token_required
 def korPiu(self):
     return KoreksiPiutang(self, request)
 
 
-@app.route("/v1/api/koreksi-piu/<int:id>", methods=["PUT", "GET", "DELETE"])
-@token_required
+@ app.route("/v1/api/koreksi-piu/<int:id>", methods=["PUT", "GET", "DELETE"])
+@ token_required
 def korPiu_id(self, id):
     return KoreksiPiutangId(id, request)
 
 
-@app.route("/v1/api/saldo-awal-inv", methods=["GET", "POST"])
-@token_required
+@ app.route("/v1/api/saldo-awal-inv", methods=["GET", "POST"])
+@ token_required
 def saldo_awal_inv(self):
     return SaldoInv(self, request)
 
 
-@app.route("/v1/api/saldo-awal-ap", methods=["GET", "POST"])
-@token_required
+@ app.route("/v1/api/saldo-awal-ap", methods=["GET", "POST"])
+@ token_required
 def saldo_awal_ap(self):
     return SaldoAP(self, request)
 
 
-@app.route("/v1/api/saldo-awal-ap/<int:id>", methods=["PUT", "DELETE"])
-@token_required
+@ app.route("/v1/api/saldo-awal-ap/<int:id>", methods=["PUT", "DELETE"])
+@ token_required
 def sa_ap_id(self, id):
     return SaldoAPId(id, request)
 
 
-@app.route("/v1/api/saldo-awal-ar", methods=["GET", "POST"])
-@token_required
+@ app.route("/v1/api/saldo-awal-ar", methods=["GET", "POST"])
+@ token_required
 def saldo_awal_ar(self):
     return SaldoAR(self, request)
 
 
-@app.route("/v1/api/saldo-awal-ar/<int:id>", methods=["PUT", "DELETE"])
-@token_required
+@ app.route("/v1/api/saldo-awal-ar/<int:id>", methods=["PUT", "DELETE"])
+@ token_required
 def sa_ar_id(self, id):
     return SaldoARId(id, request)
 
 
-@app.route("/v1/api/saldo-awal-gl", methods=["POST", "PUT", "GET"])
-@token_required
+@ app.route("/v1/api/saldo-awal-gl", methods=["POST", "PUT", "GET"])
+@ token_required
 def saldo_awal_gl(self):
     return SaldoAwalGl(self, request)
 
 
-@app.route("/v1/api/saldo-awal-gl/status", methods=["GET"])
-@token_required
+@ app.route("/v1/api/saldo-awal-gl/status", methods=["GET"])
+@ token_required
 def saldo_awal_status(self):
     return SaldoAwalGlStatus(self, request)
 
 
-@app.route("/v1/api/setup/saldo-akhir", methods=["POST", "GET"])
-@token_required
+@ app.route("/v1/api/setup/saldo-akhir", methods=["POST", "GET"])
+@ token_required
 def setup_sa(self):
     return SetupSldAkhir(self, request)
 
 
-@app.route("/v1/api/setup/saldo-akhir/<int:id>", methods=["PUT", "GET", "DELETE"])
-@token_required
+@ app.route("/v1/api/setup/saldo-akhir/<int:id>", methods=["PUT", "GET", "DELETE"])
+@ token_required
 def setup_sa_id(self, id):
     return SetupSaId(id, request, self)
 
 
-@app.route("/v1/api/saldo-akhir", methods=["POST", "GET"])
-@token_required
+@ app.route("/v1/api/saldo-akhir", methods=["POST", "GET"])
+@ token_required
 def saldo_akhir(self):
     return SaldoAkhir(request, self.id, self.company)
 
 
-@app.route("/v1/api/saldo-akhir/<int:id>", methods=["PUT"])
-@token_required
+@ app.route("/v1/api/saldo-akhir/<int:id>", methods=["PUT"])
+@ token_required
 def saldo_akhir_id(self, id):
     return SaldoAkhirId(request, id)
 
 
-@app.route("/v1/api/posting/ym", methods=["GET"])
-@token_required
+@ app.route("/v1/api/posting/ym", methods=["GET"])
+@ token_required
 def get_year(self):
     return GetYearPosting(self, request)
 
 
-@app.route("/v1/api/posting", methods=["POST", "GET"])
-@token_required
+@ app.route("/v1/api/posting", methods=["POST", "GET"])
+@ token_required
 def posting(self):
     return Posting(self, request)
 
 
-@app.route("/v1/api/unpost/<int:month>/<int:year>", methods=["GET"])
-@token_required
+@ app.route("/v1/api/unpost/<int:month>/<int:year>", methods=["GET"])
+@ token_required
 def unpost(self, month, year):
     return Unpost(self, month, year, request)
 
 
-@app.route("/v1/api/posting/transfer", methods=["POST"])
-@token_required
+@ app.route("/v1/api/posting/transfer", methods=["POST"])
+@ token_required
 def tf(self):
     return TransferGL(self, request)
 
 
-@app.route("/v1/api/closing/<int:month>/<int:year>", methods=["GET"])
-@token_required
+@ app.route("/v1/api/closing/<int:month>/<int:year>", methods=["GET"])
+@ token_required
 def closing(self, month, year):
     return Closing(self, month, year, request)

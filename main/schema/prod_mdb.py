@@ -12,6 +12,10 @@ class ProdSchema(ma.Schema):
             "type",
             "codeb",
             "unit",
+            "weight",
+            "dm_panjang",
+            "dm_lebar",
+            "dm_tinggi",
             "suplier",
             "b_price",
             "s_price",
@@ -24,6 +28,7 @@ class ProdSchema(ma.Schema):
             "max_order",
             "image",
             "ns",
+            "ket",
             "imp",
         )
 

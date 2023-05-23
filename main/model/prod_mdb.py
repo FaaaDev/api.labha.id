@@ -13,6 +13,10 @@ class ProdMdb(db.Model):
     type = db.Column(db.Integer)
     codeb = db.Column(db.String(255))
     unit = db.Column(db.Integer)
+    weight = db.Column(db.Float)
+    dm_panjang = db.Column(db.Float)
+    dm_lebar = db.Column(db.Float)
+    dm_tinggi = db.Column(db.Float)
     suplier = db.Column(db.Integer)
     b_price = db.Column(db.Integer)
     s_price = db.Column(db.Integer)
@@ -25,6 +29,7 @@ class ProdMdb(db.Model):
     max_order = db.Column(db.Integer)
     image = db.Column(db.Text)
     ns = db.Column(db.Boolean)
+    ket = db.Column(db.Text)
     imp = db.Column(db.Boolean)
 
     def __init__(
@@ -35,6 +40,10 @@ class ProdMdb(db.Model):
         type,
         codeb,
         unit,
+        weight,
+        dm_panjang,
+        dm_lebar,
+        dm_tinggi,
         suplier,
         b_price,
         s_price,
@@ -47,6 +56,7 @@ class ProdMdb(db.Model):
         max_order,
         image,
         ns,
+        ket,
         imp
     ):
         self.code = code
@@ -55,6 +65,10 @@ class ProdMdb(db.Model):
         self.type = type
         self.codeb = codeb
         self.unit = unit
+        self.weight = weight
+        self.dm_panjang = dm_panjang
+        self.dm_lebar = dm_lebar
+        self.dm_tinggi = dm_tinggi
         self.suplier = suplier
         self.b_price = b_price
         self.s_price = s_price
@@ -67,4 +81,5 @@ class ProdMdb(db.Model):
         self.max_order = max_order
         self.image = image
         self.ns = ns
+        self.ket = ket
         self.imp = imp
