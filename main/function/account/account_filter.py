@@ -1,3 +1,4 @@
+from ...function.update_table import UpdateTable
 from ...model.accou_mdb import AccouMdb
 from ...schema.accou_mdb import accou_schema
 from ...schema.kateg_mdb import kateg_schema
@@ -11,7 +12,7 @@ from sqlalchemy import func, cast, case, literal_column, or_
 
 
 class AccountFilter:
-    def __new__(self, page, length, filter):
+    def __new__(self, page, length, filter, request):
         try:
             query = (
                 db.session.query(
@@ -91,9 +92,9 @@ class AccountFilter:
                         case(
                             [
                                 (func.split_part
-                                (AccouMdb.acc_code, '.', 3
-                                ) == '', '0'
-                                )
+                                 (AccouMdb.acc_code, '.', 3
+                                  ) == '', '0'
+                                 )
                             ], else_=case([
                                 (AccouMdb.dou_type == 'U', case(
                                     [
@@ -111,7 +112,7 @@ class AccountFilter:
                                         )
                                         )
                                     ], else_=0)
-                                )
+                                 )
                             ], else_=case(
                                 [
                                     (func.char_length(
@@ -136,9 +137,9 @@ class AccountFilter:
                         (
                             [
                                 (func.split_part
-                                (AccouMdb.acc_code, '.', 4
-                                ) == '', '0'
-                                )
+                                 (AccouMdb.acc_code, '.', 4
+                                  ) == '', '0'
+                                 )
                             ], else_=func.split_part
                             (
                                 AccouMdb.acc_code, '.', 4
@@ -179,22 +180,25 @@ class AccountFilter:
                 .filter(
                     or_(
                         func.lower(AccouMdb.acc_code).like(
-                            "%{}%".format(filter.lower() if filter != "0" else "")
+                            "%{}%".format(
+                                filter.lower() if filter != "0" else "")
                         ),
                         func.lower(AccouMdb.acc_name).like(
-                            "%{}%".format(filter.lower() if filter != "0" else "")
+                            "%{}%".format(
+                                filter.lower() if filter != "0" else "")
                         ),
                         func.lower(KategMdb.name).like(
-                            "%{}%".format(filter.lower() if filter != "0" else "")
+                            "%{}%".format(
+                                filter.lower() if filter != "0" else "")
                         ),
                         func.lower(KlasiMdb.klasiname).like(
-                            "%{}%".format(filter.lower() if filter != "0" else "")
+                            "%{}%".format(
+                                filter.lower() if filter != "0" else "")
                         ),
                     )
                 )
                 .all()
             )
-            
             result = (
                 query
                 .filter(
@@ -234,4 +238,6 @@ class AccountFilter:
             return response(200, "Berhasil", True, {"data": data, "length": len(all)})
 
         except ProgrammingError as e:
-            return UpdateTable([AccouMdb, KategMdb, KlasiMdb], request)
+            return UpdateTable([AccouMdb,
+                                KategMdb,
+                                KlasiMdb, ], request)
