@@ -23,6 +23,7 @@ from .function.account.account import Account
 from .function.account.account_id import AccountId
 from .function.update_table import UpdateTable
 from .model.prod_supp_ddb import ProdSupDdb
+
 from .schema.prod_sup_ddb import *
 from .function.kategory.kategory_import import KategoryImport
 from .function.cost_center.cost_center import CostCenter
@@ -117,6 +118,7 @@ from .model.comp_mdb import CompMdb
 from .model.djasa_ddb import DjasaDdb
 from .model.exp_ddb import ExpDdb
 from .model.exp_hdb import ExpHdb
+
 from .model.fkpb_hdb import FkpbHdb
 from .model.fmtrl_ddb import FmtrlDdb
 from .model.fprdc_hdb import FprdcHdb
@@ -159,6 +161,7 @@ from .model.rprod_mdb import RprodMdb
 from .model.sales_mdb import SalesMdb
 from .model.area_penjualan_mdb import AreaPenjualanMdb
 from .model.setup_mdb import SetupMdb
+from .model.setupautonumber_mdb import SetupAutoNumberMdb
 from .model.sjasa_ddb import SjasaDdb
 from .model.sord_hdb import SordHdb
 from .model.sprod_ddb import SprodDdb
@@ -268,6 +271,7 @@ from .schema.rphj_ddb import rphj_schema, rphjs_schema, RphjSchema
 from .schema.mtsi_hdb import mtsi_schema, mtsis_schema, MtsiSchema
 from .schema.mtsi_ddb import mtsiddb_schema, mtsiddbs_schema, MtsiddbSchema
 from .schema.setup_mdb import *
+from .schema.setupautonumber_mdb import *
 from sqlalchemy.exc import *
 from sqlalchemy import and_, extract, func, or_, cast
 from .shared.shared import server_name
@@ -1667,6 +1671,7 @@ def company(self):
             discount = request.json["discount"]
             tiered = request.json["tiered"]
             rp = request.json["rp"]
+
             over_po = request.json["over_po"]
             cutoff = request.json["cutoff"]
             year_co = request.json["year_co"]
@@ -2233,6 +2238,604 @@ def setup_account_id(self, id):
         db.session.commit()
 
         return response(200, "Berhasil", True, setup_shcema.dump(setup))
+    elif request.method == "DELETE":
+        db.session.delete(setup)
+        db.session.commit()
+
+        return response(200, "Berhasil", True, None)
+    else:
+        account = AccouMdb.query.all()
+
+        if setup:
+            setup_dict = dict(
+                (col, getattr(setup, col)) for col in setup.__table__.columns.keys()
+            )
+
+            for key, value in setup_dict.items():
+                if key != "id" and key != "cp_id":
+                    for x in account:
+                        if value:
+                            if value == x.id:
+                                setup_dict[key] = accou_schema.dump(x)
+
+            return response(200, "Berhasil", True, setup_dict)
+
+        return response(200, "Berhasil", False, None)
+
+
+@app.route("/v1/api/setup/autonumber", methods=["POST", "GET"])
+@token_required
+def setup_autonumber(self):
+    user = User.query.filter(User.id == self.id).first()
+    if request.method == "POST":
+        try:
+            cp_id = self.company
+            rp_no_ref = request.json.get("rp_no_ref")
+            rp_ref_month = request.json.get("rp_ref_month")
+            rp_ref_year = request.json.get("rp_ref_year")
+            rp_depart = request.json.get("rp_depart")
+            rp_reset_month = request.json.get("rp_reset_month")
+            po_no_ref = request.json.get("po_no_ref")
+            po_ref_month = request.json.get("po_ref_month")
+            po_ref_year = request.json.get("po_ref_year")
+            po_depart = request.json.get("po_depart")
+            po_reset_month = request.json.get("po_reset_month")
+            gr_no_ref = request.json.get("gr_no_ref")
+            gr_ref_month = request.json.get("gr_ref_month")
+            gr_ref_year = request.json.get("gr_ref_year")
+            gr_depart = request.json.get("gr_depart")
+            gr_reset_month = request.json.get("gr_reset_month")
+            pi_no_ref = request.json.get("pi_no_ref")
+            pi_ref_month = request.json.get("pi_ref_month")
+            pi_ref_year = request.json.get("pi_ref_year")
+            pi_depart = request.json.get("pi_depart")
+            pi_reset_month = request.json.get("pi_reset_month")
+            pr_no_ref = request.json.get("pr_no_ref")
+            pr_ref_month = request.json.get("pr_ref_month")
+            pr_ref_year = request.json.get("pr_ref_year")
+            pr_depart = request.json.get("pr_depart")
+            pr_reset_month = request.json.get("pr_reset_month")
+
+            so_no_ref = request.json.get("so_no_ref")
+            so_ref_month = request.json.get("so_ref_month")
+            so_ref_year = request.json.get("so_ref_year")
+            so_depart = request.json.get("so_depart")
+            so_reset_month = request.json.get("so_reset_month")
+            sl_no_ref = request.json.get("sl_no_ref")
+            sl_ref_month = request.json.get("sl_ref_month")
+            sl_ref_year = request.json.get("sl_ref_year")
+            sl_depart = request.json.get("sl_depart")
+            sl_reset_month = request.json.get("sl_reset_month")
+            ip_no_ref = request.json.get("ip_no_ref")
+            ip_ref_month = request.json.get("ip_ref_month")
+            ip_ref_year = request.json.get("ip_ref_year")
+            ip_depart = request.json.get("ip_depart")
+            ip_reset_month = request.json.get("ip_reset_month")
+            fp_no_ref = request.json.get("fp_no_ref")
+            fp_ref_month = request.json.get("fp_ref_month")
+            fp_ref_year = request.json.get("fp_ref_year")
+            fp_depart = request.json.get("fp_depart")
+            fp_reset_month = request.json.get("fp_reset_month")
+            rpen_no_ref = request.json.get("rpen_no_ref")
+            rpen_ref_month = request.json.get("rpen_ref_month")
+            rpen_ref_year = request.json.get("rpen_ref_year")
+            rpen_depart = request.json.get("rpen_depart")
+            rpen_reset_month = request.json.get("rpen_reset_month")
+
+            mutasiantarlok_no_ref = request.json.get("mutasiantarlok_no_ref")
+            mutasiantarlok_ref_month = request.json.get(
+                "mutasiantarlok_ref_month")
+            mutasiantarlok_ref_year = request.json.get(
+                "mutasiantarlok_ref_year")
+            mutasiantarlok_depart = request.json.get("mutasiantarlok_depart")
+            mutasiantarlok_reset_month = request.json.get(
+                "mutasiantarlok_reset_month")
+
+            korpersediaan_no_ref = request.json.get("korpersediaan_no_ref")
+            korpersediaan_ref_month = request.json.get(
+                "korpersediaan_ref_month")
+            korpersediaan_ref_year = request.json.get("korpersediaan_ref_year")
+            korpersediaan_depart = request.json.get("korpersediaan_depart")
+            korpersediaan_reset_month = request.json.get(
+                "korpersediaan_reset_month")
+
+            pemakaianbb_no_ref = request.json.get("pemakaianbb_no_ref")
+            pemakaianbb_ref_month = request.json.get("pemakaianbb_ref_month")
+            pemakaianbb_ref_year = request.json.get("pemakaianbb_ref_year")
+            pemakaianbb_depart = request.json.get("pemakaianbb_depart")
+            pemakaianbb_reset_month = request.json.get(
+                "pemakaianbb_reset_month")
+
+            penerimaanhj_no_ref = request.json.get("penerimaanhj_no_ref")
+            penerimaanhj_ref_month = request.json.get("penerimaanhj_ref_month")
+            penerimaanhj_ref_year = request.json.get("penerimaanhj_ref_year")
+            penerimaanhj_depart = request.json.get("penerimaanhj_depart")
+            penerimaanhj_reset_month = request.json.get(
+                "penerimaanhj_reset_month")
+
+            memorial_no_ref = request.json.get("memorial_no_ref")
+            memorial_ref_month = request.json.get("memorial_ref_month")
+            memorial_ref_year = request.json.get("memorial_ref_year")
+            memorial_depart = request.json.get("memorial_depart")
+            memorial_reset_month = request.json.get("memorial_reset_month")
+
+            pengeluaran_no_ref = request.json.get("pengeluaran_no_ref")
+            pengeluaran_ref_month = request.json.get("pengeluaran_ref_month")
+            pengeluaran_ref_year = request.json.get("pengeluaran_ref_year")
+            pengeluaran_depart = request.json.get("pengeluaran_depart")
+            pengeluaran_reset_month = request.json.get(
+                "pengeluaran_reset_month")
+
+            pencairangirokeluar_no_ref = request.json.get(
+                "pencairangirokeluar_no_ref")
+            pencairangirokeluar_ref_month = request.json.get(
+                "pencairangirokeluar_ref_month")
+            pencairangirokeluar_ref_year = request.json.get(
+                "pencairangirokeluar_ref_year")
+            pencairangirokeluar_depart = request.json.get(
+                "pencairangirokeluar_depart")
+            pencairangirokeluar_reset_month = request.json.get(
+                "pencairangirokeluar_reset_month")
+
+            koreksihutang_no_ref = request.json.get("koreksihutang_no_ref")
+            koreksihutang_ref_month = request.json.get(
+                "koreksihutang_ref_month")
+            koreksihutang_ref_year = request.json.get("koreksihutang_ref_year")
+            koreksihutang_depart = request.json.get("koreksihutang_depart")
+            koreksihutang_reset_month = request.json.get(
+                "koreksihutang_reset_month")
+
+            pemasukan_no_ref = request.json.get("pemasukan_no_ref")
+            pemasukan_ref_month = request.json.get("pemasukan_ref_month")
+            pemasukan_ref_year = request.json.get("pemasukan_ref_year")
+            pemasukan_depart = request.json.get("pemasukan_depart")
+            pemasukan_reset_month = request.json.get("pemasukan_reset_month")
+
+            pencairangiromasuk_no_ref = request.json.get(
+                "pencairangiromasuk_no_ref")
+            pencairangiromasuk_ref_month = request.json.get(
+                "pencairangiromasuk_ref_month")
+            pencairangiromasuk_ref_year = request.json.get(
+                "pencairangiromasuk_ref_year")
+            pencairangiromasuk_depart = request.json.get(
+                "pencairangiromasuk_depart")
+            pencairangiromasuk_reset_month = request.json.get(
+                "pencairangiromasuk_reset_month")
+
+            koreksipiutang_no_ref = request.json.get("koreksipiutang_no_ref")
+            koreksipiutang_ref_month = request.json.get(
+                "koreksipiutang_ref_month")
+            koreksipiutang_ref_year = request.json.get(
+                "koreksipiutang_ref_year")
+            koreksipiutang_depart = request.json.get("koreksipiutang_depart")
+            koreksipiutang_reset_month = request.json.get(
+                "koreksipiutang_reset_month")
+
+            mesin_no_ref = request.json.get("mesin_no_ref")
+            mesin_ref_month = request.json.get("mesin_ref_month")
+            mesin_ref_year = request.json.get("mesin_ref_year")
+            mesin_depart = request.json.get("mesin_depart")
+            mesin_reset_month = request.json.get("mesin_reset_month")
+
+            formula_no_ref = request.json.get("formula_no_ref")
+            formula_ref_month = request.json.get("formula_ref_month")
+            formula_ref_year = request.json.get("formula_ref_year")
+            formula_depart = request.json.get("formula_depart")
+            formula_reset_month = request.json.get("formula_reset_month")
+
+            planning_no_ref = request.json.get("planning_no_ref")
+            planning_ref_month = request.json.get("planning_ref_month")
+            planning_ref_year = request.json.get("planning_ref_year")
+            planning_depart = request.json.get("planning_depart")
+            planning_reset_month = request.json.get("planning_reset_month")
+
+            batch_no_ref = request.json.get("batch_no_ref")
+            batch_ref_month = request.json.get("batch_ref_month")
+            batch_ref_year = request.json.get("batch_ref_year")
+            batch_depart = request.json.get("batch_depart")
+            batch_reset_month = request.json.get("batch_reset_month")
+
+            penerimaanhasiljadi_no_ref = request.json.get(
+                "penerimaanhasiljadi_no_ref")
+            penerimaanhasiljadi_ref_month = request.json.get(
+                "penerimaanhasiljadi_ref_month")
+            penerimaanhasiljadi_ref_year = request.json.get(
+                "penerimaanhasiljadi_ref_year")
+            penerimaanhasiljadi_depart = request.json.get(
+                "penerimaanhasiljadi_depart")
+            penerimaanhasiljadi_reset_month = request.json.get(
+                "penerimaanhasiljadi_reset_month")
+
+            pembebanan_no_ref = request.json.get("pembebanan_no_ref")
+            pembebanan_ref_month = request.json.get("pembebanan_ref_month")
+            pembebanan_ref_year = request.json.get("pembebanan_ref_year")
+            pembebanan_depart = request.json.get("pembebanan_depart")
+            pembebanan_reset_month = request.json.get("pembebanan_reset_month")
+
+            setup = SetupAutoNumberMdb(
+                cp_id,
+                rp_no_ref,
+                rp_ref_month,
+                rp_ref_year,
+                rp_depart,
+                rp_reset_month,
+                po_no_ref,
+                po_ref_month,
+                po_ref_year,
+                po_depart,
+                po_reset_month,
+                gr_no_ref,
+                gr_ref_month,
+                gr_ref_year,
+                gr_depart,
+                gr_reset_month,
+                pi_no_ref,
+                pi_ref_month,
+                pi_ref_year,
+                pi_depart,
+                pi_reset_month,
+                pr_no_ref,
+                pr_ref_month,
+                pr_ref_year,
+                pr_depart,
+                pr_reset_month,
+                so_no_ref,
+                so_ref_month,
+                so_ref_year,
+                so_depart,
+                so_reset_month,
+                sl_no_ref,
+                sl_ref_month,
+                sl_ref_year,
+                sl_depart,
+                sl_reset_month,
+                ip_no_ref,
+                ip_ref_month,
+                ip_ref_year,
+                ip_depart,
+                ip_reset_month,
+                fp_no_ref,
+                fp_ref_month,
+                fp_ref_year,
+                fp_depart,
+                fp_reset_month,
+                rpen_no_ref,
+                rpen_ref_month,
+                rpen_ref_year,
+                rpen_depart,
+                rpen_reset_month,
+
+                mutasiantarlok_no_ref,
+                mutasiantarlok_ref_month,
+                mutasiantarlok_ref_year,
+                mutasiantarlok_depart,
+                mutasiantarlok_reset_month,
+
+                korpersediaan_no_ref,
+                korpersediaan_ref_month,
+                korpersediaan_ref_year,
+                korpersediaan_depart,
+                korpersediaan_reset_month,
+
+                pemakaianbb_no_ref,
+                pemakaianbb_ref_month,
+                pemakaianbb_ref_year,
+                pemakaianbb_depart,
+                pemakaianbb_reset_month,
+
+                penerimaanhj_no_ref,
+                penerimaanhj_ref_month,
+                penerimaanhj_ref_year,
+                penerimaanhj_depart,
+                penerimaanhj_reset_month,
+
+                memorial_no_ref,
+                memorial_ref_month,
+                memorial_ref_year,
+                memorial_depart,
+                memorial_reset_month,
+
+                pengeluaran_no_ref,
+                pengeluaran_ref_month,
+                pengeluaran_ref_year,
+                pengeluaran_depart,
+                pengeluaran_reset_month,
+
+                pencairangirokeluar_no_ref,
+                pencairangirokeluar_ref_month,
+                pencairangirokeluar_ref_year,
+                pencairangirokeluar_depart,
+                pencairangirokeluar_reset_month,
+
+                koreksihutang_no_ref,
+                koreksihutang_ref_month,
+                koreksihutang_ref_year,
+                koreksihutang_depart,
+                koreksihutang_reset_month,
+
+                pemasukan_no_ref,
+                pemasukan_ref_month,
+                pemasukan_ref_year,
+                pemasukan_depart,
+                pemasukan_reset_month,
+
+                pencairangiromasuk_no_ref,
+                pencairangiromasuk_ref_month,
+                pencairangiromasuk_ref_year,
+                pencairangiromasuk_depart,
+                pencairangiromasuk_reset_month,
+
+                koreksipiutang_no_ref,
+                koreksipiutang_ref_month,
+                koreksipiutang_ref_year,
+                koreksipiutang_depart,
+                koreksipiutang_reset_month,
+
+                mesin_no_ref,
+                mesin_ref_month,
+                mesin_ref_year,
+                mesin_depart,
+                mesin_reset_month,
+
+                formula_no_ref,
+                formula_ref_month,
+                formula_ref_year,
+                formula_depart,
+                formula_reset_month,
+
+                planning_no_ref,
+                planning_ref_month,
+                planning_ref_year,
+                planning_depart,
+                planning_reset_month,
+
+                batch_no_ref,
+                batch_ref_month,
+                batch_ref_year,
+                batch_depart,
+                batch_reset_month,
+
+                penerimaanhasiljadi_no_ref,
+                penerimaanhasiljadi_ref_month,
+                penerimaanhasiljadi_ref_year,
+                penerimaanhasiljadi_depart,
+                penerimaanhasiljadi_reset_month,
+
+                pembebanan_no_ref,
+                pembebanan_ref_month,
+                pembebanan_ref_year,
+                pembebanan_depart,
+                pembebanan_reset_month,
+            )
+            db.session.add(setup)
+            db.session.commit()
+
+            result = response(200, "Berhasil", True,
+                              setupautonumber_shcema.dump(setup))
+        except IntegrityError:
+            db.session.rollback()
+            result = response(400, "Kode sudah digunakan", False, None)
+        finally:
+            return result
+    else:
+        try:
+            setup = SetupAutoNumberMdb.query.filter(
+                SetupAutoNumberMdb.cp_id == self.company).first()
+            account = AccouMdb.query.all()
+
+            if setup:
+                setup_dict = dict(
+                    (col, getattr(setup, col)) for col in setup.__table__.columns.keys()
+                )
+
+                for key, value in setup_dict.items():
+                    if key != "id" and key != "cp_id":
+                        for x in account:
+                            if value:
+                                if value == x.id:
+                                    setup_dict[key] = accou_schema.dump(x)
+
+                return response(200, "Berhasil", True, setup_dict)
+
+            return response(200, "Berhasil", False, None)
+        except ProgrammingError as e:
+            return UpdateTable([SetupAutoNumberMdb, AccouMdb], request)
+
+
+@app.route("/v1/api/setup/autonumber/<int:id>", methods=["PUT", "GET", "DELETE"])
+@token_required
+def setupautonumber_account_id(self, id):
+    setup = SetupAutoNumberMdb.query.filter(
+        SetupAutoNumberMdb.id == id).first()
+    if request.method == "PUT":
+        setup.rp_no_ref = request.json.get("rp_no_ref")
+        setup.rp_ref_month = request.json.get("rp_ref_month")
+        setup.rp_ref_year = request.json.get("rp_ref_year")
+        setup.rp_depart = request.json.get("rp_depart")
+        setup.rp_reset_month = request.json.get("rp_reset_month")
+        setup.po_no_ref = request.json.get("po_no_ref")
+        setup.po_ref_month = request.json.get("po_ref_month")
+        setup.po_ref_year = request.json.get("po_ref_year")
+        setup.po_depart = request.json.get("po_depart")
+        setup.po_reset_month = request.json.get("po_reset_month")
+        setup.gr_no_ref = request.json.get("gr_no_ref")
+        setup.gr_ref_month = request.json.get("gr_ref_month")
+        setup.gr_ref_year = request.json.get("gr_ref_year")
+        setup.gr_depart = request.json.get("gr_depart")
+        setup.gr_reset_month = request.json.get("gr_reset_month")
+        setup.pi_no_ref = request.json.get("pi_no_ref")
+        setup.pi_ref_month = request.json.get("pi_ref_month")
+        setup.pi_ref_year = request.json.get("pi_ref_year")
+        setup.pi_depart = request.json.get("pi_depart")
+        setup.pi_reset_month = request.json.get("pi_reset_month")
+        setup.pr_no_ref = request.json.get("pr_no_ref")
+        setup.pr_ref_month = request.json.get("pr_ref_month")
+        setup.pr_ref_year = request.json.get("pr_ref_year")
+        setup.pr_depart = request.json.get("pr_depart")
+        setup.pr_reset_month = request.json.get("pr_reset_month")
+
+        setup.so_no_ref = request.json.get("so_no_ref")
+        setup.so_ref_month = request.json.get("so_ref_month")
+        setup.so_ref_year = request.json.get("so_ref_year")
+        setup.so_depart = request.json.get("so_depart")
+        setup.so_reset_month = request.json.get("so_reset_month")
+        setup.sl_no_ref = request.json.get("sl_no_ref")
+        setup.sl_ref_month = request.json.get("sl_ref_month")
+        setup.sl_ref_year = request.json.get("sl_ref_year")
+        setup.sl_depart = request.json.get("sl_depart")
+        setup.sl_reset_month = request.json.get("sl_reset_month")
+        setup.ip_no_ref = request.json.get("ip_no_ref")
+        setup.ip_ref_month = request.json.get("ip_ref_month")
+        setup.ip_ref_year = request.json.get("ip_ref_year")
+        setup.ip_depart = request.json.get("ip_depart")
+        setup.ip_reset_month = request.json.get("ip_reset_month")
+        setup.fp_no_ref = request.json.get("fp_no_ref")
+        setup.fp_ref_month = request.json.get("fp_ref_month")
+        setup.fp_ref_year = request.json.get("fp_ref_year")
+        setup.fp_depart = request.json.get("fp_depart")
+        setup.fp_reset_month = request.json.get("fp_reset_month")
+        setup.rpen_no_ref = request.json.get("rpen_no_ref")
+        setup.rpen_ref_month = request.json.get("rpen_ref_month")
+        setup.rpen_ref_year = request.json.get("rpen_ref_year")
+        setup.rpen_depart = request.json.get("rpen_depart")
+        setup.rpen_reset_month = request.json.get("rpen_reset_month")
+
+        setup.mutasiantarlok_no_ref = request.json.get("mutasiantarlok_no_ref")
+        setup.mutasiantarlok_ref_month = request.json.get(
+            "mutasiantarlok_ref_month")
+        setup.mutasiantarlok_ref_year = request.json.get(
+            "mutasiantarlok_ref_year")
+        setup.mutasiantarlok_depart = request.json.get("mutasiantarlok_depart")
+        setup.mutasiantarlok_reset_month = request.json.get(
+            "mutasiantarlok_reset_month")
+
+        setup.korpersediaan_no_ref = request.json.get("korpersediaan_no_ref")
+        setup.korpersediaan_ref_month = request.json.get(
+            "korpersediaan_ref_month")
+        setup.korpersediaan_ref_year = request.json.get(
+            "korpersediaan_ref_year")
+        setup.korpersediaan_depart = request.json.get("korpersediaan_depart")
+        setup.korpersediaan_reset_month = request.json.get(
+            "korpersediaan_reset_month")
+
+        setup.pemakaianbb_no_ref = request.json.get("pemakaianbb_no_ref")
+        setup.pemakaianbb_ref_month = request.json.get("pemakaianbb_ref_month")
+        setup.pemakaianbb_ref_year = request.json.get("pemakaianbb_ref_year")
+        setup.pemakaianbb_depart = request.json.get("pemakaianbb_depart")
+        setup.pemakaianbb_reset_month = request.json.get(
+            "pemakaianbb_reset_month")
+
+        setup.penerimaanhj_no_ref = request.json.get("penerimaanhj_no_ref")
+        setup.penerimaanhj_ref_month = request.json.get(
+            "penerimaanhj_ref_month")
+        setup.penerimaanhj_ref_year = request.json.get("penerimaanhj_ref_year")
+        setup.penerimaanhj_depart = request.json.get("penerimaanhj_depart")
+        setup.penerimaanhj_reset_month = request.json.get(
+            "penerimaanhj_reset_month")
+
+        setup.memorial_no_ref = request.json.get("memorial_no_ref")
+        setup.memorial_ref_month = request.json.get("memorial_ref_month")
+        setup.memorial_ref_year = request.json.get("memorial_ref_year")
+        setup.memorial_depart = request.json.get("memorial_depart")
+        setup.memorial_reset_month = request.json.get("memorial_reset_month")
+
+        setup.pengeluaran_no_ref = request.json.get("pengeluaran_no_ref")
+        setup.pengeluaran_ref_month = request.json.get("pengeluaran_ref_month")
+        setup.pengeluaran_ref_year = request.json.get("pengeluaran_ref_year")
+        setup.pengeluaran_depart = request.json.get("pengeluaran_depart")
+        setup.pengeluaran_reset_month = request.json.get(
+            "pengeluaran_reset_month")
+
+        setup.pencairangirokeluar_no_ref = request.json.get(
+            "pencairangirokeluar_no_ref")
+        setup.pencairangirokeluar_ref_month = request.json.get(
+            "pencairangirokeluar_ref_month")
+        setup.pencairangirokeluar_ref_year = request.json.get(
+            "pencairangirokeluar_ref_year")
+        setup.pencairangirokeluar_depart = request.json.get(
+            "pencairangirokeluar_depart")
+        setup.pencairangirokeluar_reset_month = request.json.get(
+            "pencairangirokeluar_reset_month")
+
+        setup.koreksihutang_no_ref = request.json.get("koreksihutang_no_ref")
+        setup.koreksihutang_ref_month = request.json.get(
+            "koreksihutang_ref_month")
+        setup.koreksihutang_ref_year = request.json.get(
+            "koreksihutang_ref_year")
+        setup.koreksihutang_depart = request.json.get("koreksihutang_depart")
+        setup.koreksihutang_reset_month = request.json.get(
+            "koreksihutang_reset_month")
+
+        setup.pemasukan_no_ref = request.json.get("pemasukan_no_ref")
+        setup.pemasukan_ref_month = request.json.get("pemasukan_ref_month")
+        setup.pemasukan_ref_year = request.json.get("pemasukan_ref_year")
+        setup.pemasukan_depart = request.json.get("pemasukan_depart")
+        setup.pemasukan_reset_month = request.json.get("pemasukan_reset_month")
+
+        setup.pencairangiromasuk_no_ref = request.json.get(
+            "pencairangiromasuk_no_ref")
+        setup.pencairangiromasuk_ref_month = request.json.get(
+            "pencairangiromasuk_ref_month")
+        setup.pencairangiromasuk_ref_year = request.json.get(
+            "pencairangiromasuk_ref_year")
+        setup.pencairangiromasuk_depart = request.json.get(
+            "pencairangiromasuk_depart")
+        setup.pencairangiromasuk_reset_month = request.json.get(
+            "pencairangiromasuk_reset_month")
+
+        setup.koreksipiutang_no_ref = request.json.get("koreksipiutang_no_ref")
+        setup.koreksipiutang_ref_month = request.json.get(
+            "koreksipiutang_ref_month")
+        setup.koreksipiutang_ref_year = request.json.get(
+            "koreksipiutang_ref_year")
+        setup.koreksipiutang_depart = request.json.get("koreksipiutang_depart")
+        setup.koreksipiutang_reset_month = request.json.get(
+            "koreksipiutang_reset_month")
+
+        setup.mesin_no_ref = request.json.get("mesin_no_ref")
+        setup.mesin_ref_month = request.json.get("mesin_ref_month")
+        setup.mesin_ref_year = request.json.get("mesin_ref_year")
+        setup.mesin_depart = request.json.get("mesin_depart")
+        setup.mesin_reset_month = request.json.get("mesin_reset_month")
+
+        setup.formula_no_ref = request.json.get("formula_no_ref")
+        setup.formula_ref_month = request.json.get("formula_ref_month")
+        setup.formula_ref_year = request.json.get("formula_ref_year")
+        setup.formula_depart = request.json.get("formula_depart")
+        setup.formula_reset_month = request.json.get("formula_reset_month")
+
+        setup.planning_no_ref = request.json.get("planning_no_ref")
+        setup.planning_ref_month = request.json.get("planning_ref_month")
+        setup.planning_ref_year = request.json.get("planning_ref_year")
+        setup.planning_depart = request.json.get("planning_depart")
+        setup.planning_reset_month = request.json.get("planning_reset_month")
+
+        setup.batch_no_ref = request.json.get("batch_no_ref")
+        setup.batch_ref_month = request.json.get("batch_ref_month")
+        setup.batch_ref_year = request.json.get("batch_ref_year")
+        setup.batch_depart = request.json.get("batch_depart")
+        setup.batch_reset_month = request.json.get("batch_reset_month")
+
+        setup.penerimaanhasiljadi_no_ref = request.json.get(
+            "penerimaanhasiljadi_no_ref")
+        setup.penerimaanhasiljadi_ref_month = request.json.get(
+            "penerimaanhasiljadi_ref_month")
+        setup.penerimaanhasiljadi_ref_year = request.json.get(
+            "penerimaanhasiljadi_ref_year")
+        setup.penerimaanhasiljadi_depart = request.json.get(
+            "penerimaanhasiljadi_depart")
+        setup.penerimaanhasiljadi_reset_month = request.json.get(
+            "penerimaanhasiljadi_reset_month")
+
+        setup.pembebanan_no_ref = request.json.get("pembebanan_no_ref")
+        setup.pembebanan_ref_month = request.json.get("pembebanan_ref_month")
+        setup.pembebanan_ref_year = request.json.get("pembebanan_ref_year")
+        setup.pembebanan_depart = request.json.get("pembebanan_depart")
+        setup.pembebanan_reset_month = request.json.get(
+            "pembebanan_reset_month")
+        db.session.commit()
+
+        return response(200, "Berhasil", True, setupautonumber_shcema.dump(setup))
     elif request.method == "DELETE":
         db.session.delete(setup)
         db.session.commit()
